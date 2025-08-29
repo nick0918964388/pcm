@@ -133,12 +133,12 @@ export function FilterBar({
           
           {onSearch && (
             <Button
-              variant="primary"
+              variant="default"
               size="sm"
               onClick={onSearch}
-              loading={loading}
+              disabled={loading}
             >
-              搜尋
+              {loading ? '搜尋中...' : '搜尋'}
             </Button>
           )}
         </div>

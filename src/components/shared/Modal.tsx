@@ -171,11 +171,11 @@ export function ConfirmModal({
   const getConfirmVariant = () => {
     switch (type) {
       case 'danger':
-        return 'danger'
+        return 'destructive'
       case 'warning':
-        return 'primary'
+        return 'default'
       default:
-        return 'primary'
+        return 'default'
     }
   }
 
@@ -256,9 +256,9 @@ export function ConfirmModal({
           <Button
             variant={getConfirmVariant()}
             onClick={onConfirm}
-            loading={loading}
+            disabled={loading}
           >
-            {confirmText}
+            {loading ? '處理中...' : confirmText}
           </Button>
         </>
       }

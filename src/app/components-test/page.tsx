@@ -126,12 +126,12 @@ export default function ComponentsTestPage() {
         <div className="bg-white p-6 rounded-lg shadow space-y-4">
           <h3 className="font-medium text-gray-900">按鈕變體</h3>
           <div className="flex flex-wrap gap-3">
-            <Button variant="primary">主要按鈕</Button>
+            <Button variant="default">主要按鈕</Button>
             <Button variant="secondary">次要按鈕</Button>
             <Button variant="outline">外框按鈕</Button>
             <Button variant="ghost">透明按鈕</Button>
-            <Button variant="danger">危險按鈕</Button>
-            <Button variant="primary" loading>載入中...</Button>
+            <Button variant="destructive">危險按鈕</Button>
+            <Button variant="default">載入中...</Button>
           </div>
 
           <h3 className="font-medium text-gray-900">輸入框</h3>
@@ -251,7 +251,7 @@ export default function ComponentsTestPage() {
               開啟Modal
             </Button>
             <Button 
-              variant="danger" 
+              variant="destructive" 
               onClick={() => setConfirmModalOpen(true)}
             >
               開啟確認對話框
