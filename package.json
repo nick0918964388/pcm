@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -15,6 +19,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.13",
+    "@testing-library/user-event": "^14.6.1",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -31,9 +36,17 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.49.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5"
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/ui": "^2.1.9",
+    "jsdom": "^25.0.1",
+    "msw": "^2.6.6",
+    "typescript": "^5",
+    "vitest": "^2.1.8"
   }
 }

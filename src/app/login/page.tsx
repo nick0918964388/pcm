@@ -16,7 +16,7 @@ export default function LoginPage() {
     setIsLoading(true)
     
     setTimeout(() => {
-      router.push('/dashboard')
+      router.push('/project-selection')
     }, 1000)
   }
 
