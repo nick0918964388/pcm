@@ -12,9 +12,11 @@
  * @date 2025-08-31
  */
 
+import React from 'react'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { Project } from '@/types/project'
+import { Project, ProjectMemberExtended, ProjectMemberFilters } from '@/types/project'
+import { WBSItem, WBSFilters, WBSStatistics } from '@/types/wbs'
 
 // ==================== TYPES ====================
 
@@ -69,6 +71,71 @@ export interface UserProjectPreferences {
 }
 
 /**
+ * 專案人員狀態管理
+ */
+export interface ProjectMembersState {
+  /** 人員資料 */
+  data: ProjectMemberExtended[]
+  /** 篩選後的資料 */
+  filteredData: ProjectMemberExtended[]
+  /** 當前篩選條件 */
+  currentFilters: ProjectMemberFilters
+  /** 載入狀態 */
+  loading: boolean
+  /** 錯誤訊息 */
+  error: string | null
+  /** 分頁資訊 */
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
+  /** 快取配置 */
+  cache: {
+    lastFetchTime: Date | null
+    ttl: number // Time to live in milliseconds
+  }
+}
+
+/**
+ * WBS 管理狀態
+ */
+export interface WBSManagementState {
+  /** 樹狀資料 */
+  treeData: WBSItem[]
+  /** 展開的節點 */
+  expandedNodes: Set<string>
+  /** 選中的節點 */
+  selectedNodes: Set<string>
+  /** 拖拽狀態 */
+  dragState: {
+    isDragging: boolean
+    draggedNode: string | null
+    dropTarget: string | null
+  }
+  /** 檢視狀態 */
+  viewState: {
+    showCompleted: boolean
+    viewMode: 'tree' | 'gantt' | 'kanban'
+    filterPanelOpen: boolean
+  }
+  /** 當前篩選條件 */
+  currentFilters: WBSFilters
+  /** 統計資料 */
+  statistics: WBSStatistics | null
+  /** 載入狀態 */
+  loading: boolean
+  /** 錯誤訊息 */
+  error: string | null
+  /** 快取配置 */
+  cache: {
+    lastFetchTime: Date | null
+    ttl: number
+  }
+}
+
+/**
  * 專案範疇管理狀態
  */
 export interface ProjectScopeState {
@@ -95,6 +162,12 @@ export interface ProjectScopeState {
   loading: boolean
   /** 錯誤訊息 */
   error: string | null
+  
+  // ===== 擴展狀態分支 =====
+  /** 專案人員管理狀態 */
+  projectMembers: ProjectMembersState
+  /** WBS 管理狀態 */
+  wbsManagement: WBSManagementState
 }
 
 /**
@@ -142,6 +215,54 @@ export interface ProjectScopeActions {
   hasPermission: (permission: ProjectPermission) => boolean
   /** 更新當前專案權限 */
   updateCurrentProjectPermission: (permission: ProjectPermission) => void
+  
+  // ===== 專案人員管理 =====
+  /** 載入專案人員 */
+  loadProjectMembers: (members: ProjectMemberExtended[], page: number, pageSize: number, total: number) => void
+  /** 設定專案人員載入狀態 */
+  setProjectMembersLoading: (loading: boolean) => void
+  /** 設定專案人員錯誤狀態 */
+  setProjectMembersError: (error: string | null) => void
+  /** 套用人員篩選條件 */
+  applyMemberFilters: (filters: ProjectMemberFilters) => void
+  /** 清除人員篩選條件 */
+  clearMemberFilters: () => void
+  /** 更新人員分頁 */
+  updateMemberPagination: (pagination: { page?: number; pageSize?: number }) => void
+  /** 檢查人員快取是否有效 */
+  isMemberCacheValid: () => boolean
+  /** 刷新人員快取 */
+  refreshMemberCache: () => void
+  
+  // ===== WBS 管理 =====
+  /** 載入 WBS 樹狀結構 */
+  loadWBSTree: (treeData: WBSItem[]) => void
+  /** 切換 WBS 節點展開狀態 */
+  toggleWBSNode: (nodeId: string) => void
+  /** 選取 WBS 節點 */
+  selectWBSNode: (nodeId: string, multiSelect?: boolean) => void
+  /** 開始 WBS 拖拽 */
+  startWBSDrag: (nodeId: string) => void
+  /** 設定 WBS 放置目標 */
+  setWBSDropTarget: (targetId: string) => void
+  /** 結束 WBS 拖拽 */
+  endWBSDrag: () => void
+  /** 套用 WBS 篩選條件 */
+  applyWBSFilters: (filters: WBSFilters) => void
+  /** 清除 WBS 篩選條件 */
+  clearWBSFilters: () => void
+  /** 載入 WBS 統計資料 */
+  loadWBSStatistics: (statistics: WBSStatistics) => void
+  /** 設定 WBS 檢視模式 */
+  setWBSViewMode: (mode: 'tree' | 'gantt' | 'kanban') => void
+  /** 切換完成項目顯示 */
+  toggleWBSShowCompleted: () => void
+  /** 切換篩選面板 */
+  toggleWBSFilterPanel: () => void
+  /** 設定 WBS 載入狀態 */
+  setWBSLoading: (loading: boolean) => void
+  /** 設定 WBS 錯誤狀態 */
+  setWBSError: (error: string | null) => void
 }
 
 // ==================== DEFAULT VALUES ====================
@@ -170,6 +291,50 @@ const initialState: ProjectScopeState = {
   isProjectSelectorOpen: false,
   loading: false,
   error: null,
+  
+  // 專案人員管理初始狀態
+  projectMembers: {
+    data: [],
+    filteredData: [],
+    currentFilters: {},
+    loading: false,
+    error: null,
+    pagination: {
+      page: 1,
+      pageSize: 10,
+      total: 0,
+      totalPages: 0
+    },
+    cache: {
+      lastFetchTime: null,
+      ttl: 300000 // 5 minutes
+    }
+  },
+  
+  // WBS 管理初始狀態
+  wbsManagement: {
+    treeData: [],
+    expandedNodes: new Set<string>(),
+    selectedNodes: new Set<string>(),
+    dragState: {
+      isDragging: false,
+      draggedNode: null,
+      dropTarget: null
+    },
+    viewState: {
+      showCompleted: true,
+      viewMode: 'tree',
+      filterPanelOpen: false
+    },
+    currentFilters: {},
+    statistics: null,
+    loading: false,
+    error: null,
+    cache: {
+      lastFetchTime: null,
+      ttl: 300000 // 5 minutes
+    }
+  }
 }
 
 // ==================== STORE IMPLEMENTATION ====================
@@ -416,6 +581,383 @@ export const useProjectScopeStore = create<ProjectScopeState & ProjectScopeActio
             'updateCurrentProjectPermission'
           )
         },
+
+        // ===== 專案人員管理動作 =====
+        loadProjectMembers: (members: ProjectMemberExtended[], page: number, pageSize: number, total: number) => {
+          set(
+            (state) => ({
+              ...state,
+              projectMembers: {
+                ...state.projectMembers,
+                data: members,
+                filteredData: members,
+                pagination: {
+                  page,
+                  pageSize,
+                  total,
+                  totalPages: Math.ceil(total / pageSize)
+                },
+                cache: {
+                  ...state.projectMembers.cache,
+                  lastFetchTime: new Date()
+                },
+                loading: false,
+                error: null
+              }
+            }),
+            false,
+            'loadProjectMembers'
+          )
+        },
+
+        setProjectMembersLoading: (loading: boolean) => {
+          set(
+            (state) => ({
+              ...state,
+              projectMembers: {
+                ...state.projectMembers,
+                loading
+              }
+            }),
+            false,
+            'setProjectMembersLoading'
+          )
+        },
+
+        setProjectMembersError: (error: string | null) => {
+          set(
+            (state) => ({
+              ...state,
+              projectMembers: {
+                ...state.projectMembers,
+                error,
+                loading: false
+              }
+            }),
+            false,
+            'setProjectMembersError'
+          )
+        },
+
+        applyMemberFilters: (filters: ProjectMemberFilters) => {
+          set(
+            (state) => ({
+              ...state,
+              projectMembers: {
+                ...state.projectMembers,
+                currentFilters: filters,
+                // TODO: 實際的篩選邏輯會在後續實現
+                filteredData: state.projectMembers.data
+              }
+            }),
+            false,
+            'applyMemberFilters'
+          )
+        },
+
+        clearMemberFilters: () => {
+          set(
+            (state) => ({
+              ...state,
+              projectMembers: {
+                ...state.projectMembers,
+                currentFilters: {},
+                filteredData: state.projectMembers.data
+              }
+            }),
+            false,
+            'clearMemberFilters'
+          )
+        },
+
+        updateMemberPagination: (pagination: { page?: number; pageSize?: number }) => {
+          set(
+            (state) => ({
+              ...state,
+              projectMembers: {
+                ...state.projectMembers,
+                pagination: {
+                  ...state.projectMembers.pagination,
+                  ...pagination
+                }
+              }
+            }),
+            false,
+            'updateMemberPagination'
+          )
+        },
+
+        isMemberCacheValid: () => {
+          const state = get()
+          const { lastFetchTime, ttl } = state.projectMembers.cache
+          if (!lastFetchTime) return false
+          return Date.now() - lastFetchTime.getTime() < ttl
+        },
+
+        refreshMemberCache: () => {
+          set(
+            (state) => ({
+              ...state,
+              projectMembers: {
+                ...state.projectMembers,
+                cache: {
+                  ...state.projectMembers.cache,
+                  lastFetchTime: new Date()
+                }
+              }
+            }),
+            false,
+            'refreshMemberCache'
+          )
+        },
+
+        // ===== WBS 管理動作 =====
+        loadWBSTree: (treeData: WBSItem[]) => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                treeData,
+                loading: false,
+                error: null,
+                cache: {
+                  ...state.wbsManagement.cache,
+                  lastFetchTime: new Date()
+                }
+              }
+            }),
+            false,
+            'loadWBSTree'
+          )
+        },
+
+        toggleWBSNode: (nodeId: string) => {
+          set(
+            (state) => {
+              const newExpandedNodes = new Set(state.wbsManagement.expandedNodes)
+              if (newExpandedNodes.has(nodeId)) {
+                newExpandedNodes.delete(nodeId)
+              } else {
+                newExpandedNodes.add(nodeId)
+              }
+              
+              return {
+                ...state,
+                wbsManagement: {
+                  ...state.wbsManagement,
+                  expandedNodes: newExpandedNodes
+                }
+              }
+            },
+            false,
+            'toggleWBSNode'
+          )
+        },
+
+        selectWBSNode: (nodeId: string, multiSelect = false) => {
+          set(
+            (state) => {
+              let newSelectedNodes = new Set<string>()
+              
+              if (multiSelect) {
+                newSelectedNodes = new Set(state.wbsManagement.selectedNodes)
+                if (newSelectedNodes.has(nodeId)) {
+                  newSelectedNodes.delete(nodeId)
+                } else {
+                  newSelectedNodes.add(nodeId)
+                }
+              } else {
+                newSelectedNodes.add(nodeId)
+              }
+              
+              return {
+                ...state,
+                wbsManagement: {
+                  ...state.wbsManagement,
+                  selectedNodes: newSelectedNodes
+                }
+              }
+            },
+            false,
+            'selectWBSNode'
+          )
+        },
+
+        startWBSDrag: (nodeId: string) => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                dragState: {
+                  isDragging: true,
+                  draggedNode: nodeId,
+                  dropTarget: null
+                }
+              }
+            }),
+            false,
+            'startWBSDrag'
+          )
+        },
+
+        setWBSDropTarget: (targetId: string) => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                dragState: {
+                  ...state.wbsManagement.dragState,
+                  dropTarget: targetId
+                }
+              }
+            }),
+            false,
+            'setWBSDropTarget'
+          )
+        },
+
+        endWBSDrag: () => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                dragState: {
+                  isDragging: false,
+                  draggedNode: null,
+                  dropTarget: null
+                }
+              }
+            }),
+            false,
+            'endWBSDrag'
+          )
+        },
+
+        applyWBSFilters: (filters: WBSFilters) => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                currentFilters: filters
+              }
+            }),
+            false,
+            'applyWBSFilters'
+          )
+        },
+
+        clearWBSFilters: () => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                currentFilters: {}
+              }
+            }),
+            false,
+            'clearWBSFilters'
+          )
+        },
+
+        loadWBSStatistics: (statistics: WBSStatistics) => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                statistics
+              }
+            }),
+            false,
+            'loadWBSStatistics'
+          )
+        },
+
+        setWBSViewMode: (mode: 'tree' | 'gantt' | 'kanban') => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                viewState: {
+                  ...state.wbsManagement.viewState,
+                  viewMode: mode
+                }
+              }
+            }),
+            false,
+            'setWBSViewMode'
+          )
+        },
+
+        toggleWBSShowCompleted: () => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                viewState: {
+                  ...state.wbsManagement.viewState,
+                  showCompleted: !state.wbsManagement.viewState.showCompleted
+                }
+              }
+            }),
+            false,
+            'toggleWBSShowCompleted'
+          )
+        },
+
+        toggleWBSFilterPanel: () => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                viewState: {
+                  ...state.wbsManagement.viewState,
+                  filterPanelOpen: !state.wbsManagement.viewState.filterPanelOpen
+                }
+              }
+            }),
+            false,
+            'toggleWBSFilterPanel'
+          )
+        },
+
+        setWBSLoading: (loading: boolean) => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                loading
+              }
+            }),
+            false,
+            'setWBSLoading'
+          )
+        },
+
+        setWBSError: (error: string | null) => {
+          set(
+            (state) => ({
+              ...state,
+              wbsManagement: {
+                ...state.wbsManagement,
+                error,
+                loading: false
+              }
+            }),
+            false,
+            'setWBSError'
+          )
+        },
       }),
       {
         name: 'project-scope-store',
@@ -437,13 +979,18 @@ export const useProjectScopeStore = create<ProjectScopeState & ProjectScopeActio
         },
         // 自訂反序列化，還原日期物件
         deserialize: (str) => {
-          const state = JSON.parse(str)
-          return {
-            ...state,
-            recentProjects: (state.recentProjects || []).map((project: any) => ({
-              ...project,
-              lastAccessTime: new Date(project.lastAccessTime),
-            })),
+          try {
+            const state = JSON.parse(str)
+            return {
+              ...state,
+              recentProjects: (state.recentProjects || []).map((project: any) => ({
+                ...project,
+                lastAccessTime: new Date(project.lastAccessTime),
+              })),
+            }
+          } catch (error) {
+            console.warn('Failed to parse stored state:', error)
+            return {}
           }
         },
       }
@@ -467,33 +1014,130 @@ export const useCurrentProject = () => {
  * 獲取最近專案的 Hook
  */
 export const useRecentProjects = (limit = 5) => {
-  return useProjectScopeStore(
-    (state) => state.recentProjects.slice(0, limit),
-    (prev, curr) => {
-      if (prev.length !== curr.length) return false
-      return prev.every((item, index) => item.projectId === curr[index]?.projectId)
-    }
-  )
+  const allProjects = useProjectScopeStore((state) => state.recentProjects)
+  return React.useMemo(() => {
+    return (allProjects || []).slice(0, limit)
+  }, [allProjects, limit])
 }
 
 /**
  * 獲取收藏專案的 Hook
  */
 export const useFavoriteProjects = () => {
-  return useProjectScopeStore((state) => ({
-    favoriteProjectIds: state.favoriteProjects,
-    toggleFavorite: state.toggleProjectFavorite,
-    isFavorite: state.isProjectFavorite,
-  }))
+  const favoriteProjectIds = useProjectScopeStore((state) => state.favoriteProjects)
+  const toggleFavorite = useProjectScopeStore((state) => state.toggleProjectFavorite)
+  const isFavorite = useProjectScopeStore((state) => state.isProjectFavorite)
+  
+  return React.useMemo(() => ({
+    favoriteProjectIds,
+    toggleFavorite,
+    isFavorite,
+  }), [favoriteProjectIds, toggleFavorite, isFavorite])
 }
 
 /**
  * 獲取使用者偏好的 Hook
  */
 export const useUserPreferences = () => {
-  return useProjectScopeStore((state) => ({
-    preferences: state.userPreferences,
-    updatePreferences: state.updateUserPreferences,
-    resetPreferences: state.resetUserPreferences,
-  }))
+  const preferences = useProjectScopeStore((state) => state.userPreferences)
+  const updatePreferences = useProjectScopeStore((state) => state.updateUserPreferences)
+  const resetPreferences = useProjectScopeStore((state) => state.resetUserPreferences)
+  
+  return React.useMemo(() => ({
+    preferences,
+    updatePreferences,
+    resetPreferences,
+  }), [preferences, updatePreferences, resetPreferences])
+}
+
+// ==================== EXTENDED UTILITY HOOKS ====================
+
+/**
+ * 專案人員管理 Hook
+ */
+export const useProjectMembers = () => {
+  const state = useProjectScopeStore()
+  
+  return {
+    members: state.projectMembers?.data || [],
+    filteredMembers: state.projectMembers?.filteredData || [],
+    filters: state.projectMembers?.currentFilters || {},
+    pagination: state.projectMembers?.pagination || { page: 1, pageSize: 10, total: 0, totalPages: 0 },
+    loading: state.projectMembers?.loading || false,
+    error: state.projectMembers?.error || null,
+    isCacheValid: state.isMemberCacheValid?.() || false,
+    
+    // 操作方法
+    loadMembers: state.loadProjectMembers,
+    setLoading: state.setProjectMembersLoading,
+    setError: state.setProjectMembersError,
+    applyFilters: state.applyMemberFilters,
+    clearFilters: state.clearMemberFilters,
+    updatePagination: state.updateMemberPagination,
+    refreshCache: state.refreshMemberCache,
+  }
+}
+
+/**
+ * WBS 樹管理 Hook
+ */
+export const useWBSTree = () => {
+  const state = useProjectScopeStore()
+  
+  return {
+    treeData: state.wbsManagement?.treeData || [],
+    expandedNodes: state.wbsManagement?.expandedNodes || new Set(),
+    selectedNodes: state.wbsManagement?.selectedNodes || new Set(),
+    dragState: state.wbsManagement?.dragState || { isDragging: false, draggedNode: null, dropTarget: null },
+    viewState: state.wbsManagement?.viewState || { showCompleted: true, viewMode: 'tree', filterPanelOpen: false },
+    filters: state.wbsManagement?.currentFilters || {},
+    statistics: state.wbsManagement?.statistics || null,
+    loading: state.wbsManagement?.loading || false,
+    error: state.wbsManagement?.error || null,
+    
+    // 操作方法
+    loadTree: state.loadWBSTree,
+    toggleNode: state.toggleWBSNode,
+    selectNode: state.selectWBSNode,
+    startDrag: state.startWBSDrag,
+    setDropTarget: state.setWBSDropTarget,
+    endDrag: state.endWBSDrag,
+    applyFilters: state.applyWBSFilters,
+    clearFilters: state.clearWBSFilters,
+    loadStatistics: state.loadWBSStatistics,
+    setViewMode: state.setWBSViewMode,
+    toggleShowCompleted: state.toggleWBSShowCompleted,
+    toggleFilterPanel: state.toggleWBSFilterPanel,
+    setLoading: state.setWBSLoading,
+    setError: state.setWBSError,
+  }
+}
+
+/**
+ * 專案人員篩選 Hook
+ */
+export const useMemberFilters = () => {
+  const state = useProjectScopeStore()
+  
+  return {
+    filters: state.projectMembers?.currentFilters || {},
+    applyFilters: state.applyMemberFilters,
+    clearFilters: state.clearMemberFilters,
+  }
+}
+
+/**
+ * WBS 操作 Hook
+ */
+export const useWBSOperations = () => {
+  const state = useProjectScopeStore()
+  
+  return {
+    startDrag: state.startWBSDrag,
+    setDropTarget: state.setWBSDropTarget,
+    endDrag: state.endWBSDrag,
+    setViewMode: state.setWBSViewMode,
+    toggleShowCompleted: state.toggleWBSShowCompleted,
+    toggleFilterPanel: state.toggleWBSFilterPanel,
+  }
 }

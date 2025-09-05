@@ -134,16 +134,16 @@ export function ProjectSelector({ inNavbar = false, className = '' }: ProjectSel
         <Button
           variant="ghost"
           onClick={toggleProjectSelector}
-          className="flex items-center space-x-2 text-white hover:bg-white/10"
+          className="flex items-center space-x-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
         >
           <div className="flex items-center space-x-2">
             {currentProject ? (
               <>
-                <div className="w-6 h-6 bg-white/20 rounded flex items-center justify-center text-xs font-bold">
+                <div className="w-6 h-6 bg-[#00645A] rounded flex items-center justify-center text-white text-xs font-bold">
                   {currentProject.code.slice(-2)}
                 </div>
                 <span className="font-medium">{currentProject.name}</span>
-                <Badge variant="secondary" className="bg-white/20 text-white text-xs">
+                <Badge variant="secondary" className="bg-gray-100 text-gray-700 text-xs">
                   {currentProject.status}
                 </Badge>
               </>
@@ -158,7 +158,7 @@ export function ProjectSelector({ inNavbar = false, className = '' }: ProjectSel
         </Button>
 
         {isProjectSelectorOpen && (
-          <Card className="absolute top-full left-0 mt-2 w-96 max-h-96 overflow-y-auto shadow-lg border border-gray-200 z-50">
+          <Card className="absolute top-full right-0 mt-2 w-96 max-h-96 overflow-y-auto shadow-lg border border-gray-200 z-[50]">
             {/* 搜尋區域 */}
             <div className="p-4 border-b border-gray-200">
               <div className="relative">

@@ -14,12 +14,12 @@ export const navigationConfig: NavigationItem[] = [
       {
         id: 'project-members',
         label: '專案成員查詢',
-        href: '/project-scope/members'
+        href: '/staff'
       },
       {
         id: 'wbs-settings',
         label: 'WBS 項目設定',
-        href: '/project-scope/wbs'
+        href: '/wbs'
       }
     ]
   },
@@ -28,29 +28,29 @@ export const navigationConfig: NavigationItem[] = [
     label: '人力資源',
     children: [
       {
-        id: 'vendor-contacts',
-        label: '廠商人員通訊錄',
-        href: '/human-resources/contacts'
+        id: 'vendor-directory',
+        label: '廠商通訊錄查詢',
+        href: '/vendors'
       },
       {
         id: 'attendance-stats-card',
         label: '出工人數統計 (刷卡機)',
-        href: '/human-resources/attendance-card'
+        href: '/hr/attendance-card'
       },
       {
         id: 'attendance-stats-powerbi',
         label: '出工人數統計 (PowerBI)',
-        href: '/human-resources/attendance-powerbi'
+        href: '/hr/attendance-powerbi'
       },
       {
         id: 'attendance-history',
         label: '刷卡歷史紀錄查詢',
-        href: '/human-resources/attendance-history'
+        href: '/hr/attendance-history'
       },
       {
         id: 'no-card-notification',
         label: '廠商未刷卡通知',
-        href: '/human-resources/no-card-notification'
+        href: '/hr/no-card-notification'
       }
     ]
   },
@@ -155,7 +155,7 @@ export const navigationConfig: NavigationItem[] = [
   },
   {
     id: 'risk-safety-environmental',
-    label: '風險與工安環保',
+    label: '風險工安',
     children: [
       {
         id: 'esh-platform',

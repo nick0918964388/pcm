@@ -159,43 +159,48 @@ export function ProjectCard({
   // 網格模式
   return (
     <Card 
-      className={`p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-[#00645A] ${className}`}
+      className={`p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-[#00645A] min-h-[320px] flex flex-col ${className}`}
       onClick={() => onClick?.(project)}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-1">
-            <h3 className="text-lg font-semibold text-gray-900 truncate">
+      <div className="mb-4">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-gray-900 truncate mb-1">
               {project.name}
             </h3>
-            <Badge className={`px-2 py-1 text-xs border ${getStatusColor(project.status)}`}>
-              {project.status}
-            </Badge>
+            <p className="text-sm text-gray-600">{project.code}</p>
           </div>
-          <p className="text-sm text-gray-600">{project.code}</p>
+          
+          {showSelectButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                onClick?.(project)
+              }}
+              className="flex items-center space-x-1 ml-2 flex-shrink-0"
+            >
+              <span>選擇</span>
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          )}
         </div>
         
-        {showSelectButton && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              onClick?.(project)
-            }}
-            className="flex items-center space-x-1 ml-2"
-          >
-            <span>選擇</span>
-            <ArrowRight className="h-3 w-3" />
-          </Button>
-        )}
+        <div className="flex items-center">
+          <Badge className={`px-2 py-1 text-xs border ${getStatusColor(project.status)}`}>
+            {project.status}
+          </Badge>
+        </div>
       </div>
 
       {/* 描述 */}
-      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-        {project.description}
-      </p>
+      <div className="flex-1 mb-4">
+        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+          {project.description}
+        </p>
+      </div>
 
       {/* 進度條 */}
       <div className="mb-4">
@@ -207,53 +212,53 @@ export function ProjectCard({
       </div>
 
       {/* 專案資訊 */}
-      <div className="space-y-2 mb-4">
+      <div className="space-y-3 mb-4">
         <div className="flex items-center text-sm text-gray-600">
-          <User className="h-4 w-4 mr-2" />
-          <span>{project.managerName}</span>
+          <User className="h-4 w-4 mr-2 flex-shrink-0" />
+          <span className="truncate">{project.managerName}</span>
         </div>
         
         <div className="flex items-center text-sm text-gray-600">
-          <Calendar className="h-4 w-4 mr-2" />
-          <span>{formatDate(project.startDate)} - {formatDate(project.endDate)}</span>
+          <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
+          <span className="truncate">{formatDate(project.startDate)} - {formatDate(project.endDate)}</span>
         </div>
         
         {project.location && (
           <div className="flex items-center text-sm text-gray-600">
-            <MapPin className="h-4 w-4 mr-2" />
-            <span>{project.location}</span>
+            <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span className="truncate">{project.location}</span>
           </div>
         )}
       </div>
 
       {/* 統計資訊 */}
-      <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-        <div className="text-center">
+      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-200">
+        <div className="flex flex-col items-center min-h-[60px] justify-between">
           <div className="flex items-center justify-center mb-1">
             <DollarSign className="h-4 w-4 text-green-600" />
           </div>
-          <div className="text-xs text-gray-500">預算</div>
-          <div className="text-sm font-semibold">
+          <div className="text-xs text-gray-500 mb-1">預算</div>
+          <div className="text-sm font-semibold text-center leading-tight">
             {formatCurrency(project.totalBudget)}
           </div>
         </div>
         
-        <div className="text-center">
+        <div className="flex flex-col items-center min-h-[60px] justify-between">
           <div className="flex items-center justify-center mb-1">
             <TrendingUp className="h-4 w-4 text-blue-600" />
           </div>
-          <div className="text-xs text-gray-500">里程碑</div>
-          <div className="text-sm font-semibold">
+          <div className="text-xs text-gray-500 mb-1">里程碑</div>
+          <div className="text-sm font-semibold text-center">
             {project.completedMilestones}/{project.totalMilestones}
           </div>
         </div>
         
-        <div className="text-center">
+        <div className="flex flex-col items-center min-h-[60px] justify-between">
           <div className="flex items-center justify-center mb-1">
             <Clock className={`h-4 w-4 ${daysRemaining < 30 ? 'text-red-600' : 'text-gray-600'}`} />
           </div>
-          <div className="text-xs text-gray-500">剩餘天數</div>
-          <div className={`text-sm font-semibold ${
+          <div className="text-xs text-gray-500 mb-1">剩餘天數</div>
+          <div className={`text-sm font-semibold text-center ${
             daysRemaining < 30 ? 'text-red-600' : 'text-gray-900'
           }`}>
             {daysRemaining > 0 ? `${daysRemaining} 天` : '已逾期'}

@@ -12,6 +12,9 @@
 // Re-export all project-related types
 export * from './project'
 
+// Re-export all WBS-related types
+export * from './wbs'
+
 // Export type utilities for easier importing
 export type {
   // Core interfaces
@@ -46,3 +49,40 @@ export type {
   ProjectFormErrors,
   
 } from './project'
+
+// Export WBS type utilities for easier importing
+export type {
+  // Core WBS interfaces
+  WBSItem,
+  WBSTreeOperations,
+  WBSFilters,
+  WBSImportExportFormat,
+  WBSImportValidation,
+  BatchUpdateWBSRequest,
+  BatchOperationResult,
+  WBSStatistics,
+  WBSTemplate,
+  
+  // Enum types
+  WBSStatus,
+  WBSPriority,
+  WBSOperationType,
+  WBSExportFormat,
+  
+  // API response types
+  WBSApiResponse,
+  WBSListResponse,
+  
+  // Form types
+  WBSFormData,
+  WBSFormErrors,
+  
+  // Component props
+  WBSTreeProps,
+  
+  // Utility types
+  CreateWBSItemInput,
+  UpdateWBSItemInput,
+  FlatWBSItem,
+  
+} from './wbs'

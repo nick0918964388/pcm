@@ -7,6 +7,13 @@ import {
   DataTable,
   Column
 } from '@/components/shared'
+import MainNavigation from '@/components/navigation/MainNavigation'
+import Breadcrumbs from '@/components/navigation/Breadcrumbs'
+import { ProjectStatusCards } from '@/components/dashboard/ProjectStatusCards'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 
 interface ESHEvent {
   id: number
@@ -152,133 +159,137 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 bg-[#F5F5F5] min-h-screen max-w-none">
-      {/* Header */}
-      <div className="bg-[#00645A] text-white p-3 sm:p-4 rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0">
-            <h1 className="text-xl sm:text-2xl font-bold">FAB20 Phase3</h1>
-            <span className="text-xs sm:text-sm opacity-90">PCM Professional Construction Management</span>
-          </div>
-          <div className="text-xs sm:text-sm">
-            今天是 {new Date().toLocaleDateString('zh-TW')} | PCM 平台風險SOP
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid Layout - 響應式布局 */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        {/* 左側 - 里程碑和統計卡片 */}
-        <div className="xl:col-span-5 space-y-4">
-          {/* Milestone Timeline */}
-          <MilestoneTimeline 
-            milestones={milestones}
-            currentDate="2024/11/01"
-          />
-
-          {/* 統計卡片 - 響應式網格 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <StatCard
-              title="專案起算"
-              startDate="2025/05/01"
-              endDate="2026/11/01"
-              actualDays={78}
-              planDays={472}
-              color="green"
-            />
-            
-            <StatCard
-              title="專案進度"
-              percentage="-%/-%"
-              actual="0%"
-              plan="0%"
-              color="blue"
-              subItems={[
-                { label: '勘收比例', value: '0%' },
-                { label: '付款比例', value: '0%' }
-              ]}
-            />
-            
-            <StatCard
-              title="今日出工(含當商人員)"
-              value={0}
-              unit="MD"
-              color="yellow"
-              subItems={[
-                { label: '最高出工(不含當商人員)', value: 0, unit: 'MD' },
-                { label: '智能累積(不含當商人員)', value: 0, unit: 'MD' }
-              ]}
-            />
-            
-            <StatCard
-              title="送審文件"
-              value="53/368"
-              unit="pcs compl./total"
-              color="red"
-              subItems={[
-                { label: '退還文件', value: '41/41', unit: 'pcs' },
-                { label: '退費狀態', value: '2/3', unit: 'pcs' }
-              ]}
-            />
-          </div>
-        </div>
-
-        {/* 右側 - KPI 和表格 */}
-        <div className="xl:col-span-7 space-y-4">
-          {/* KPI Progress Bars */}
-          <div className="bg-white p-4 sm:p-6 rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-1 sm:space-y-0">
-              <h3 className="text-base sm:text-lg font-bold text-[#1A1A1A]">實決算工時 KPI</h3>
-              <span className="text-xs sm:text-sm text-[#8C8C8C]">千小時</span>
-            </div>
-            <div className="space-y-3">
-              {kpiData.map((kpi, index) => (
-                <KPIProgressBar
-                  key={index}
-                  label={kpi.label}
-                  value={kpi.value}
-                  maxValue={kpi.label === 'TNZWM' ? 12500 : 2500}
-                  color={kpi.value > kpi.maxValue * 0.8 ? 'red' : kpi.value > kpi.maxValue * 0.6 ? 'yellow' : 'green'}
-                />
-              ))}
+    <div className="min-h-screen bg-white">
+      <MainNavigation />
+      <Breadcrumbs />
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 bg-white min-h-screen">
+          {/* Header */}
+          <div className="bg-[#FFFFFF] border border-[#F0F0F0] p-3 sm:p-4 rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">FAB20 Phase3</h1>
+                <span className="text-xs sm:text-sm text-[#595959]">PCM Professional Construction Management</span>
+              </div>
+              <div className="text-xs sm:text-sm text-[#595959]">
+                今天是 {new Date().toLocaleDateString('zh-TW')} | PCM 平台風險SOP
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* 底部表格區域 - 響應式布局 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* 工地ESH要覽 */}
-        <div>
-          <div className="bg-white rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-            <div className="p-4 border-b border-[#F0F0F0] flex items-center justify-between">
-              <h3 className="font-bold text-[#1A1A1A]">工地ESH 要覽心</h3>
-              <button className="text-sm text-[#00645A] hover:underline font-medium">...more</button>
-            </div>
-            <div className="overflow-x-auto">
-              <DataTable
-                columns={eshColumns}
-                data={eshEvents}
-                className="shadow-none rounded-none"
+          {/* 第一列：Project Status Cards - 專案狀態卡片 */}
+          <div className="@container/main">
+            <ProjectStatusCards />
+          </div>
+
+          {/* 第二列：Milestone Timeline 和 KPI Section - 並排布局 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* 左側 - Milestone Timeline */}
+            <div className="space-y-4">
+              <MilestoneTimeline 
+                milestones={milestones}
+                currentDate="2024/11/01"
               />
             </div>
-          </div>
-        </div>
 
-        {/* 最新消息 */}
-        <div>
-          <div className="bg-white rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-            <div className="p-4 border-b border-[#F0F0F0] flex items-center justify-between">
-              <h3 className="font-bold text-[#1A1A1A]">最新消息</h3>
-              <button className="text-sm text-[#00645A] hover:underline font-medium">...more</button>
+            {/* 右側 - KPI Progress Bars */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
+                  <CardTitle className="text-base sm:text-lg text-[#1A1A1A]">實決算工時 KPI</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm text-[#8C8C8C]">千小時</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {kpiData.map((kpi, index) => {
+                    const maxValue = kpi.label === 'TNZWM' ? 12500 : 2500;
+                    const percentage = Math.round((kpi.value / maxValue) * 100);
+                    
+                    return (
+                      <div key={index} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-[#1A1A1A]">{kpi.label}</span>
+                          <span className="text-sm text-[#595959]">
+                            {kpi.value.toLocaleString()} / {maxValue.toLocaleString()}
+                          </span>
+                        </div>
+                        <Progress value={percentage} className="h-2" />
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
             </div>
-            <div className="overflow-x-auto">
-              <DataTable
-                columns={newsColumns}
-                data={newsItems}
-                className="shadow-none rounded-none"
-              />
-            </div>
+          </div>
+
+          {/* 底部表格區域 - 響應式布局 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* 工地ESH要覽 */}
+            <Card>
+              <CardHeader className="flex items-center justify-between">
+                <CardTitle className="text-[#1A1A1A]">工地ESH 要覽</CardTitle>
+                <button className="text-sm text-[#00645A] hover:underline font-medium">...more</button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-20">類型</TableHead>
+                      <TableHead className="w-24">工地</TableHead>
+                      <TableHead className="w-32">廠欣</TableHead>
+                      <TableHead>事件描述</TableHead>
+                      <TableHead className="w-24">日期</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {eshEvents.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell>
+                          <Badge variant={event.type === '意外' ? 'destructive' : 'secondary'}>
+                            {event.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{event.site}</TableCell>
+                        <TableCell>{event.location}</TableCell>
+                        <TableCell className="text-sm text-[#595959]">{event.person}</TableCell>
+                        <TableCell className="text-sm">{event.date}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* 最新消息 */}
+            <Card>
+              <CardHeader className="flex items-center justify-between">
+                <CardTitle className="text-[#1A1A1A]">最新消息</CardTitle>
+                <button className="text-sm text-[#00645A] hover:underline font-medium">...more</button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-20">類別</TableHead>
+                      <TableHead className="w-20">工地</TableHead>
+                      <TableHead>消息內容</TableHead>
+                      <TableHead className="w-24">日期</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {newsItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <Badge variant="outline">{item.category}</Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{item.site}</TableCell>
+                        <TableCell className="text-sm text-[#595959]">{item.title}</TableCell>
+                        <TableCell className="text-sm">{item.date}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

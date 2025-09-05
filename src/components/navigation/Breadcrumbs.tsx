@@ -38,11 +38,11 @@ export default function Breadcrumbs() {
   // 手動定義首頁麵包屑
   if (pathname === '/dashboard') {
     return (
-      <nav className="bg-gray-100 px-6 py-3 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto">
+      <nav className="bg-[#F5F5F5] px-6 py-3 border-b border-[#F0F0F0]">
+        <div className="w-full">
           <ol className="flex items-center space-x-2 text-sm">
             <li>
-              <span className="text-blue-600 font-medium">專案儀表板</span>
+              <span className="text-[#00645A] font-medium">專案儀表板</span>
             </li>
           </ol>
         </div>
@@ -71,14 +71,14 @@ export default function Breadcrumbs() {
   ]
 
   return (
-    <nav className="bg-gray-100 px-6 py-3 border-b border-gray-200">
-      <div className="max-w-7xl mx-auto">
+    <nav className="bg-[#F5F5F5] px-6 py-3 border-b border-[#F0F0F0]">
+      <div className="w-full">
         <ol className="flex items-center space-x-2 text-sm">
           {breadcrumbItems.map((item, index) => (
             <li key={item.href} className="flex items-center">
               {index > 0 && (
                 <svg
-                  className="w-4 h-4 mx-2 text-gray-400"
+                  className="w-4 h-4 mx-2 text-[#8C8C8C]"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -90,11 +90,11 @@ export default function Breadcrumbs() {
                 </svg>
               )}
               {item.isCurrentPage ? (
-                <span className="text-blue-600 font-medium">{item.label}</span>
+                <span className="text-[#00645A] font-medium">{item.label}</span>
               ) : (
                 <Link
                   href={item.href}
-                  className="text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                  className="text-[#595959] hover:text-[#00645A] transition-colors duration-200"
                 >
                   {item.label}
                 </Link>

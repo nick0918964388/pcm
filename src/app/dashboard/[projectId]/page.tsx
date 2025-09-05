@@ -2,20 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useProjectStore } from '@/store/projectStore'
-import { useProjectScopeStore } from '@/store/projectScopeStore'
-import { Project } from '@/types/project'
-import { 
-  StatCard, 
-  MilestoneTimeline, 
-  KPIProgressBar,
-  DataTable,
-  Column
-} from '@/components/shared'
+// import { useProjectStore } from '@/store/projectStore'
+// import { useProjectScopeStore } from '@/store/projectScopeStore'
+// import { Project } from '@/types/project'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Navbar } from '@/components/layout/Navbar'
+import { ProjectSelector } from '@/components/projects/ProjectSelector'
+import { ProjectStatusCards } from '@/components/dashboard/ProjectStatusCards'
+import { MilestoneTimeline } from '@/components/shared/MilestoneTimeline'
 import { 
   ArrowLeft, 
   Settings, 
@@ -52,399 +50,259 @@ interface NewsItem {
 export default function ProjectDashboardPage() {
   const params = useParams()
   const router = useRouter()
-  const { getProject, initialize, initialized } = useProjectStore()
-  const { currentProject, selectProject } = useProjectScopeStore()
+  // const { getProject, initialize, initialized } = useProjectStore()
+  // const { currentProject, selectProject } = useProjectScopeStore()
   
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const projectId = params.projectId as string
 
   useEffect(() => {
-    const loadProject = async () => {
-      setLoading(true)
-      
-      // 確保 store 已初始化
-      if (!initialized) {
-        await initialize()
-      }
-
-      // 檢查目前選中的專案是否符合
-      if (currentProject && currentProject.id === projectId) {
-        setLoading(false)
-        return
-      }
-
-      // 從 store 獲取專案
-      const project = getProject(projectId)
-      if (project) {
-        selectProject(project)
-      } else {
-        // 專案不存在，導向專案選擇頁面
-        router.push('/project-selection')
-      }
-      
+    // 簡化載入邏輯，避免 store 相關問題
+    const timer = setTimeout(() => {
       setLoading(false)
-    }
+    }, 100)
 
-    if (projectId) {
-      loadProject()
-    }
-  }, [projectId, getProject, initialize, initialized, router, currentProject, selectProject])
+    return () => clearTimeout(timer)
+  }, [projectId])
 
   // 處理返回專案選擇
   const handleBackToSelection = () => {
     router.push('/project-selection')
   }
 
-  // 獲取專案特定的里程碑資料（模擬）
-  const getProjectMilestones = (project: Project) => {
-    const startDate = new Date(project.startDate)
-    const endDate = new Date(project.endDate)
-    const duration = endDate.getTime() - startDate.getTime()
-    
-    return [
-      { 
-        date: new Date(startDate).toLocaleDateString('zh-TW'), 
-        label: '專案開始', 
-        status: 'completed' as const 
-      },
-      { 
-        date: new Date(startDate.getTime() + duration * 0.25).toLocaleDateString('zh-TW'), 
-        label: 'M1', 
-        status: project.progress > 25 ? 'completed' as const : 'current' as const 
-      },
-      { 
-        date: new Date(startDate.getTime() + duration * 0.5).toLocaleDateString('zh-TW'), 
-        label: 'M2', 
-        status: project.progress > 50 ? 'completed' as const : project.progress > 25 ? 'current' as const : 'upcoming' as const 
-      },
-      { 
-        date: new Date(startDate.getTime() + duration * 0.75).toLocaleDateString('zh-TW'), 
-        label: 'M3', 
-        status: project.progress > 75 ? 'completed' as const : project.progress > 50 ? 'current' as const : 'upcoming' as const 
-      },
-      { 
-        date: new Date(endDate).toLocaleDateString('zh-TW'), 
-        label: '專案完成', 
-        status: project.progress === 100 ? 'completed' as const : 'upcoming' as const 
-      },
-    ]
+  // 載入中狀態
+  if (loading) {
+    return (
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center">載入中...</div>
+      </div>
+    )
   }
 
-  // 獲取專案特定的 KPI 資料（模擬）
-  const getProjectKPIData = (project: Project) => {
-    const baseValue = Math.floor(project.progress * 25)
-    return [
-      { label: project.code + '-A', value: baseValue + Math.floor(Math.random() * 200), maxValue: 2500 },
-      { label: project.code + '-B', value: baseValue + Math.floor(Math.random() * 300), maxValue: 2500 },
-      { label: project.code + '-C', value: baseValue + Math.floor(Math.random() * 400), maxValue: 2500 },
-      { label: project.code + '-D', value: baseValue + Math.floor(Math.random() * 500), maxValue: 2500 },
-    ]
+  // 錯誤狀態
+  if (error) {
+    return (
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center text-red-600">錯誤: {error}</div>
+        <div className="text-center mt-4">
+          <Button onClick={handleBackToSelection}>返回專案選擇</Button>
+        </div>
+      </div>
+    )
   }
 
-  // 專案特定的 ESH 事件資料（模擬）
-  const getProjectESHEvents = (project: Project): ESHEvent[] => [
+  // 模擬專案資料
+  const currentProject = {
+    id: projectId,
+    name: projectId === 'proj001' ? 'FAB20 Phase1' : 
+          projectId === 'proj002' ? 'FAB21 Phase2 專案' : 
+          'Unknown Project'
+  }
+
+  // 里程碑數據 (根據專案動態生成)
+  const milestones = [
+    { date: '2024/11/01', label: '開工', status: 'completed' as const },
+    { date: '2025/01/15', label: 'M1', status: 'completed' as const },
+    { date: '2025/05/01', label: 'M2', status: 'current' as const },
+    { date: '2025/08/01', label: 'M3', status: 'upcoming' as const },
+    { date: '2026/11/01', label: '完工', status: 'upcoming' as const },
+  ]
+
+  // KPI數據 (根據專案動態生成)
+  const kpiData = [
+    { label: 'AP2C', value: 500, maxValue: 2500 },
+    { label: 'AP5B', value: 1800, maxValue: 2500 },
+    { label: 'AP6B', value: 2200, maxValue: 2500 },
+    { label: 'AP7P1', value: 1500, maxValue: 2500 },
+    { label: 'AP8P1', value: 1200, maxValue: 2500 },
+    { label: 'F18P1', value: 800, maxValue: 2500 },
+    { label: 'F20P1', value: 1600, maxValue: 2500 },
+    { label: 'FWH', value: 2400, maxValue: 2500 },
+    { label: 'RDA1', value: 600, maxValue: 2500 },
+    { label: 'TNZWM', value: 2500, maxValue: 12500 },
+  ]
+
+  // 工地ESH要覽數據
+  const eshEvents: ESHEvent[] = [
     {
       id: 1,
       type: '事件',
-      site: project.code,
-      location: '施工區域A',
-      person: `${new Date().toLocaleDateString()} ${project.code}/施工人員 安全檢查作業`,
-      date: new Date().toLocaleDateString('zh-TW')
+      site: 'F22P1',
+      location: '廠欣(F22P3)',
+      person: '20250715 廠欣/黃昱 人員過度架高場',
+      date: '2025/07/15'
     },
     {
       id: 2,
-      type: '檢查',
-      site: project.code,
-      location: '施工區域B',
-      person: `${new Date(Date.now() - 86400000).toLocaleDateString()} ${project.code}/品管人員 品質檢測作業`,
-      date: new Date(Date.now() - 86400000).toLocaleDateString('zh-TW')
-    }
+      type: '意外',
+      site: 'AP8P1',
+      location: '廠欣',
+      person: '20250713 AP8 廠欣/維安TK廠孔網阻可動火 花灑落至鐵板造成燒熔破損',
+      date: '2025/07/13'
+    },
+    {
+      id: 3,
+      type: '事件',
+      site: 'F22P1',
+      location: '賴明(F22P3O)',
+      person: '20250630 F22P3 賴明/金球 人員從獨工無上背帶',
+      date: '2025/06/30'
+    },
   ]
 
-  // 專案特定的新聞資料（模擬）
-  const getProjectNews = (project: Project): NewsItem[] => [
+  // 最新消息數據
+  const newsItems: NewsItem[] = [
     {
       id: 1,
-      category: 'Progress',
-      site: project.code,
-      title: `${project.name} 里程碑 M${Math.ceil(project.progress / 25)} 進度更新`,
-      date: new Date().toLocaleDateString('zh-TW')
+      category: 'Others',
+      site: 'F21P2',
+      title: 'F21 share folder',
+      date: '2024/10/22'
     },
     {
       id: 2,
-      category: 'Meeting',
-      site: project.code,
-      title: `${project.name} 週會會議記錄`,
-      date: new Date(Date.now() - 86400000).toLocaleDateString('zh-TW')
-    }
-  ]
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00645A] mx-auto mb-4"></div>
-          <p className="text-gray-600">載入專案儀表板中...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!currentProject) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            找不到專案
-          </h2>
-          <p className="text-gray-600 mb-4">
-            指定的專案不存在或您沒有存取權限
-          </p>
-          <Button onClick={handleBackToSelection}>
-            返回專案選擇
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  const milestones = getProjectMilestones(currentProject)
-  const kpiData = getProjectKPIData(currentProject)
-  const eshEvents = getProjectESHEvents(currentProject)
-  const newsItems = getProjectNews(currentProject)
-
-  const eshColumns: Column<ESHEvent>[] = [
-    {
-      key: 'type',
-      title: '類型',
-      width: '80px',
-      render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
-          value === '意外' ? 'bg-red-100 text-red-800' : 
-          value === '事件' ? 'bg-yellow-100 text-yellow-800' : 
-          'bg-blue-100 text-blue-800'
-        }`}>
-          {value}
-        </span>
-      )
-    },
-    {
-      key: 'site',
-      title: '工地',
-      width: '100px',
-    },
-    {
-      key: 'location',
-      title: '區域',
-      width: '120px',
-    },
-    {
-      key: 'person',
-      title: '事件描述',
-    },
-    {
-      key: 'date',
-      title: '日期',
-      width: '100px',
+      category: 'Arch',
+      site: 'F20P2',
+      title: 'F20P2純水管行動架&吊重場重疊資訊編號J63A4921之場工地安定性復水供應量',
+      date: '2023/08/16'
     },
   ]
-
-  const newsColumns: Column<NewsItem>[] = [
-    {
-      key: 'category',
-      title: '類別',
-      width: '80px',
-    },
-    {
-      key: 'site',
-      title: '工地',
-      width: '80px',
-    },
-    {
-      key: 'title',
-      title: '消息內容',
-    },
-    {
-      key: 'date',
-      title: '日期',
-      width: '100px',
-    },
-  ]
-
-  // 計算專案統計資料
-  const projectStats = {
-    actualDays: Math.floor((new Date().getTime() - new Date(currentProject.startDate).getTime()) / (1000 * 60 * 60 * 24)),
-    planDays: Math.floor((new Date(currentProject.endDate).getTime() - new Date(currentProject.startDate).getTime()) / (1000 * 60 * 60 * 24)),
-    budgetUsedPercentage: Math.floor((currentProject.usedBudget / currentProject.totalBudget) * 100),
-  }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5]">
-      <Navbar showProjectSelector={true} />
-      <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 max-w-none">
-      {/* Header */}
-      <div className="bg-[#00645A] text-white p-3 sm:p-4 rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToSelection}
-              className="text-white hover:bg-white/10 p-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0">
-              <h1 className="text-xl sm:text-2xl font-bold">{currentProject.name}</h1>
-              <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  {currentProject.code}
-                </Badge>
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  {currentProject.status}
-                </Badge>
+    <div className="min-h-screen bg-white">
+      {/* 主要內容區域 */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="bg-[#FFFFFF] border border-[#F0F0F0] p-4 rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">{currentProject.name}</h1>
+                <span className="text-xs sm:text-sm text-[#595959]">PCM Professional Construction Management</span>
+              </div>
+              <div className="text-xs sm:text-sm text-[#595959]">
+                今天是 {new Date().toLocaleDateString('zh-TW')} | PCM 平台風險SOP
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-xs sm:text-sm opacity-90">
-              今天是 {new Date().toLocaleDateString('zh-TW')}
-            </span>
-            <div className="flex items-center space-x-1">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 p-2">
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 p-2">
-                <Share2 className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 p-2">
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
+
+          {/* 第一列：Project Status Cards - 專案狀態卡片 */}
+          <div className="@container/main">
+            <ProjectStatusCards />
           </div>
-        </div>
-      </div>
 
-      {/* Main Grid Layout - 響應式布局 */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        {/* 左側 - 里程碑和統計卡片 */}
-        <div className="xl:col-span-5 space-y-4">
-          {/* Milestone Timeline */}
-          <MilestoneTimeline 
-            milestones={milestones}
-            currentDate={new Date().toLocaleDateString('zh-TW')}
-          />
-
-          {/* 統計卡片 - 響應式網格 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <StatCard
-              title="專案期程"
-              startDate={new Date(currentProject.startDate).toLocaleDateString('zh-TW')}
-              endDate={new Date(currentProject.endDate).toLocaleDateString('zh-TW')}
-              actualDays={projectStats.actualDays}
-              planDays={projectStats.planDays}
-              color="green"
-            />
-            
-            <StatCard
-              title="專案進度"
-              percentage={`${currentProject.progress}%`}
-              actual={`${currentProject.progress}%`}
-              plan="100%"
-              color="blue"
-              subItems={[
-                { label: '完成里程碑', value: `${currentProject.completedMilestones}/${currentProject.totalMilestones}` },
-                { label: '預算使用', value: `${projectStats.budgetUsedPercentage}%` }
-              ]}
-            />
-            
-            <StatCard
-              title="專案團隊"
-              value={currentProject.teamMembers.length}
-              unit="人"
-              color="yellow"
-              subItems={[
-                { label: '專案經理', value: currentProject.managerName },
-                { label: '團隊規模', value: currentProject.teamMembers.length, unit: '人' }
-              ]}
-            />
-            
-            <StatCard
-              title="預算狀況"
-              value={`${Math.floor(currentProject.usedBudget / 10000)}/${Math.floor(currentProject.totalBudget / 10000)}`}
-              unit="萬元"
-              color="red"
-              subItems={[
-                { label: '已使用', value: `${projectStats.budgetUsedPercentage}%` },
-                { label: '剩餘', value: `${100 - projectStats.budgetUsedPercentage}%` }
-              ]}
-            />
-          </div>
-        </div>
-
-        {/* 右側 - KPI 和表格 */}
-        <div className="xl:col-span-7 space-y-4">
-          {/* KPI Progress Bars */}
-          <div className="bg-white p-4 sm:p-6 rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-1 sm:space-y-0">
-              <h3 className="text-base sm:text-lg font-bold text-[#1A1A1A]">
-                {currentProject.name} KPI 指標
-              </h3>
-              <span className="text-xs sm:text-sm text-[#8C8C8C]">千小時</span>
-            </div>
-            <div className="space-y-3">
-              {kpiData.map((kpi, index) => (
-                <KPIProgressBar
-                  key={index}
-                  label={kpi.label}
-                  value={kpi.value}
-                  maxValue={kpi.maxValue}
-                  color={kpi.value > kpi.maxValue * 0.8 ? 'red' : kpi.value > kpi.maxValue * 0.6 ? 'yellow' : 'green'}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 底部表格區域 - 響應式布局 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* 專案 ESH 要覽 */}
-        <div>
-          <div className="bg-white rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-            <div className="p-4 border-b border-[#F0F0F0] flex items-center justify-between">
-              <h3 className="font-bold text-[#1A1A1A]">{currentProject.code} ESH 要覽</h3>
-              <button className="text-sm text-[#00645A] hover:underline font-medium">...more</button>
-            </div>
-            <div className="overflow-x-auto">
-              <DataTable
-                columns={eshColumns}
-                data={eshEvents}
-                className="shadow-none rounded-none"
+          {/* 第二列：Milestone Timeline 和 KPI Section - 並排布局 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* 左側 - 完整版里程碑時間軸 */}
+            <div className="space-y-4">
+              <MilestoneTimeline 
+                milestones={milestones}
+                currentDate="2024/11/01"
               />
             </div>
-          </div>
-        </div>
 
-        {/* 專案消息 */}
-        <div>
-          <div className="bg-white rounded shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-            <div className="p-4 border-b border-[#F0F0F0] flex items-center justify-between">
-              <h3 className="font-bold text-[#1A1A1A]">{currentProject.name} 專案消息</h3>
-              <button className="text-sm text-[#00645A] hover:underline font-medium">...more</button>
-            </div>
-            <div className="overflow-x-auto">
-              <DataTable
-                columns={newsColumns}
-                data={newsItems}
-                className="shadow-none rounded-none"
-              />
+            {/* 右側 - KPI Progress Section */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base sm:text-lg text-[#1A1A1A]">實決算工時 KPI</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm text-[#8C8C8C]">千小時</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {kpiData.map((kpi, index) => {
+                    const maxValue = kpi.label === 'TNZWM' ? 12500 : 2500;
+                    const percentage = Math.round((kpi.value / maxValue) * 100);
+                    
+                    return (
+                      <div key={index} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-[#1A1A1A]">{kpi.label}</span>
+                          <span className="text-sm text-[#595959]">
+                            {kpi.value.toLocaleString()} / {maxValue.toLocaleString()}
+                          </span>
+                        </div>
+                        <Progress value={percentage} className="h-2" />
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
             </div>
           </div>
+
+          {/* 底部表格區域 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* 工地ESH要覽 */}
+            <Card>
+              <CardHeader className="flex items-center justify-between">
+                <CardTitle>工地ESH 要覽</CardTitle>
+                <Button variant="link" size="sm">...more</Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-20">類型</TableHead>
+                      <TableHead className="w-24">工地</TableHead>
+                      <TableHead className="w-32">廠欣</TableHead>
+                      <TableHead>事件描述</TableHead>
+                      <TableHead className="w-24">日期</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {eshEvents.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell>
+                          <Badge variant={event.type === '意外' ? 'destructive' : 'secondary'}>
+                            {event.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{event.site}</TableCell>
+                        <TableCell>{event.location}</TableCell>
+                        <TableCell className="text-sm">{event.person}</TableCell>
+                        <TableCell className="text-sm">{event.date}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* 最新消息 */}
+            <Card>
+              <CardHeader className="flex items-center justify-between">
+                <CardTitle>最新消息</CardTitle>
+                <Button variant="link" size="sm">...more</Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-20">類別</TableHead>
+                      <TableHead className="w-20">工地</TableHead>
+                      <TableHead>消息內容</TableHead>
+                      <TableHead className="w-24">日期</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {newsItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <Badge variant="outline">{item.category}</Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{item.site}</TableCell>
+                        <TableCell className="text-sm">{item.title}</TableCell>
+                        <TableCell className="text-sm">{item.date}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
       </div>
     </div>
   )

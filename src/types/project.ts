@@ -71,6 +71,44 @@ export enum PermissionLevel {
   ADMIN = 'admin'
 }
 
+/**
+ * Skill category enumeration for team member classification
+ * 
+ * @enum {string}
+ */
+export enum SkillCategory {
+  /** 技術技能 */
+  TECHNICAL = 'technical',
+  /** 管理技能 */
+  MANAGEMENT = 'management',
+  /** 設計技能 */
+  DESIGN = 'design',
+  /** 分析技能 */
+  ANALYTICAL = 'analytical',
+  /** 溝通技能 */
+  COMMUNICATION = 'communication',
+  /** 專業認證 */
+  CERTIFICATION = 'certification'
+}
+
+/**
+ * Work status enumeration for team member availability
+ * 
+ * @enum {string}
+ */
+export enum WorkStatus {
+  /** 可用 */
+  AVAILABLE = 'available',
+  /** 忙碌 */
+  BUSY = 'busy',
+  /** 請假 */
+  ON_LEAVE = 'on_leave',
+  /** 出差 */
+  ON_BUSINESS_TRIP = 'on_business_trip',
+  /** 離線 */
+  OFFLINE = 'offline'
+}
+
 // ==================== CORE INTERFACES ====================
 
 /**
@@ -95,6 +133,178 @@ export interface ProjectMember {
   avatarUrl?: string
   /** 加入專案日期 */
   joinedAt: Date
+}
+
+/**
+ * Member skill definition with category classification
+ * 
+ * @interface MemberSkill
+ */
+export interface MemberSkill {
+  /** 技能名稱 */
+  name: string
+  /** 技能分類 */
+  category: SkillCategory
+  /** 熟練度等級 (1-5) */
+  level: number
+  /** 是否為認證技能 */
+  certified?: boolean
+  /** 取得日期 */
+  acquiredAt?: Date
+}
+
+/**
+ * Member personal preferences configuration
+ * 
+ * @interface MemberPreferences
+ */
+export interface MemberPreferences {
+  /** 偏好的工作時段 */
+  preferredWorkHours?: {
+    start: string
+    end: string
+  }
+  /** 偏好的通知方式 */
+  notificationSettings?: {
+    email: boolean
+    sms: boolean
+    push: boolean
+  }
+  /** 工作地點偏好 */
+  workLocationPreference?: 'remote' | 'office' | 'hybrid'
+  /** 語言偏好 */
+  languagePreference?: string
+  /** 時區設定 */
+  timezone?: string
+}
+
+/**
+ * Member statistical data for performance tracking
+ * 
+ * @interface MemberStatistics
+ */
+export interface MemberStatistics {
+  /** 參與專案總數 */
+  totalProjects: number
+  /** 完成專案數 */
+  completedProjects: number
+  /** 當前活躍專案數 */
+  activeProjects: number
+  /** 平均專案完成時間(天) */
+  averageProjectDuration?: number
+  /** 專案成功率 */
+  successRate?: number
+  /** 總工作時數 */
+  totalWorkHours?: number
+  /** 平均每日工作時數 */
+  averageDailyHours?: number
+  /** 遲交次數 */
+  lateDeliveries?: number
+  /** 品質評分 (1-5) */
+  qualityRating?: number
+}
+
+/**
+ * Extended project member interface with additional fields for comprehensive management
+ * 
+ * @interface ProjectMemberExtended
+ */
+export interface ProjectMemberExtended extends ProjectMember {
+  /** 成員技能列表 */
+  skills?: MemberSkill[]
+  /** 目前工作負荷百分比 (0-100) */
+  workload?: number
+  /** 工作狀態 */
+  workStatus?: WorkStatus
+  /** 最後活躍時間 */
+  lastActiveAt?: Date
+  /** 個人偏好設定 */
+  preferences?: MemberPreferences
+  /** 統計數據 */
+  statistics?: MemberStatistics
+  /** 直屬主管ID */
+  supervisorId?: string
+  /** 成員等級 */
+  level?: string
+  /** 薪資等級 */
+  salaryGrade?: string
+  /** 合約類型 */
+  contractType?: 'full_time' | 'part_time' | 'contractor' | 'intern'
+  /** 合約到期日 */
+  contractEndDate?: Date
+  /** 備註 */
+  notes?: string
+}
+
+/**
+ * Filters for querying project members with various criteria
+ * 
+ * @interface ProjectMemberFilters
+ */
+export interface ProjectMemberFilters {
+  /** 搜尋關鍵字（姓名、職位、部門） */
+  search?: string
+  /** 部門篩選 */
+  departments?: string[]
+  /** 職位篩選 */
+  roles?: string[]
+  /** 技能篩選 */
+  skills?: string[]
+  /** 技能分類篩選 */
+  skillCategories?: SkillCategory[]
+  /** 工作狀態篩選 */
+  workStatus?: WorkStatus[]
+  /** 工作負荷範圍篩選 */
+  workloadRange?: {
+    min: number
+    max: number
+  }
+  /** 加入日期範圍篩選 */
+  joinedDateRange?: {
+    from: Date
+    to: Date
+  }
+  /** 最後活躍時間範圍篩選 */
+  lastActiveRange?: {
+    from: Date
+    to: Date
+  }
+  /** 合約類型篩選 */
+  contractTypes?: ('full_time' | 'part_time' | 'contractor' | 'intern')[]
+  /** 是否只顯示可用成員 */
+  availableOnly?: boolean
+  /** 專案經驗篩選（最少參與專案數） */
+  minProjects?: number
+  /** 品質評分篩選（最低評分） */
+  minQualityRating?: number
+}
+
+/**
+ * Query result for project member searches with metadata
+ * 
+ * @interface ProjectMemberQueryResult
+ */
+export interface ProjectMemberQueryResult {
+  /** 查詢結果成員列表 */
+  members: ProjectMemberExtended[]
+  /** 總符合條件的成員數 */
+  total: number
+  /** 分頁資訊 */
+  pagination?: {
+    page: number
+    pageSize: number
+    totalPages: number
+  }
+  /** 篩選器統計 */
+  filterStats?: {
+    totalByDepartment: Record<string, number>
+    totalByRole: Record<string, number>
+    totalBySkill: Record<string, number>
+    totalByWorkStatus: Record<WorkStatus, number>
+    averageWorkload: number
+  }
+  /** 查詢執行時間(毫秒) */
+  queryTime?: number
 }
 
 /**
@@ -467,6 +677,26 @@ export function isViewMode(value: any): value is ViewMode {
   return Object.values(ViewMode).includes(value)
 }
 
+/**
+ * Type guard to check if a value is a valid SkillCategory
+ * 
+ * @param value The value to check
+ * @returns True if the value is a valid SkillCategory
+ */
+export function isSkillCategory(value: any): value is SkillCategory {
+  return Object.values(SkillCategory).includes(value)
+}
+
+/**
+ * Type guard to check if a value is a valid WorkStatus
+ * 
+ * @param value The value to check
+ * @returns True if the value is a valid WorkStatus
+ */
+export function isWorkStatus(value: any): value is WorkStatus {
+  return Object.values(WorkStatus).includes(value)
+}
+
 // ==================== CONSTANTS ====================
 
 /**
@@ -507,3 +737,212 @@ export const PROJECT_TYPE_ICONS = {
   [ProjectType.RENOVATION]: '🔨',
   [ProjectType.MAINTENANCE]: '🔧',
 } as const
+
+/**
+ * Skill category color mapping for UI display
+ */
+export const SKILL_CATEGORY_COLORS = {
+  [SkillCategory.TECHNICAL]: 'blue',
+  [SkillCategory.MANAGEMENT]: 'purple',
+  [SkillCategory.DESIGN]: 'pink',
+  [SkillCategory.ANALYTICAL]: 'green',
+  [SkillCategory.COMMUNICATION]: 'orange',
+  [SkillCategory.CERTIFICATION]: 'yellow',
+} as const
+
+/**
+ * Work status color mapping for UI display
+ */
+export const WORK_STATUS_COLORS = {
+  [WorkStatus.AVAILABLE]: 'green',
+  [WorkStatus.BUSY]: 'red',
+  [WorkStatus.ON_LEAVE]: 'gray',
+  [WorkStatus.ON_BUSINESS_TRIP]: 'blue',
+  [WorkStatus.OFFLINE]: 'slate',
+} as const
+
+/**
+ * Member-related constants for validation and defaults
+ */
+export const MEMBER_CONSTANTS = {
+  /** 技能熟練度最小值 */
+  MIN_SKILL_LEVEL: 1,
+  /** 技能熟練度最大值 */
+  MAX_SKILL_LEVEL: 5,
+  /** 工作負荷最小值 */
+  MIN_WORKLOAD: 0,
+  /** 工作負荷最大值 */
+  MAX_WORKLOAD: 100,
+  /** 品質評分最小值 */
+  MIN_QUALITY_RATING: 1,
+  /** 品質評分最大值 */
+  MAX_QUALITY_RATING: 5,
+  /** 預設每日工作時數 */
+  DEFAULT_DAILY_HOURS: 8,
+  /** 預設查詢頁面大小 */
+  DEFAULT_MEMBER_PAGE_SIZE: 20,
+  /** 最大查詢頁面大小 */
+  MAX_MEMBER_PAGE_SIZE: 200,
+  /** 搜尋關鍵字最小長度 */
+  MIN_MEMBER_SEARCH_LENGTH: 2,
+} as const
+
+// ==================== API INTERFACES ====================
+
+/**
+ * 專案人員查詢結果介面
+ */
+export interface ProjectMemberQueryResult extends ApiResponse<ProjectMemberExtended[]> {
+  /** 總筆數 */
+  total: number
+  /** 當前頁碼 */
+  page: number
+  /** 每頁筆數 */
+  pageSize: number
+  /** 是否有下一頁 */
+  hasMore: boolean
+}
+
+/**
+ * 創建專案人員輸入介面
+ */
+export interface CreateProjectMemberInput {
+  /** 使用者ID */
+  userId: string
+  /** 專案角色 */
+  role: string
+  /** 權限列表 */
+  permissions: string[]
+  /** 技能列表 */
+  skills?: MemberSkill[]
+  /** 工作負載 */
+  workload?: number
+  /** 工作狀態 */
+  workStatus?: WorkStatus
+  /** 偏好設定 */
+  preferences?: MemberPreferences
+}
+
+/**
+ * 更新專案人員輸入介面
+ */
+export interface UpdateProjectMemberInput {
+  /** 專案角色 */
+  role?: string
+  /** 權限列表 */
+  permissions?: string[]
+  /** 技能列表 */
+  skills?: MemberSkill[]
+  /** 工作負載 */
+  workload?: number
+  /** 工作狀態 */
+  workStatus?: WorkStatus
+  /** 是否啟用 */
+  isActive?: boolean
+  /** 偏好設定 */
+  preferences?: MemberPreferences
+}
+
+// ==================== TASK-2.1 ADDITIONAL TYPES ====================
+
+/**
+ * 專案人員搜索參數介面
+ */
+export interface ProjectMemberSearchParams {
+  /** 分頁頁數 */
+  page?: number
+  /** 每頁筆數 */
+  pageSize?: number
+  /** 排序欄位 */
+  sortBy?: string
+  /** 排序方向 */
+  sortOrder?: 'asc' | 'desc'
+  /** 搜索關鍵字 */
+  search?: string
+  /** 角色篩選 */
+  role?: string
+  /** 部門篩選 */
+  department?: string
+  /** 工作狀態篩選 */
+  workStatus?: WorkStatus
+  /** 技能篩選 */
+  skills?: string[]
+  /** 工作負載範圍篩選 */
+  workloadRange?: {
+    min?: number
+    max?: number
+  }
+  /** 加入日期範圍篩選 */
+  joinDateRange?: {
+    start?: string
+    end?: string
+  }
+}
+
+/**
+ * 創建專案成員請求介面
+ */
+export interface CreateProjectMemberRequest {
+  /** 使用者名稱 */
+  userName: string
+  /** 電子郵件 */
+  email: string
+  /** 專案角色 */
+  role: string
+  /** 部門 */
+  department: string
+  /** 職位 */
+  position: string
+  /** 電話 */
+  phone?: string
+  /** 技能列表 */
+  skills?: string[]
+  /** 工作負載 */
+  workload?: number
+  /** 工作狀態 */
+  workStatus?: WorkStatus
+}
+
+/**
+ * 更新專案成員請求介面
+ */
+export interface UpdateProjectMemberRequest {
+  /** 使用者名稱 */
+  userName?: string
+  /** 電子郵件 */
+  email?: string
+  /** 專案角色 */
+  role?: string
+  /** 部門 */
+  department?: string
+  /** 職位 */
+  position?: string
+  /** 電話 */
+  phone?: string
+  /** 技能列表 */
+  skills?: string[]
+  /** 工作負載 */
+  workload?: number
+  /** 工作狀態 */
+  workStatus?: WorkStatus
+  /** 是否啟用 */
+  isActive?: boolean
+}
+
+/**
+ * 批量成員操作請求介面
+ */
+export interface BulkMemberOperationRequest {
+  /** 操作類型 */
+  operation: 'delete' | 'update' | 'activate' | 'deactivate' | 'changeRole'
+  /** 成員ID列表 */
+  memberIds: string[]
+  /** 操作數據（用於更新操作） */
+  data?: {
+    role?: string
+    department?: string
+    workStatus?: WorkStatus
+    isActive?: boolean
+    [key: string]: any
+  }
+}
