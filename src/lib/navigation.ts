@@ -35,22 +35,22 @@ export const navigationConfig: NavigationItem[] = [
       {
         id: 'attendance-stats-card',
         label: '出工人數統計 (刷卡機)',
-        href: '/hr/attendance-card'
+        href: '/under-development'
       },
       {
         id: 'attendance-stats-powerbi',
         label: '出工人數統計 (PowerBI)',
-        href: '/hr/attendance-powerbi'
+        href: '/under-development'
       },
       {
         id: 'attendance-history',
         label: '刷卡歷史紀錄查詢',
-        href: '/hr/attendance-history'
+        href: '/under-development'
       },
       {
         id: 'no-card-notification',
         label: '廠商未刷卡通知',
-        href: '/hr/no-card-notification'
+        href: '/under-development'
       }
     ]
   },
@@ -61,22 +61,22 @@ export const navigationConfig: NavigationItem[] = [
       {
         id: 'milestones',
         label: '專案里程碑',
-        href: '/schedule/milestones'
+        href: '/under-development'
       },
       {
         id: 'package-status',
         label: '發包狀況',
-        href: '/schedule/packages'
+        href: '/under-development'
       },
       {
         id: 'permit-management',
         label: '法規許可證管理',
-        href: '/schedule/permits'
+        href: '/under-development'
       },
       {
         id: 'historical-comparison',
         label: '連動歷史工期比對',
-        href: '/schedule/historical-comparison'
+        href: '/under-development'
       }
     ]
   },
@@ -87,17 +87,17 @@ export const navigationConfig: NavigationItem[] = [
       {
         id: 'cost-control',
         label: '成本管控',
-        href: '/cost/control'
+        href: '/under-development'
       },
       {
         id: 'package-documents',
         label: '發包文件',
-        href: '/cost/documents'
+        href: '/under-development'
       },
       {
         id: 'dcr-management',
         label: 'DCR 管理',
-        href: '/cost/dcr'
+        href: '/under-development'
       }
     ]
   },
@@ -108,22 +108,22 @@ export const navigationConfig: NavigationItem[] = [
       {
         id: 'quality-reports',
         label: '品質日報/週報',
-        href: '/quality/reports'
+        href: '/under-development'
       },
       {
         id: 'quality-audit',
         label: '品質稽核',
-        href: '/quality/audit'
+        href: '/under-development'
       },
       {
         id: 'quality-kpi',
         label: '品質 KPI',
-        href: '/quality/kpi'
+        href: '/under-development'
       },
       {
         id: 'quality-summary',
         label: '品質稽核彙總表',
-        href: '/quality/summary'
+        href: '/under-development'
       }
     ]
   },
@@ -134,22 +134,22 @@ export const navigationConfig: NavigationItem[] = [
       {
         id: 'news',
         label: '最新消息',
-        href: '/communication/news'
+        href: '/under-development'
       },
       {
         id: 'document-management',
         label: '文件管理 (IDC)',
-        href: '/communication/documents'
+        href: '/under-development'
       },
       {
         id: 'meeting-room-booking',
         label: '會議室預約系統',
-        href: '/communication/meeting-rooms'
+        href: '/under-development'
       },
       {
         id: 'photo-gallery',
         label: 'iPhoto 2.0 (工程照片庫)',
-        href: '/communication/photos'
+        href: '/under-development'
       }
     ]
   },
@@ -160,22 +160,22 @@ export const navigationConfig: NavigationItem[] = [
       {
         id: 'esh-platform',
         label: 'ESH 管理平台',
-        href: '/esh/platform'
+        href: '/under-development'
       },
       {
         id: 'esh-reports',
         label: 'ESH 週/日報',
-        href: '/esh/reports'
+        href: '/under-development'
       },
       {
         id: 'environmental-gps',
         label: '環保 GPS 即時監控',
-        href: '/esh/gps-monitoring'
+        href: '/under-development'
       },
       {
         id: 'environmental-monitoring',
         label: '環保數值即時監測',
-        href: '/esh/environmental-monitoring'
+        href: '/under-development'
       }
     ]
   },
@@ -186,7 +186,7 @@ export const navigationConfig: NavigationItem[] = [
       {
         id: 'site-cameras',
         label: '工地即時影像',
-        href: '/video/site-cameras'
+        href: '/under-development'
       }
     ]
   }

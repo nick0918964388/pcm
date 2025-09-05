@@ -14,6 +14,7 @@ import { ProjectMemberFilters } from '@/components/projects/ProjectMemberFilters
 import { ViewModeToggle, type ViewMode } from '@/components/projects/ViewModeToggle'
 import { ProjectMemberGrid } from '@/components/projects/ProjectMemberGrid'
 import { ProjectMemberTable } from '@/components/projects/ProjectMemberTable'
+import { CardSkeleton } from '@/components/ui/skeleton'
 import { 
   Users, 
   UserPlus, 
@@ -34,7 +35,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/Select'
 import type { ProjectMemberSearchParams } from '@/types/project'
 
 interface ProjectMember {
@@ -347,7 +348,23 @@ export default function ProjectStaffPage() {
   if (loading) {
     return (
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="text-center">載入專案人員資料中...</div>
+        <div className="space-y-6">
+          <CardSkeleton />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+        </div>
       </div>
     )
   }

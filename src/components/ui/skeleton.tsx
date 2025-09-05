@@ -79,9 +79,72 @@ function SkeletonButton({
   )
 }
 
+// 表格 Skeleton
+function TableSkeleton({ 
+  rows = 5, 
+  columns = 8, 
+  className 
+}: { 
+  rows?: number
+  columns?: number
+  className?: string 
+}) {
+  return (
+    <div className={cn("space-y-3", className)}>
+      {/* Table Header Skeleton */}
+      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+        {Array.from({ length: columns }).map((_, i) => (
+          <Skeleton key={i} className="h-4" />
+        ))}
+      </div>
+      
+      {/* Table Rows Skeleton */}
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <div
+          key={rowIndex}
+          className="grid gap-4"
+          style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+        >
+          {Array.from({ length: columns }).map((_, colIndex) => (
+            <Skeleton
+              key={colIndex}
+              className={cn(
+                "h-6",
+                // 第一列稍短
+                colIndex === 0 && "h-4 w-12",
+                // 最後一列按鈕樣式
+                colIndex === columns - 1 && "h-8 w-16"
+              )}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// 卡片 Skeleton
+function CardSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn("p-6 space-y-3 bg-white rounded-lg border", className)}>
+      <div className="flex items-center space-x-3">
+        <Skeleton className="h-4 w-4" />
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-16 ml-auto" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-3/4" />
+      </div>
+    </div>
+  )
+}
+
 export { 
   Skeleton, 
   SkeletonText, 
   SkeletonAvatar, 
-  SkeletonButton 
+  SkeletonButton,
+  TableSkeleton,
+  CardSkeleton
 }

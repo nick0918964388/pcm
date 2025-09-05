@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import {
@@ -35,7 +35,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/Select'
 import {
   Popover,
   PopoverContent,

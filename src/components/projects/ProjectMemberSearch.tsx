@@ -12,7 +12,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react'
 import { Search, X, Clock, User, MapPin, Briefcase } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'

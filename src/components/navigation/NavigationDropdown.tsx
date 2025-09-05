@@ -31,8 +31,17 @@ export default function NavigationDropdown({ item, projectId }: NavigationDropdo
             // 為所有子項目生成動態路由
             let href = child.href || '#'
             if (projectId && child.href) {
-              // 將相對路徑轉換為專案路徑
-              href = `/dashboard/${projectId}${child.href}`
+              // 如果是絕對路徑（以 / 開頭），檢查是否需要轉換為專案路徑
+              if (child.href.startsWith('/under-development')) {
+                // under-development 頁面保持絕對路徑
+                href = child.href
+              } else if (child.href.startsWith('/')) {
+                // 其他絕對路徑轉換為專案路徑
+                href = `/dashboard/${projectId}${child.href}`
+              } else {
+                // 相對路徑轉換為專案路徑
+                href = `/dashboard/${projectId}/${child.href}`
+              }
             }
             
             return (
