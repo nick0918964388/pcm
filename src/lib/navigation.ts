@@ -51,6 +51,11 @@ export const navigationConfig: NavigationItem[] = [
         id: 'no-card-notification',
         label: '廠商未刷卡通知',
         href: '/under-development'
+      },
+      {
+        id: 'duty-schedule',
+        label: '廠商人員值班查詢',
+        href: '/duty-schedules'
       }
     ]
   },
