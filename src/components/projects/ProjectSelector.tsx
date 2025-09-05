@@ -24,6 +24,8 @@ import {
   Heart,
   X
 } from 'lucide-react'
+import { ProjectSelectorSkeleton } from '@/components/ui/skeletons/ProjectGridSkeleton'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface ProjectSelectorProps {
   /** 是否顯示在頂部導覽列 */
@@ -137,7 +139,15 @@ export function ProjectSelector({ inNavbar = false, className = '' }: ProjectSel
           className="flex items-center space-x-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
         >
           <div className="flex items-center space-x-2">
-            {currentProject ? (
+            {!initialized ? (
+              // 載入中骨架
+              <>
+                <Skeleton className="w-6 h-6 rounded" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-12 rounded-full" />
+              </>
+            ) : currentProject ? (
+              // 已選擇專案
               <>
                 <div className="w-6 h-6 bg-[#00645A] rounded flex items-center justify-center text-white text-xs font-bold">
                   {currentProject.code.slice(-2)}
@@ -148,6 +158,7 @@ export function ProjectSelector({ inNavbar = false, className = '' }: ProjectSel
                 </Badge>
               </>
             ) : (
+              // 未選擇專案
               <>
                 <Grid3X3 className="h-4 w-4" />
                 <span>選擇專案</span>
@@ -264,16 +275,35 @@ export function ProjectSelector({ inNavbar = false, className = '' }: ProjectSel
                   </div>
                 ))
               ) : (
-                <div className="p-4 text-center text-gray-500">
-                  <div className="text-gray-400 mb-2">
-                    <Search className="h-8 w-8 mx-auto" />
-                  </div>
-                  <p className="text-sm">
-                    {activeTab === 'recent' && '尚無最近存取的專案'}
-                    {activeTab === 'favorites' && '尚無收藏的專案'}
-                    {activeTab === 'all' && searchQuery && '找不到符合的專案'}
-                    {activeTab === 'all' && !searchQuery && '載入中...'}
-                  </p>
+                <div className="p-4">
+                  {!initialized ? (
+                    // 載入中骨架
+                    <div className="space-y-2">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="flex items-center space-x-3 p-2">
+                          <Skeleton className="h-8 w-8 rounded-lg" />
+                          <div className="flex-1 space-y-1">
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-3 w-20" />
+                          </div>
+                          <Skeleton className="h-4 w-4" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    // 空狀態
+                    <div className="text-center text-gray-500">
+                      <div className="text-gray-400 mb-2">
+                        <Search className="h-8 w-8 mx-auto" />
+                      </div>
+                      <p className="text-sm">
+                        {activeTab === 'recent' && '尚無最近存取的專案'}
+                        {activeTab === 'favorites' && '尚無收藏的專案'}
+                        {activeTab === 'all' && searchQuery && '找不到符合的專案'}
+                        {activeTab === 'all' && !searchQuery && '尚無專案資料'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
