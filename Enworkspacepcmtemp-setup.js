@@ -1,0 +1,1 @@
+console.log('Setting up test project'); const project = { id: 'test-proj-001', name: 'Test Project FAB20', code: 'FAB20-TEST', status: 'active', description: 'Test project for navigation' }; sessionStorage.setItem('selectedProject', JSON.stringify(project)); console.log('Test project set:', project);

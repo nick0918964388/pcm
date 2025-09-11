@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 172 71% 20%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 172 71% 20%;
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 172 71% 20%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 172 71% 20%;
+  }
+}
+
+/* Design System Colors based on design.json */
+:root {
+  /* Brand Colors */
+  --color-brand-primary: #00645A;
+  --color-brand-primary-dark: #005048;
+  --color-brand-accent: #2DC2AE;
+  
+  /* Background Colors */
+  --color-bg-level0: #FFFFFF;
+  --color-bg-level1: #F5F5F5;
+  --color-bg-level2: #E0E0E0;
+  
+  /* Text Colors */
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #595959;
+  --color-text-tertiary: #8C8C8C;
+  --color-text-interactive: #00645A;
+  --color-text-on-color: #FFFFFF;
+  --color-text-error: #D93025;
+  
+  /* UI Colors */
+  --color-ui-border: #D9D9D9;
+  --color-ui-divider: #F0F0F0;
+  --color-ui-focus: #00645A;
+  
+  /* Support Colors */
+  --color-support-error: #D93025;
+  --color-support-warning: #FAA91A;
+  --color-support-success: #1E8E3E;
+  
+  /* Layout */
+  --border-radius: 4px;
+  --shadow-subtle: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-medium: 0 4px 12px rgba(0,0,0,0.1);
+  
+  /* Legacy support */
+  --brand-primary: #00645A;
+  --brand-primary-light: #00736B;
+  --brand-primary-dark: #005048;
+}
+
+/* Base styles */
+@layer base {
+  body {
+    @apply bg-white;
+    color: var(--color-text-primary);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-text-primary);
+    @apply font-bold;
+  }
+  
+  p {
+    color: var(--color-text-secondary);
+  }
+  
+  a {
+    color: var(--color-text-interactive);
+    @apply no-underline font-medium hover:underline;
+  }
+}
+
+/* Component utilities */
+@layer utilities {
+  /* Brand Colors */
+  .bg-brand-primary {
+    background-color: var(--color-brand-primary);
+  }
+  
+  .bg-brand-primary-dark {
+    background-color: var(--color-brand-primary-dark);
+  }
+  
+  .text-brand-primary {
+    color: var(--color-brand-primary);
+  }
+  
+  .border-brand-primary {
+    border-color: var(--color-brand-primary);
+  }
+  
+  .hover\:bg-brand-primary-light:hover {
+    background-color: var(--brand-primary-light);
+  }
+}
+
+/* Card styles with proper shadows and radius */
+.card-ds {
+  background-color: var(--color-bg-level0);
+  border: 1px solid var(--color-ui-divider);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-subtle);
+}
+
+.card-ds:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}

@@ -1,0 +1,1 @@
+sessionStorage.setItem("selectedProjectId", "proj001"); sessionStorage.setItem("projects", JSON.stringify([{id: "proj001", name: "FAB20 Phase1", status: "進行中", startDate: "2024-01-01", endDate: "2025-12-31", totalBudget: 1000000, usedBudget: 300000}]));
