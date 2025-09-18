@@ -1,0 +1,723 @@
+openapi: 3.0.3
+info:
+  title: 照片管理系統 API
+  description: 照片上傳、管理、搜尋和預覽功能的 RESTful API
+  version: 1.0.0
+  contact:
+    name: 照片管理系統團隊
+    email: team@photoapp.com
+
+servers:
+  - url: https://api.photoapp.com/v1
+    description: 生產環境
+  - url: https://staging-api.photoapp.com/v1  
+    description: 測試環境
+
+paths:
+  /photos:
+    get:
+      summary: 取得照片列表
+      description: 取得專案或相簿中的照片列表，支援分頁、排序和篩選
+      tags:
+        - 照片管理
+      parameters:
+        - name: project_id
+          in: query
+          description: 專案 ID
+          schema:
+            type: string
+            format: uuid
+        - name: album_id
+          in: query
+          description: 相簿 ID
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          description: 頁數 (從 1 開始)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: 每頁照片數量
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - name: sort_by
+          in: query
+          description: 排序欄位
+          schema:
+            type: string
+            enum: [uploaded_at, custom_date, filename, file_size]
+            default: custom_date
+        - name: sort_order
+          in: query
+          description: 排序方向
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: date_from
+          in: query
+          description: 開始日期 (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          description: 結束日期 (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: quick_filter
+          in: query
+          description: 快速日期篩選
+          schema:
+            type: string
+            enum: [today, last_week, last_2weeks, last_3weeks, last_month, last_6months]
+        - name: search
+          in: query
+          description: 搜尋關鍵字 (搜尋檔名、描述、標籤)
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: 成功取得照片列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      summary: 上傳照片
+      description: 上傳單張或多張照片到專案
+      tags:
+        - 照片管理
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: 照片檔案 (最多 10 個)
+                project_id:
+                  type: string
+                  format: uuid
+                  description: 目標專案 ID
+                custom_date:
+                  type: string
+                  format: date-time
+                  description: 自訂日期 (可選)
+                location:
+                  type: string
+                  maxLength: 255
+                  description: 拍攝位置 (可選)
+                description:
+                  type: string
+                  maxLength: 1000
+                  description: 照片描述 (可選)
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: 標籤列表 (可選)
+              required:
+                - files
+                - project_id
+      responses:
+        '201':
+          description: 照片上傳成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: 檔案過大
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /photos/{photo_id}:
+    get:
+      summary: 取得照片詳細資訊
+      description: 取得單張照片的詳細資訊，包括元資料和標註
+      tags:
+        - 照片管理
+      parameters:
+        - name: photo_id
+          in: path
+          required: true
+          description: 照片 ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 成功取得照片資訊
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    put:
+      summary: 更新照片資訊
+      description: 更新照片的元資料，如描述、標籤、自訂日期等
+      tags:
+        - 照片管理
+      parameters:
+        - name: photo_id
+          in: path
+          required: true
+          description: 照片 ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhotoUpdateRequest'
+      responses:
+        '200':
+          description: 照片資訊更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      summary: 刪除照片
+      description: 永久刪除照片 (軟刪除)
+      tags:
+        - 照片管理
+      parameters:
+        - name: photo_id
+          in: path
+          required: true
+          description: 照片 ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: 照片刪除成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /photos/{photo_id}/download:
+    get:
+      summary: 下載照片
+      description: 下載照片原始檔案或指定尺寸
+      tags:
+        - 照片管理
+      parameters:
+        - name: photo_id
+          in: path
+          required: true
+          description: 照片 ID
+          schema:
+            type: string
+            format: uuid
+        - name: size
+          in: query
+          description: 下載尺寸
+          schema:
+            type: string
+            enum: [original, medium, small, thumb]
+            default: original
+      responses:
+        '200':
+          description: 成功下載照片
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /photos/batch:
+    post:
+      summary: 批次操作照片
+      description: 對多張照片執行批次操作 (刪除、移動到相簿、下載)
+      tags:
+        - 照片管理
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhotoBatchRequest'
+      responses:
+        '200':
+          description: 批次操作成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoBatchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /search/photos:
+    get:
+      summary: 搜尋照片
+      description: 全文搜尋照片，支援複雜查詢條件
+      tags:
+        - 搜尋功能
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: 搜尋關鍵字
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - name: project_id
+          in: query
+          description: 限制搜尋範圍為特定專案
+          schema:
+            type: string
+            format: uuid
+        - name: uploader_id
+          in: query
+          description: 限制搜尋範圍為特定上傳者
+          schema:
+            type: string
+            format: uuid
+        - name: date_from
+          in: query
+          description: 搜尋起始日期
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          description: 搜尋結束日期
+          schema:
+            type: string
+            format: date
+        - name: location
+          in: query
+          description: 拍攝位置關鍵字
+          schema:
+            type: string
+            maxLength: 100
+        - name: page
+          in: query
+          description: 頁數
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: 每頁結果數
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: 搜尋結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  schemas:
+    Photo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 照片唯一識別碼
+        filename:
+          type: string
+          description: 原始檔名
+        file_size:
+          type: integer
+          description: 檔案大小 (bytes)
+        width:
+          type: integer
+          description: 圖片寬度 (pixels)
+        height:
+          type: integer
+          description: 圖片高度 (pixels)
+        mime_type:
+          type: string
+          description: MIME 類型
+        uploaded_at:
+          type: string
+          format: date-time
+          description: 上傳時間
+        custom_date:
+          type: string
+          format: date-time
+          description: 自訂日期
+        uploader_id:
+          type: string
+          format: uuid
+          description: 上傳者 ID
+        uploader_name:
+          type: string
+          description: 上傳者名稱
+        project_id:
+          type: string
+          format: uuid
+          description: 所屬專案 ID
+        location:
+          type: string
+          description: 拍攝位置
+        description:
+          type: string
+          description: 照片描述
+        tags:
+          type: array
+          items:
+            type: string
+          description: 標籤列表
+        thumbnail_urls:
+          type: object
+          properties:
+            thumb:
+              type: string
+              format: uri
+            small:
+              type: string
+              format: uri
+            medium:
+              type: string
+              format: uri
+          description: 縮圖 URL
+        download_url:
+          type: string
+          format: uri
+          description: 下載 URL
+
+    PhotoDetail:
+      allOf:
+        - $ref: '#/components/schemas/Photo'
+        - type: object
+          properties:
+            annotations:
+              type: array
+              items:
+                $ref: '#/components/schemas/Annotation'
+              description: 照片標註列表
+            albums:
+              type: array
+              items:
+                $ref: '#/components/schemas/AlbumSummary'
+              description: 所屬相簿列表
+
+    Annotation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+          description: 標註內容
+        author_id:
+          type: string
+          format: uuid
+        author_name:
+          type: string
+          description: 標註作者
+        position_x:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: X 座標 (0-1)
+        position_y:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Y 座標 (0-1)
+        annotation_type:
+          type: string
+          enum: [text, date, location]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AlbumSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: 相簿名稱
+        photo_count:
+          type: integer
+          description: 照片數量
+
+    PhotoListResponse:
+      type: object
+      properties:
+        photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Photo'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PhotoUploadResponse:
+      type: object
+      properties:
+        uploaded_photos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Photo'
+        failed_uploads:
+          type: array
+          items:
+            type: object
+            properties:
+              filename:
+                type: string
+              error:
+                type: string
+        total_uploaded:
+          type: integer
+        total_failed:
+          type: integer
+
+    PhotoUpdateRequest:
+      type: object
+      properties:
+        custom_date:
+          type: string
+          format: date-time
+        location:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+        tags:
+          type: array
+          items:
+            type: string
+
+    PhotoBatchRequest:
+      type: object
+      required:
+        - photo_ids
+        - action
+      properties:
+        photo_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+          maxItems: 100
+        action:
+          type: string
+          enum: [delete, add_to_album, remove_from_album]
+        album_id:
+          type: string
+          format: uuid
+          description: 相簿 ID (add_to_album/remove_from_album 時必填)
+
+    PhotoBatchResponse:
+      type: object
+      properties:
+        successful_operations:
+          type: array
+          items:
+            type: string
+            format: uuid
+        failed_operations:
+          type: array
+          items:
+            type: object
+            properties:
+              photo_id:
+                type: string
+                format: uuid
+              error:
+                type: string
+        total_successful:
+          type: integer
+        total_failed:
+          type: integer
+
+    SearchResponse:
+      type: object
+      properties:
+        photos:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Photo'
+              - type: object
+                properties:
+                  relevance_score:
+                    type: number
+                    format: float
+                    description: 搜尋相關性分數
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+        search_stats:
+          type: object
+          properties:
+            total_results:
+              type: integer
+            search_time_ms:
+              type: integer
+            query:
+              type: string
+
+    PaginationInfo:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        per_page:
+          type: integer
+        total_pages:
+          type: integer
+        total_items:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: 錯誤訊息
+        error_code:
+          type: string
+          description: 錯誤代碼
+        details:
+          type: object
+          description: 詳細錯誤資訊
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: 請求參數錯誤
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    
+    Unauthorized:
+      description: 未授權存取
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    
+    Forbidden:
+      description: 權限不足
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    
+    NotFound:
+      description: 資源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: 照片管理
+    description: 照片上傳、檢視、編輯、刪除功能
+  - name: 搜尋功能
+    description: 照片搜尋和篩選功能

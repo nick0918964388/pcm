@@ -1,65 +1,73 @@
-# CLAUDE.md
+# Claude Code Spec-Driven Development
 
-> Think carefully and implement the most concise solution that changes as little code as possible.
+Kiro-style Spec Driven Development implementation using claude code slash commands, hooks and agents.
 
-## USE SUB-AGENTS FOR CONTEXT OPTIMIZATION
+## Project Context
 
-### 1. Always use the file-analyzer sub-agent when asked to read files.
-The file-analyzer agent is an expert in extracting and summarizing critical information from files, particularly log files and verbose outputs. It provides concise, actionable summaries that preserve essential information while dramatically reducing context usage.
+### Paths
+- Steering: `.kiro/steering/`
+- Specs: `.kiro/specs/`
+- Commands: `.claude/commands/`
 
-### 2. Always use the code-analyzer sub-agent when asked to search code, analyze code, research bugs, or trace logic flow.
+### Steering vs Specification
 
-The code-analyzer agent is an expert in code analysis, logic tracing, and vulnerability detection. It provides concise, actionable summaries that preserve essential information while dramatically reducing context usage.
+**Steering** (`.kiro/steering/`) - Guide AI with project-wide rules and context
+**Specs** (`.kiro/specs/`) - Formalize development process for individual features
 
-### 3. Always use the test-runner sub-agent to run tests and analyze the test results.
+### Active Specifications
+- **project-photo-gallery**: 工程照片庫功能 - 廠商照片預覽、專案相簿分類、現代化介面
+- Check `.kiro/specs/` for active specifications
+- Use `/kiro:spec-status [feature-name]` to check progress
 
-Using the test-runner agent ensures:
+## Development Guidelines
+- 以英文思考，但以繁體中文生成回應（Think in English, generate in Traditional Chinese）
 
-- Full test output is captured for debugging
-- Main conversation stays clean and focused
-- Context usage is optimized
-- All issues are properly surfaced
-- No approval dialogs interrupt the workflow
+## Workflow
 
-## Philosophy
+### Phase 0: Steering (Optional)
+`/kiro:steering` - Create/update steering documents
+`/kiro:steering-custom` - Create custom steering for specialized contexts
 
-### Error Handling
+Note: Optional for new features or small additions. You can proceed directly to spec-init.
 
-- **Fail fast** for critical configuration (missing text model)
-- **Log and continue** for optional features (extraction model)
-- **Graceful degradation** when external services unavailable
-- **User-friendly messages** through resilience layer
+### Phase 1: Specification Creation
+1. `/kiro:spec-init [detailed description]` - Initialize spec with detailed project description
+2. `/kiro:spec-requirements [feature]` - Generate requirements document
+3. `/kiro:spec-design [feature]` - Interactive: "Have you reviewed requirements.md? [y/N]"
+4. `/kiro:spec-tasks [feature]` - Interactive: Confirms both requirements and design review
 
-### Testing
+### Phase 2: Progress Tracking
+`/kiro:spec-status [feature]` - Check current progress and phases
 
-- Always use the test-runner agent to execute tests.
-- Do not use mock services for anything ever.
-- Do not move on to the next test until the current test is complete.
-- If the test fails, consider checking if the test is structured correctly before deciding we need to refactor the codebase.
-- Tests to be verbose so we can use them for debugging.
+## Development Rules
+1. **Consider steering**: Run `/kiro:steering` before major development (optional for new features)
+2. **Follow 3-phase approval workflow**: Requirements → Design → Tasks → Implementation
+3. **Approval required**: Each phase requires human review (interactive prompt or manual)
+4. **No skipping phases**: Design requires approved requirements; Tasks require approved design
+5. **Update task status**: Mark tasks as completed when working on them
+6. **Keep steering current**: Run `/kiro:steering` after significant changes
+7. **Check spec compliance**: Use `/kiro:spec-status` to verify alignment
 
+## Steering Configuration
 
-## Tone and Behavior
+### Current Steering Files
+Managed by `/kiro:steering` command. Updates here reflect command changes.
 
-- Criticism is welcome. Please tell me when I am wrong or mistaken, or even when you think I might be wrong or mistaken.
-- Please tell me if there is a better approach than the one I am taking.
-- Please tell me if there is a relevant standard or convention that I appear to be unaware of.
-- Be skeptical.
-- Be concise.
-- Short summaries are OK, but don't give an extended breakdown unless we are working through the details of a plan.
-- Do not flatter, and do not give compliments unless I am specifically asking for your judgement.
-- Occasional pleasantries are fine.
-- Feel free to ask many questions. If you are in doubt of my intent, don't guess. Ask.
+### Active Steering Files
+- `product.md`: Always included - Product context and business objectives
+- `tech.md`: Always included - Technology stack and architectural decisions
+- `structure.md`: Always included - File organization and code patterns
 
-## ABSOLUTE RULES:
+### Custom Steering Files
+<!-- Added by /kiro:steering-custom command -->
+<!-- Format:
+- `filename.md`: Mode - Pattern(s) - Description
+  Mode: Always|Conditional|Manual
+  Pattern: File patterns for Conditional mode
+-->
 
-- NO PARTIAL IMPLEMENTATION
-- NO SIMPLIFICATION : no "//This is simplified stuff for now, complete implementation would blablabla"
-- NO CODE DUPLICATION : check existing codebase to reuse functions and constants Read files before writing new functions. Use common sense function name to find them easily.
-- NO DEAD CODE : either use or delete from codebase completely
-- IMPLEMENT TEST FOR EVERY FUNCTIONS
-- NO CHEATER TESTS : test must be accurate, reflect real usage and be designed to reveal flaws. No useless tests! Design tests to be verbose so we can use them for debuging.
-- NO INCONSISTENT NAMING - read existing codebase naming patterns.
-- NO OVER-ENGINEERING - Don't add unnecessary abstractions, factory patterns, or middleware when simple functions would work. Don't think "enterprise" when you need "working"
-- NO MIXED CONCERNS - Don't put validation logic inside API handlers, database queries inside UI components, etc. instead of proper separation
-- NO RESOURCE LEAKS - Don't forget to close database connections, clear timeouts, remove event listeners, or clean up file handles
+### Inclusion Modes
+- **Always**: Loaded in every interaction (default)
+- **Conditional**: Loaded for specific file patterns (e.g., "*.test.js")
+- **Manual**: Reference with `@filename.md` syntax
+

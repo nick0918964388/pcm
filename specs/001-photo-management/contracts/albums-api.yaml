@@ -1,0 +1,491 @@
+openapi: 3.0.3
+info:
+  title: 相簿管理 API
+  description: 相簿建立、管理和照片組織功能的 RESTful API
+  version: 1.0.0
+
+paths:
+  /albums:
+    get:
+      summary: 取得相簿列表
+      description: 取得使用者或專案的相簿列表
+      tags:
+        - 相簿管理
+      parameters:
+        - name: project_id
+          in: query
+          description: 專案 ID (可選)
+          schema:
+            type: string
+            format: uuid
+        - name: creator_id
+          in: query
+          description: 建立者 ID (可選)
+          schema:
+            type: string
+            format: uuid
+        - name: privacy_level
+          in: query
+          description: 隱私等級篩選
+          schema:
+            type: string
+            enum: [public, private, project]
+        - name: page
+          in: query
+          description: 頁數
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: 每頁相簿數量
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: 成功取得相簿列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumListResponse'
+
+    post:
+      summary: 建立新相簿
+      description: 建立新的照片相簿
+      tags:
+        - 相簿管理
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlbumCreateRequest'
+      responses:
+        '201':
+          description: 相簿建立成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Album'
+
+  /albums/{album_id}:
+    get:
+      summary: 取得相簿詳細資訊
+      description: 取得相簿詳細資訊，包括照片列表
+      tags:
+        - 相簿管理
+      parameters:
+        - name: album_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: include_photos
+          in: query
+          description: 是否包含照片列表
+          schema:
+            type: boolean
+            default: true
+        - name: photo_page
+          in: query
+          description: 照片列表頁數
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: photos_per_page
+          in: query
+          description: 每頁照片數量
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: 成功取得相簿詳細資訊
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumDetail'
+
+    put:
+      summary: 更新相簿資訊
+      description: 更新相簿名稱、描述等資訊
+      tags:
+        - 相簿管理
+      parameters:
+        - name: album_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlbumUpdateRequest'
+      responses:
+        '200':
+          description: 相簿更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Album'
+
+    delete:
+      summary: 刪除相簿
+      description: 刪除相簿 (不會刪除照片本身)
+      tags:
+        - 相簿管理
+      parameters:
+        - name: album_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: 相簿刪除成功
+
+  /albums/{album_id}/photos:
+    post:
+      summary: 新增照片到相簿
+      description: 將照片加入指定相簿
+      tags:
+        - 相簿管理
+      parameters:
+        - name: album_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPhotosRequest'
+      responses:
+        '200':
+          description: 照片加入相簿成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddPhotosResponse'
+
+    delete:
+      summary: 從相簿移除照片
+      description: 從相簿中移除指定照片
+      tags:
+        - 相簿管理
+      parameters:
+        - name: album_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - photo_ids
+              properties:
+                photo_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  minItems: 1
+      responses:
+        '204':
+          description: 照片移除成功
+
+  /albums/{album_id}/reorder:
+    put:
+      summary: 重新排序相簿中的照片
+      description: 調整相簿中照片的顯示順序
+      tags:
+        - 相簿管理
+      parameters:
+        - name: album_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderPhotosRequest'
+      responses:
+        '200':
+          description: 照片順序更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  updated_count:
+                    type: integer
+
+components:
+  schemas:
+    Album:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: 相簿名稱
+        description:
+          type: string
+          description: 相簿描述
+        cover_photo_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 封面照片 ID
+        cover_photo_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 封面照片縮圖 URL
+        creator_id:
+          type: string
+          format: uuid
+        creator_name:
+          type: string
+          description: 建立者名稱
+        project_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 所屬專案 ID
+        project_name:
+          type: string
+          nullable: true
+          description: 所屬專案名稱
+        privacy_level:
+          type: string
+          enum: [public, private, project]
+          description: 隱私等級
+        photo_count:
+          type: integer
+          description: 照片數量
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AlbumDetail:
+      allOf:
+        - $ref: '#/components/schemas/Album'
+        - type: object
+          properties:
+            photos:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/Photo'
+                  - type: object
+                    properties:
+                      sort_order:
+                        type: integer
+                        description: 在相簿中的排序
+                      added_at:
+                        type: string
+                        format: date-time
+                        description: 加入相簿時間
+            pagination:
+              $ref: '#/components/schemas/PaginationInfo'
+
+    AlbumCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: 相簿名稱
+        description:
+          type: string
+          maxLength: 500
+          description: 相簿描述
+        project_id:
+          type: string
+          format: uuid
+          description: 所屬專案 ID (可選，不指定為跨專案相簿)
+        privacy_level:
+          type: string
+          enum: [public, private, project]
+          default: project
+          description: 隱私等級
+        cover_photo_id:
+          type: string
+          format: uuid
+          description: 封面照片 ID (可選)
+
+    AlbumUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        privacy_level:
+          type: string
+          enum: [public, private, project]
+        cover_photo_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    AddPhotosRequest:
+      type: object
+      required:
+        - photo_ids
+      properties:
+        photo_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+          maxItems: 100
+          description: 要加入的照片 ID 列表
+        sort_position:
+          type: string
+          enum: [beginning, end]
+          default: end
+          description: 插入位置
+
+    AddPhotosResponse:
+      type: object
+      properties:
+        added_photos:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: 成功加入的照片 ID
+        skipped_photos:
+          type: array
+          items:
+            type: object
+            properties:
+              photo_id:
+                type: string
+                format: uuid
+              reason:
+                type: string
+          description: 跳過的照片及原因
+        total_added:
+          type: integer
+        total_skipped:
+          type: integer
+
+    ReorderPhotosRequest:
+      type: object
+      required:
+        - photo_orders
+      properties:
+        photo_orders:
+          type: array
+          items:
+            type: object
+            required:
+              - photo_id
+              - sort_order
+            properties:
+              photo_id:
+                type: string
+                format: uuid
+              sort_order:
+                type: integer
+                minimum: 0
+          minItems: 1
+          description: 照片 ID 與新排序的對應
+
+    AlbumListResponse:
+      type: object
+      properties:
+        albums:
+          type: array
+          items:
+            $ref: '#/components/schemas/Album'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    # 引用自 photos-api.yaml
+    Photo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        thumbnail_urls:
+          type: object
+          properties:
+            thumb:
+              type: string
+              format: uri
+            small:
+              type: string
+              format: uri
+            medium:
+              type: string
+              format: uri
+        custom_date:
+          type: string
+          format: date-time
+        uploader_name:
+          type: string
+
+    PaginationInfo:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        per_page:
+          type: integer
+        total_pages:
+          type: integer
+        total_items:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+tags:
+  - name: 相簿管理
+    description: 相簿建立、編輯、照片組織功能
