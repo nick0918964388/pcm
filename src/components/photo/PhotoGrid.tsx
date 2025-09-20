@@ -5,8 +5,8 @@
 
 'use client'
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
-import { FixedSizeGrid as Grid } from 'react-window'
+import { useState, useCallback, useMemo } from 'react'
+// import { FixedSizeGrid as Grid } from 'react-window'
 import { cn } from '@/lib/utils'
 import { Photo } from '@/types/photo.types'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -35,8 +35,6 @@ interface PhotoGridProps {
   columnCount?: number
   itemSize?: number
   height?: number
-  enableVirtualScrolling?: boolean
-  enableIntersectionObserver?: boolean
 }
 
 interface PhotoItemProps {
@@ -63,37 +61,6 @@ function PhotoItem({
 }: PhotoItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
-  const [isInView, setIsInView] = useState(false)
-  const imageRef = useRef<HTMLImageElement>(null)
-
-  // Intersection Observer for lazy loading
-  useEffect(() => {
-    const imageElement = imageRef.current
-    if (!imageElement) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsInView(true)
-            observer.unobserve(entry.target)
-          }
-        })
-      },
-      {
-        rootMargin: '50px',
-        threshold: 0.1
-      }
-    )
-
-    observer.observe(imageElement)
-
-    return () => {
-      if (imageElement) {
-        observer.unobserve(imageElement)
-      }
-    }
-  }, [])
 
   const handleImageLoad = useCallback(() => {
     setImageLoaded(true)
@@ -177,8 +144,7 @@ function PhotoItem({
         )}
 
         <img
-          ref={imageRef}
-          src={isInView ? photo.thumbnailUrl : undefined}
+          src={photo.thumbnailUrl}
           alt={photo.fileName}
           className={cn(
             "w-full h-full object-cover transition-all duration-300",
@@ -223,95 +189,7 @@ function PhotoItem({
   )
 }
 
-/**
- * 虛擬滾動網格項目元件（用於 react-window）
- */
-interface VirtualizedItemProps {
-  columnIndex: number
-  rowIndex: number
-  style: React.CSSProperties
-  data: {
-    photos: Photo[]
-    columnCount: number
-    selectedPhotos: string[]
-    onPhotoClick: (photo: Photo, index: number) => void
-    onPhotoSelect: (photoId: string, selected: boolean) => void
-    onPhotoDownload: (photo: Photo) => void
-    onPhotoDelete: (photo: Photo) => void
-  }
-}
-
-function VirtualizedPhotoItem({ columnIndex, rowIndex, style, data }: VirtualizedItemProps) {
-  const { photos, columnCount, selectedPhotos, onPhotoClick, onPhotoSelect, onPhotoDownload, onPhotoDelete } = data
-  const photoIndex = rowIndex * columnCount + columnIndex
-  const photo = photos[photoIndex]
-
-  if (!photo) {
-    return <div style={style} />
-  }
-
-  return (
-    <div style={{ ...style, padding: '8px' }}>
-      <PhotoItem
-        photo={photo}
-        selected={selectedPhotos.includes(photo.id)}
-        onSelect={onPhotoSelect}
-        onClick={onPhotoClick}
-        onDownload={onPhotoDownload}
-        onDelete={onPhotoDelete}
-        index={photoIndex}
-      />
-    </div>
-  )
-}
-
-/**
- * 虛擬滾動照片網格
- */
-function VirtualizedPhotoGrid({
-  photos,
-  selectedPhotos = [],
-  onPhotoClick = () => {},
-  onPhotoSelect = () => {},
-  onPhotoDownload = () => {},
-  onPhotoDelete = () => {},
-  columnCount = 4,
-  itemSize = 220,
-  height = 600,
-  className
-}: PhotoGridProps) {
-  const gridRef = useRef<any>(null)
-  const rowCount = Math.ceil(photos.length / columnCount)
-
-  const itemData = useMemo(() => ({
-    photos,
-    columnCount,
-    selectedPhotos,
-    onPhotoClick,
-    onPhotoSelect,
-    onPhotoDownload,
-    onPhotoDelete
-  }), [photos, columnCount, selectedPhotos, onPhotoClick, onPhotoSelect, onPhotoDownload, onPhotoDelete])
-
-  return (
-    <div className={cn("w-full", className)}>
-      <Grid
-        ref={gridRef}
-        columnCount={columnCount}
-        columnWidth={itemSize}
-        height={height}
-        rowCount={rowCount}
-        rowHeight={itemSize}
-        itemData={itemData}
-        overscanRowCount={2}
-        overscanColumnCount={2}
-        className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
-      >
-        {VirtualizedPhotoItem}
-      </Grid>
-    </div>
-  )
-}
+// Simple grid implementation without react-window for now
 
 /**
  * PhotoGrid 主元件
@@ -328,9 +206,7 @@ export function PhotoGrid({
   className,
   columnCount = 4,
   itemSize = 200,
-  height = 600,
-  enableVirtualScrolling = false,
-  enableIntersectionObserver = true
+  height = 600
 }: PhotoGridProps) {
   const { selectAllPhotos, clearSelection } = usePhotoStore()
 
@@ -392,9 +268,6 @@ export function PhotoGrid({
     )
   }
 
-  // 自動決定是否使用虛擬滾動（大量照片時）
-  const shouldUseVirtualScrolling = enableVirtualScrolling || photos.length > 100
-
   return (
     <div className={cn("w-full", className)}>
       {/* 操作列 */}
@@ -422,38 +295,24 @@ export function PhotoGrid({
         </div>
       )}
 
-      {/* 照片網格顯示 */}
-      {shouldUseVirtualScrolling ? (
-        <VirtualizedPhotoGrid
-          photos={photos}
-          selectedPhotos={selectedPhotos}
-          onPhotoClick={onPhotoClick}
-          onPhotoSelect={onPhotoSelect}
-          onPhotoDownload={onPhotoDownload}
-          onPhotoDelete={onPhotoDelete}
-          columnCount={columnCount}
-          itemSize={itemSize}
-          height={height}
-        />
-      ) : (
-        <div
-          className={cn("grid gap-4 auto-rows-max", getGridColumns())}
-          style={{ maxHeight: height, overflow: 'auto' }}
-        >
-          {photos.map((photo, index) => (
-            <PhotoItem
-              key={photo.id}
-              photo={photo}
-              selected={selectedPhotos.includes(photo.id)}
-              onSelect={onPhotoSelect}
-              onClick={onPhotoClick}
-              onDownload={onPhotoDownload}
-              onDelete={onPhotoDelete}
-              index={index}
-            />
-          ))}
-        </div>
-      )}
+      {/* 簡單網格實作 */}
+      <div
+        className={cn("grid gap-4 auto-rows-max", getGridColumns())}
+        style={{ maxHeight: height, overflow: 'auto' }}
+      >
+        {photos.map((photo, index) => (
+          <PhotoItem
+            key={photo.id}
+            photo={photo}
+            selected={selectedPhotos.includes(photo.id)}
+            onSelect={onPhotoSelect}
+            onClick={onPhotoClick}
+            onDownload={onPhotoDownload}
+            onDelete={onPhotoDelete}
+            index={index}
+          />
+        ))}
+      </div>
     </div>
   )
 }

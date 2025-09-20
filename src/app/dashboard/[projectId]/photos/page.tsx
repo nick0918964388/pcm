@@ -27,7 +27,7 @@ import {
 import { PhotoUploader, PhotoGrid, PhotoLightbox, PhotoGalleryList } from '@/components/photo'
 import { usePhotoStore } from '@/store/photoStore'
 import { photoService } from '@/services/photoService'
-import { Photo, Album, UploadResult } from '@/types/photo.types'
+import { Photo, Album, UploadResult, UserPermissions } from '@/types/photo.types'
 
 export default function PhotoGalleryPage() {
   const params = useParams()
@@ -36,6 +36,13 @@ export default function PhotoGalleryPage() {
   const [showUploader, setShowUploader] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // TODO: 這裡應該從認證系統獲取實際的使用者權限
+  const userPermissions: UserPermissions = {
+    canView: ['album-1'], // 暫時硬編碼，實際應從 API 獲取
+    canEdit: ['album-1'],
+    canDelete: ['album-1']
+  }
 
   const {
     photos,
@@ -251,6 +258,7 @@ export default function PhotoGalleryPage() {
             selectedAlbum={currentAlbum}
             loading={loading}
             error={error}
+            userPermissions={userPermissions}
             onAlbumSelect={handleAlbumChange}
             onAlbumCreate={() => {
               // TODO: 實作新增相簿功能
