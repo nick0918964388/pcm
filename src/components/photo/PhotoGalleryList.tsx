@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { Album } from '@/types/photo.types'
+import { Album, UserPermissions } from '@/types/photo.types'
 
 interface PhotoGalleryListProps {
   albums: Album[]
@@ -25,6 +25,7 @@ interface PhotoGalleryListProps {
   selectedAlbum: string | null
   loading?: boolean
   error?: string | null
+  userPermissions?: UserPermissions
   onAlbumSelect: (albumId: string | null) => void
   onAlbumCreate?: () => void
   onAlbumDelete?: (albumId: string) => void
@@ -34,14 +35,45 @@ interface PhotoGalleryListProps {
 interface AlbumItemProps {
   album: Album
   isSelected: boolean
+  canDelete: boolean
   onSelect: (albumId: string) => void
   onDelete?: (albumId: string) => void
 }
 
 /**
+ * 相簿封面元件
+ */
+function AlbumCover({ album }: { album: Album }) {
+  const [imageError, setImageError] = useState(false)
+
+  const handleImageError = useCallback(() => {
+    setImageError(true)
+  }, [])
+
+  if (!album.coverPhotoId || imageError) {
+    return (
+      <FolderOpen
+        className="w-4 h-4 mr-2 flex-shrink-0"
+        data-testid="album-folder-icon"
+      />
+    )
+  }
+
+  return (
+    <img
+      src={`/api/photos/${album.coverPhotoId}/thumbnail`}
+      alt={`${album.name} 封面`}
+      className="w-4 h-4 mr-2 flex-shrink-0 rounded object-cover"
+      onError={handleImageError}
+      data-testid="album-cover-image"
+    />
+  )
+}
+
+/**
  * 單一相簿項目元件
  */
-function AlbumItem({ album, isSelected, onSelect, onDelete }: AlbumItemProps) {
+function AlbumItem({ album, isSelected, canDelete, onSelect, onDelete }: AlbumItemProps) {
   const handleClick = useCallback(() => {
     onSelect(album.id)
   }, [album.id, onSelect])
@@ -73,7 +105,7 @@ function AlbumItem({ album, isSelected, onSelect, onDelete }: AlbumItemProps) {
           onClick={handleClick}
           aria-current={isSelected ? "page" : undefined}
         >
-          <FolderOpen className="w-4 h-4 mr-2 flex-shrink-0" />
+          <AlbumCover album={album} />
           <span className="truncate mr-2">{album.name}</span>
           <Badge
             variant={isSelected ? "secondary" : "secondary"}
@@ -86,7 +118,7 @@ function AlbumItem({ album, isSelected, onSelect, onDelete }: AlbumItemProps) {
           </Badge>
         </Button>
 
-        {onDelete && (
+        {onDelete && canDelete && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -96,6 +128,7 @@ function AlbumItem({ album, isSelected, onSelect, onDelete }: AlbumItemProps) {
                   "opacity-0 group-hover:opacity-100 p-1 h-auto",
                   isSelected && "text-primary-foreground hover:text-primary-foreground"
                 )}
+                data-testid="album-delete-button"
               >
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
@@ -144,6 +177,19 @@ function EmptyState() {
 }
 
 /**
+ * 權限提示元件
+ */
+function NoPermissionState() {
+  return (
+    <div className="text-center py-6 text-gray-500">
+      <FolderOpen className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+      <p className="text-sm font-medium">您沒有相簿的檢視權限</p>
+      <p className="text-xs">請聯絡管理員申請存取權限</p>
+    </div>
+  )
+}
+
+/**
  * 錯誤狀態元件
  */
 function ErrorState({ error }: { error: string }) {
@@ -163,15 +209,26 @@ export function PhotoGalleryList({
   selectedAlbum,
   loading = false,
   error = null,
+  userPermissions,
   onAlbumSelect,
   onAlbumCreate,
   onAlbumDelete,
   className
 }: PhotoGalleryListProps) {
+  // 根據權限過濾相簿
+  const filteredAlbums = useMemo(() => {
+    if (!userPermissions) {
+      return albums
+    }
+    return albums.filter(album =>
+      userPermissions.canView.includes(album.id)
+    )
+  }, [albums, userPermissions])
+
   // 計算總照片數
   const totalPhotos = useMemo(() => {
-    return albums.reduce((total, album) => total + album.photoCount, 0)
-  }, [albums])
+    return filteredAlbums.reduce((total, album) => total + album.photoCount, 0)
+  }, [filteredAlbums])
 
   // 處理"所有照片"點擊
   const handleAllPhotosClick = useCallback(() => {
@@ -182,6 +239,10 @@ export function PhotoGalleryList({
   const handleAlbumSelect = useCallback((albumId: string) => {
     onAlbumSelect(albumId)
   }, [onAlbumSelect])
+
+  // 檢查是否有權限相關的配置
+  const hasPermissions = userPermissions !== undefined
+  const noViewPermissions = hasPermissions && userPermissions.canView.length === 0
 
   // 檢查螢幕大小（簡化版）
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
@@ -234,13 +295,16 @@ export function PhotoGalleryList({
           {/* 相簿列表 */}
           {!loading && !error && (
             <>
-              {albums.length > 0 ? (
+              {noViewPermissions ? (
+                <NoPermissionState />
+              ) : filteredAlbums.length > 0 ? (
                 <ul role="list" aria-label="專案相簿列表" className="space-y-1">
-                  {albums.map((album) => (
+                  {filteredAlbums.map((album) => (
                     <AlbumItem
                       key={album.id}
                       album={album}
                       isSelected={selectedAlbum === album.id}
+                      canDelete={userPermissions?.canDelete.includes(album.id) ?? true}
                       onSelect={handleAlbumSelect}
                       onDelete={onAlbumDelete}
                     />

@@ -251,4 +251,87 @@ describe('PhotoGalleryList', () => {
       expect(true).toBe(true) // 暫時的斷言
     })
   })
+
+  describe('相簿封面功能', () => {
+    const albumWithCover: Album = {
+      ...mockAlbums[0],
+      coverPhotoId: 'cover-photo-1'
+    }
+
+    it('有封面的相簿應該顯示封面圖片', () => {
+      render(<PhotoGalleryList {...defaultProps} albums={[albumWithCover]} />)
+
+      // 檢查是否有封面圖片顯示
+      const coverImage = screen.queryByTestId('album-cover-image')
+      expect(coverImage).toBeInTheDocument()
+    })
+
+    it('沒有封面的相簿應該顯示預設圖標', () => {
+      render(<PhotoGalleryList {...defaultProps} />)
+
+      // 應該顯示預設的資料夾圖標
+      const folderIcons = screen.getAllByTestId('album-folder-icon')
+      expect(folderIcons.length).toBeGreaterThan(0)
+    })
+
+    it('封面載入失敗時應該退回到預設圖標', () => {
+      render(<PhotoGalleryList {...defaultProps} albums={[albumWithCover]} />)
+
+      // 模擬圖片載入失敗
+      const coverImage = screen.queryByTestId('album-cover-image')
+      if (coverImage) {
+        fireEvent.error(coverImage)
+      }
+
+      // 應該顯示預設圖標
+      expect(screen.getByTestId('album-folder-icon')).toBeInTheDocument()
+    })
+  })
+
+  describe('權限過濾功能', () => {
+    const mockPermissions = {
+      canView: ['album-1', 'album-2'],
+      canEdit: ['album-1'],
+      canDelete: ['album-1']
+    }
+
+    it('應該只顯示有檢視權限的相簿', () => {
+      render(
+        <PhotoGalleryList
+          {...defaultProps}
+          userPermissions={mockPermissions}
+        />
+      )
+
+      // 應該只顯示 album-1 和 album-2
+      expect(screen.getByText('施工進度照片')).toBeInTheDocument()
+      expect(screen.getByText('品質檢查照片')).toBeInTheDocument()
+      expect(screen.queryByText('安全檢查照片')).not.toBeInTheDocument()
+    })
+
+    it('沒有權限時應該顯示權限提示', () => {
+      render(
+        <PhotoGalleryList
+          {...defaultProps}
+          albums={[]}
+          userPermissions={{ canView: [], canEdit: [], canDelete: [] }}
+        />
+      )
+
+      expect(screen.getByText('您沒有相簿的檢視權限')).toBeInTheDocument()
+    })
+
+    it('相簿操作按鈕應該根據權限顯示', () => {
+      render(
+        <PhotoGalleryList
+          {...defaultProps}
+          userPermissions={mockPermissions}
+        />
+      )
+
+      // album-1 有刪除權限，應該有刪除按鈕
+      const deleteButtons = screen.getAllByTestId('album-delete-button')
+      expect(deleteButtons.length).toBeGreaterThan(0)
+    })
+  })
 })
