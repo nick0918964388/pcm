@@ -15,7 +15,6 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 **Specs** (`.kiro/specs/`) - Formalize development process for individual features
 
 ### Active Specifications
-- **project-photo-gallery**: 工程照片庫功能 - 廠商照片預覽、專案相簿分類、現代化介面
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
 
