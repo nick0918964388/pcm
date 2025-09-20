@@ -61,24 +61,12 @@ SET search_path = public;
 -- ============================================
 
 \echo ''
-\echo '步驟 4/5: 插入初始資料和設定...'
+\echo '步驟 4/4: 插入初始資料和設定...'
 \echo '執行: 04-initial-data.sql'
 
 \ir 04-initial-data.sql
 
 \echo '✅ 初始資料插入完成'
-
--- ============================================
--- 步驟 5: 建立照片庫架構
--- ============================================
-
-\echo ''
-\echo '步驟 5/5: 建立照片庫架構...'
-\echo '執行: 06-photo-gallery-schema.sql'
-
-\ir 06-photo-gallery-schema.sql
-
-\echo '✅ 照片庫架構建立完成'
 
 -- ============================================
 -- 資料庫初始化驗證
@@ -144,12 +132,6 @@ UNION ALL
 SELECT 'Duty Persons', COUNT(*) FROM duty_persons
 UNION ALL
 SELECT 'Duty Schedules', COUNT(*) FROM duty_schedules
-UNION ALL
-SELECT 'Photo Albums', COUNT(*) FROM photo_albums
-UNION ALL
-SELECT 'Photos', COUNT(*) FROM photos
-UNION ALL
-SELECT 'Photo Versions', COUNT(*) FROM photo_versions
 UNION ALL
 SELECT 'System Settings', COUNT(*) FROM system_settings
 ORDER BY table_name;

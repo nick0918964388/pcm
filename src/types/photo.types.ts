@@ -108,12 +108,6 @@ export interface ValidationResult {
   errors: string[]
 }
 
-export interface UserPermissions {
-  canView: string[]
-  canEdit: string[]
-  canDelete: string[]
-}
-
 export type PhotoViewMode = 'grid' | 'list'
 export type PhotoSortBy = 'uploadedAt' | 'fileName' | 'fileSize'
 export type PhotoSortOrder = 'asc' | 'desc'
