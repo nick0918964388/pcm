@@ -29,7 +29,7 @@ interface PhotoGridProps {
   error?: string | null
   onPhotoClick?: (photo: Photo, index: number) => void
   onPhotoSelect?: (photoId: string, selected: boolean) => void
-  onPhotoDownload?: (photo: Photo) => void
+  onPhotoDownload?: (photo: Photo | Photo[]) => void // 支援單張或批次下載
   onPhotoDelete?: (photo: Photo) => void
   className?: string
   columnCount?: number
@@ -286,9 +286,17 @@ export function PhotoGrid({
 
           {selectedPhotos.length > 0 && (
             <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // 觸發批次下載回調
+                  const selectedPhotoObjects = photos.filter(p => selectedPhotos.includes(p.id))
+                  onPhotoDownload?.(selectedPhotoObjects)
+                }}
+              >
                 <Download className="w-4 h-4 mr-2" />
-                下載選取項目
+                下載選取項目 ({selectedPhotos.length})
               </Button>
             </div>
           )}

@@ -25,8 +25,9 @@ import {
   Download
 } from 'lucide-react'
 import { PhotoUploader, PhotoGrid, PhotoLightbox, PhotoGalleryList } from '@/components/photo'
+import { DownloadProgress, BatchDownloadProgress } from '@/components/photo/DownloadProgress'
 import { usePhotoStore } from '@/store/photoStore'
-import { photoService } from '@/services/photoService'
+import { photoService, BatchDownloadOptions } from '@/services/photoService'
 import { Photo, Album, UploadResult, UserPermissions } from '@/types/photo.types'
 
 export default function PhotoGalleryPage() {
@@ -36,6 +37,7 @@ export default function PhotoGalleryPage() {
   const [showUploader, setShowUploader] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [downloadProgress, setDownloadProgress] = useState<BatchDownloadProgress | null>(null)
 
   // TODO: 這裡應該從認證系統獲取實際的使用者權限
   const userPermissions: UserPermissions = {
@@ -164,15 +166,90 @@ export default function PhotoGalleryPage() {
   }, [selectPhoto, deselectPhoto])
 
   /**
-   * 處理照片下載
+   * 處理照片下載（支援單張和批次）
    */
-  const handlePhotoDownload = useCallback(async (photo: Photo) => {
+  const handlePhotoDownload = useCallback(async (photoOrPhotos: Photo | Photo[]) => {
     try {
-      await photoService.downloadPhoto(photo, 'original')
+      if (Array.isArray(photoOrPhotos)) {
+        // 批次下載
+        const photos = photoOrPhotos
+        if (photos.length === 0) {
+          alert('請選擇要下載的照片')
+          return
+        }
+
+        // 檢查是否需要分批下載
+        if (photoService.shouldSplitDownload(photos)) {
+          const confirmMessage = `選取的照片較多（${photos.length}張），將分批下載為多個ZIP檔案。確定繼續嗎？`
+          if (!confirm(confirmMessage)) {
+            return
+          }
+        }
+
+        // 建立進度追蹤
+        const progressId = `download-${Date.now()}`
+        const initialProgress: BatchDownloadProgress = {
+          id: progressId,
+          totalFiles: photos.length,
+          completedFiles: 0,
+          failedFiles: 0,
+          overallProgress: 0,
+          status: 'preparing',
+          items: photos.map(photo => ({
+            id: photo.id,
+            fileName: photo.fileName,
+            progress: 0,
+            status: 'pending'
+          })),
+          startTime: new Date()
+        }
+
+        setDownloadProgress(initialProgress)
+
+        // 設定下載選項
+        const options: BatchDownloadOptions = {
+          onProgress: (progress) => {
+            setDownloadProgress(prev => prev ? {
+              ...prev,
+              overallProgress: progress,
+              status: progress < 90 ? 'downloading' : progress < 100 ? 'zipping' : 'completed'
+            } : null)
+          }
+        }
+
+        // 執行批次下載
+        await photoService.downloadPhotos(photos, options)
+
+        // 下載完成，清除選取
+        clearSelection()
+
+        // 標記為完成
+        setDownloadProgress(prev => prev ? {
+          ...prev,
+          completedFiles: photos.length,
+          overallProgress: 100,
+          status: 'completed'
+        } : null)
+
+      } else {
+        // 單張下載
+        await photoService.downloadPhoto(photoOrPhotos, 'original')
+      }
     } catch (error) {
       console.error('下載失敗:', error)
+
+      // 更新進度為失敗狀態
+      if (Array.isArray(photoOrPhotos)) {
+        setDownloadProgress(prev => prev ? {
+          ...prev,
+          status: 'failed',
+          failedFiles: prev.totalFiles - prev.completedFiles
+        } : null)
+      } else {
+        alert('下載失敗')
+      }
     }
-  }, [])
+  }, [clearSelection])
 
   /**
    * 處理照片刪除
@@ -348,7 +425,15 @@ export default function PhotoGalleryPage() {
                   <span className="text-sm text-gray-600">
                     已選取 {selectedPhotos.length} 張
                   </span>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const selectedPhotoObjects = filteredPhotos.filter(p => selectedPhotos.includes(p.id))
+                      handlePhotoDownload(selectedPhotoObjects)
+                    }}
+                    disabled={!!downloadProgress && downloadProgress.status !== 'completed'}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     批次下載
                   </Button>
@@ -371,6 +456,22 @@ export default function PhotoGalleryPage() {
             />
           </CardContent>
         </Card>
+
+        {/* 下載進度 */}
+        {downloadProgress && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <DownloadProgress
+              progress={downloadProgress}
+              onCancel={() => {
+                photoService.cancelBatchDownload()
+                setDownloadProgress(prev => prev ? { ...prev, status: 'cancelled' } : null)
+              }}
+              onClose={() => {
+                setDownloadProgress(null)
+              }}
+            />
+          </div>
+        )}
 
         {/* 燈箱 */}
         <PhotoLightbox

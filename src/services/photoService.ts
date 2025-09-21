@@ -13,11 +13,33 @@ import {
   ApiResponse,
   PhotoFilters
 } from '@/types/photo.types'
+import JSZip from 'jszip'
+
+export interface BatchDownloadOptions {
+  onProgress?: (progress: number) => void
+  concurrency?: number
+  batchSize?: number
+}
+
+export interface DownloadQueueItem {
+  id: string
+  photos: Photo[]
+  status: 'pending' | 'downloading' | 'completed' | 'failed'
+  progress: number
+  createdAt: Date
+}
 
 export class PhotoService {
   private readonly SUPPORTED_FORMATS = ['image/jpeg', 'image/png', 'image/heic', 'image/webp']
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
   private readonly COMPRESSION_THRESHOLD = 5 * 1024 * 1024 // 5MB
+  private readonly MAX_BATCH_SIZE = 100 * 1024 * 1024 // 100MB 批次下載大小限制
+  private readonly DEFAULT_CONCURRENCY = 3 // 預設並發數
+
+  // 批次下載相關狀態
+  private selectedPhotos: Set<string> = new Set()
+  private downloadQueue: DownloadQueueItem[] = []
+  private currentDownload: AbortController | null = null
 
   /**
    * 驗證單一檔案
@@ -378,13 +400,275 @@ export class PhotoService {
     }
   }
 
+  // ==========================================
+  // 批次選取功能 (Task 5-2)
+  // ==========================================
+
+  /**
+   * 取得選取的照片 ID 陣列
+   */
+  getSelectedPhotos(): string[] {
+    return Array.from(this.selectedPhotos)
+  }
+
+  /**
+   * 選取照片
+   */
+  selectPhoto(photoId: string): void {
+    this.selectedPhotos.add(photoId)
+  }
+
+  /**
+   * 取消選取照片
+   */
+  deselectPhoto(photoId: string): void {
+    this.selectedPhotos.delete(photoId)
+  }
+
+  /**
+   * 清除所有選取
+   */
+  clearSelection(): void {
+    this.selectedPhotos.clear()
+  }
+
+  /**
+   * 檢查照片是否被選取
+   */
+  isPhotoSelected(photoId: string): boolean {
+    return this.selectedPhotos.has(photoId)
+  }
+
+  // ==========================================
+  // ZIP 打包功能
+  // ==========================================
+
+  /**
+   * 建立包含多張照片的 ZIP 檔案
+   */
+  async createPhotoZip(photos: Photo[]): Promise<Blob> {
+    const zip = new JSZip()
+    const fileNameCounts = new Map<string, number>()
+
+    // 並發下載照片並加入 ZIP
+    const downloadPromises = photos.map(async (photo, index) => {
+      try {
+        // 下載照片檔案
+        const response = await fetch(photo.originalUrl)
+        if (!response.ok) {
+          throw new Error(`Failed to download ${photo.fileName}`)
+        }
+        const blob = await response.blob()
+
+        // 處理重複檔名
+        let fileName = photo.fileName
+        if (fileNameCounts.has(fileName)) {
+          const count = fileNameCounts.get(fileName)! + 1
+          fileNameCounts.set(fileName, count)
+          const nameParts = fileName.split('.')
+          const extension = nameParts.pop()
+          const baseName = nameParts.join('.')
+          fileName = `${baseName}_${count}.${extension}`
+        } else {
+          fileNameCounts.set(fileName, 1)
+        }
+
+        // 加入到 ZIP
+        zip.file(fileName, blob)
+      } catch (error) {
+        console.error(`Failed to add ${photo.fileName} to ZIP:`, error)
+        // 繼續處理其他檔案，不因單一檔案失敗而中斷
+      }
+    })
+
+    await Promise.all(downloadPromises)
+
+    // 生成 ZIP 檔案
+    return zip.generateAsync({ type: 'blob' })
+  }
+
+  /**
+   * 檢查是否應該分割下載
+   */
+  shouldSplitDownload(photos: Photo[]): boolean {
+    const totalSize = photos.reduce((sum, photo) => sum + photo.fileSize, 0)
+    return totalSize > this.MAX_BATCH_SIZE
+  }
+
   /**
    * 批次下載照片 (ZIP)
    */
-  async downloadPhotos(photos: Photo[]): Promise<void> {
-    // TODO: 實作 ZIP 下載功能
-    // 可能需要額外的函式庫如 JSZip
-    console.warn('Batch download not implemented yet')
+  async downloadPhotos(
+    photos: Photo[],
+    options: BatchDownloadOptions = {}
+  ): Promise<void> {
+    const { onProgress, concurrency = this.DEFAULT_CONCURRENCY } = options
+
+    if (photos.length === 0) {
+      throw new Error('沒有選取任何照片')
+    }
+
+    // 檢查是否需要分批下載
+    if (this.shouldSplitDownload(photos)) {
+      return this.downloadPhotosInBatches(photos, options)
+    }
+
+    try {
+      // 建立 AbortController 支援取消
+      this.currentDownload = new AbortController()
+
+      onProgress?.(10) // 開始處理
+
+      // 建立 ZIP 檔案
+      const zipBlob = await this.createPhotoZip(photos)
+
+      onProgress?.(90) // ZIP 生成完成
+
+      // 觸發下載
+      const url = URL.createObjectURL(zipBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `photos_${new Date().toISOString().slice(0, 10)}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // 清理
+      URL.revokeObjectURL(url)
+      onProgress?.(100) // 完成
+
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Download cancelled')
+      }
+      throw error
+    } finally {
+      this.currentDownload = null
+    }
+  }
+
+  /**
+   * 分批下載大量照片
+   */
+  async downloadPhotosInBatches(
+    photos: Photo[],
+    options: BatchDownloadOptions = {}
+  ): Promise<void> {
+    const { batchSize = 20, onProgress } = options
+    const batches: Photo[][] = []
+
+    // 分割為多個批次
+    for (let i = 0; i < photos.length; i += batchSize) {
+      batches.push(photos.slice(i, i + batchSize))
+    }
+
+    // 逐批下載
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i]
+      const progress = ((i + 1) / batches.length) * 100
+
+      onProgress?.(progress)
+
+      const zipBlob = await this.createPhotoZip(batch)
+
+      // 下載單一批次
+      const url = URL.createObjectURL(zipBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `photos_batch_${i + 1}_${new Date().toISOString().slice(0, 10)}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      URL.revokeObjectURL(url)
+
+      // 短暫延遲避免瀏覽器下載限制
+      if (i < batches.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    }
+  }
+
+  /**
+   * 取消批次下載
+   */
+  cancelBatchDownload(): void {
+    if (this.currentDownload) {
+      this.currentDownload.abort()
+      this.currentDownload = null
+    }
+  }
+
+  // ==========================================
+  // 佇列管理功能
+  // ==========================================
+
+  /**
+   * 取得下載佇列
+   */
+  getDownloadQueue(): DownloadQueueItem[] {
+    return [...this.downloadQueue]
+  }
+
+  /**
+   * 加入到下載佇列
+   */
+  addToDownloadQueue(photos: Photo[]): string {
+    // 檢查是否已存在相同的照片組合
+    const photoIds = photos.map(p => p.id).sort()
+    const existing = this.downloadQueue.find(item => {
+      const existingIds = item.photos.map(p => p.id).sort()
+      return JSON.stringify(photoIds) === JSON.stringify(existingIds)
+    })
+
+    if (existing) {
+      return existing.id // 返回現有項目的 ID
+    }
+
+    const queueItem: DownloadQueueItem = {
+      id: `queue-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      photos: [...photos],
+      status: 'pending',
+      progress: 0,
+      createdAt: new Date()
+    }
+
+    this.downloadQueue.push(queueItem)
+    return queueItem.id
+  }
+
+  /**
+   * 從下載佇列移除
+   */
+  removeFromDownloadQueue(queueId: string): void {
+    const index = this.downloadQueue.findIndex(item => item.id === queueId)
+    if (index >= 0) {
+      this.downloadQueue.splice(index, 1)
+    }
+  }
+
+  /**
+   * 更新佇列項目狀態
+   */
+  updateQueueItemStatus(
+    queueId: string,
+    status: DownloadQueueItem['status'],
+    progress: number = 0
+  ): void {
+    const item = this.downloadQueue.find(item => item.id === queueId)
+    if (item) {
+      item.status = status
+      item.progress = progress
+    }
+  }
+
+  /**
+   * 清理已完成的佇列項目
+   */
+  cleanupQueue(): void {
+    this.downloadQueue = this.downloadQueue.filter(
+      item => item.status !== 'completed' && item.status !== 'failed'
+    )
   }
 }
 
