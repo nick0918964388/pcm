@@ -1,0 +1,235 @@
+/**
+ * 響應式設計樣式
+ * 為照片庫組件提供響應式和觸控優化
+ */
+
+/* 觸控目標大小 */
+.touch-target-44 {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* 隱藏滾動條但保持滾動功能 */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 漸進式圖片載入效果 */
+.progressive-image {
+  transition: filter 0.3s ease;
+}
+
+.progressive-image.loading {
+  filter: blur(5px);
+}
+
+.progressive-image.loaded {
+  filter: blur(0);
+}
+
+/* 行動裝置優化 */
+@media (max-width: 640px) {
+  .photo-grid {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .photo-item {
+    border-radius: 8px;
+  }
+
+  .photo-item .action-buttons {
+    opacity: 1; /* 在行動裝置上始終顯示 */
+  }
+
+  .lightbox-toolbar {
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    top: auto;
+    flex-direction: row;
+    justify-content: space-around;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 12px;
+    padding: 0.75rem;
+  }
+}
+
+/* 平板裝置優化 */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .photo-grid {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .photo-item {
+    border-radius: 12px;
+  }
+
+  /* 分屏模式支援 */
+  .split-view {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+  }
+
+  .split-view .photo-grid {
+    grid-column: 1;
+  }
+
+  .split-view .photo-preview {
+    grid-column: 2;
+    position: sticky;
+    top: 1rem;
+    height: fit-content;
+  }
+}
+
+/* 桌面優化 */
+@media (min-width: 1025px) {
+  .photo-grid {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+
+  .photo-item {
+    border-radius: 16px;
+  }
+
+  .photo-item:hover .action-buttons {
+    opacity: 1;
+  }
+}
+
+/* 觸控手勢支援 */
+.swipe-container {
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.swipe-container.pinch-zoom {
+  touch-action: manipulation;
+}
+
+/* 網路狀態指示器 */
+.network-indicator {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  backdrop-filter: blur(8px);
+}
+
+.network-indicator.offline {
+  background: rgba(251, 146, 60, 0.9);
+}
+
+.network-indicator.slow {
+  background: rgba(59, 130, 246, 0.9);
+}
+
+.network-indicator.good {
+  background: rgba(34, 197, 94, 0.9);
+}
+
+/* 資料節省模式 */
+.data-saver-mode .photo-thumbnail {
+  filter: contrast(0.8) brightness(0.9);
+}
+
+.data-saver-mode .photo-thumbnail::after {
+  content: "數據節省";
+  position: absolute;
+  bottom: 0.25rem;
+  right: 0.25rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+}
+
+/* 虛擬滾動優化 */
+.virtual-grid {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+.virtual-grid-item {
+  contain: layout style paint;
+}
+
+/* 載入狀態 */
+.skeleton-loader {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 效能優化 */
+.photo-grid-optimized {
+  contain: layout style paint;
+}
+
+.photo-grid-optimized .photo-item {
+  contain: layout style;
+  will-change: transform;
+}
+
+/* 高對比度模式支援 */
+@media (prefers-contrast: high) {
+  .photo-item {
+    border: 2px solid;
+  }
+
+  .photo-item.selected {
+    border-color: #0066cc;
+    background-color: rgba(0, 102, 204, 0.1);
+  }
+}
+
+/* 減少動畫偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .photo-item,
+  .progressive-image,
+  .skeleton-loader {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* 暗色模式支援 */
+@media (prefers-color-scheme: dark) {
+  .photo-grid {
+    background-color: #111827;
+  }
+
+  .photo-item {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .network-indicator {
+    color: #f9fafb;
+  }
+}
