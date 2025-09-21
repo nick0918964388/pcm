@@ -82,29 +82,6 @@ export interface PhotoFilters {
   albumId?: string
 }
 
-export interface SearchSuggestion {
-  id: string
-  query: string
-  type: 'filename' | 'tag' | 'description' | 'history'
-  count?: number
-  lastUsed?: Date
-}
-
-export interface SearchHistory {
-  id: string
-  query: string
-  timestamp: Date
-  resultCount: number
-}
-
-export interface PhotoSearchState {
-  query: string
-  suggestions: SearchSuggestion[]
-  history: SearchHistory[]
-  isSearching: boolean
-  showSuggestions: boolean
-}
-
 export interface UploadResult {
   success: boolean
   photoId: string
