@@ -117,3 +117,39 @@ export interface UserPermissions {
 export type PhotoViewMode = 'grid' | 'list'
 export type PhotoSortBy = 'uploadedAt' | 'fileName' | 'fileSize'
 export type PhotoSortOrder = 'asc' | 'desc'
+
+// 下載相關類型定義
+export type PhotoResolution = 'thumbnail' | 'small' | 'medium' | 'large' | 'original'
+
+export interface DownloadOptions {
+  resolution: PhotoResolution
+  includeMetadata?: boolean
+  watermark?: boolean
+}
+
+export interface DownloadProgress {
+  id: string
+  photoId: string
+  fileName: string
+  progress: number
+  status: 'pending' | 'downloading' | 'completed' | 'failed' | 'cancelled'
+  url?: string
+  error?: string
+  startedAt: Date
+  completedAt?: Date
+}
+
+export interface DownloadRequest {
+  photoId: string
+  fileName: string
+  options: DownloadOptions
+}
+
+export interface DownloadResponse {
+  success: boolean
+  downloadUrl: string
+  fileName: string
+  fileSize: number
+  expiresAt: Date
+  error?: string
+}
