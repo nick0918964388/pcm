@@ -154,7 +154,7 @@ export const navigationConfig: NavigationItem[] = [
       {
         id: 'photo-gallery',
         label: 'iPhoto 2.0 (工程照片庫)',
-        href: '/photos'
+        href: 'photos'
       }
     ]
   },
