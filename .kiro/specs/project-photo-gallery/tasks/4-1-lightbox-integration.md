@@ -4,7 +4,7 @@
 整合yet-another-react-lightbox元件庫，建立照片預覽系統。
 
 ## 執行狀態
-- [ ] 待執行
+- [x] 已完成
 
 ## 實作細節
 - 整合yet-another-react-lightbox元件

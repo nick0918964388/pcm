@@ -378,6 +378,11 @@ export default function PhotoGalleryPage() {
           open={lightboxOpen}
           index={lightboxIndex}
           onClose={closeLightbox}
+          enableZoom={true}
+          enableFullscreen={true}
+          enableThumbnails={true}
+          enableKeyboardShortcuts={true}
+          enableTouchGestures={true}
         />
       </div>
     </div>
