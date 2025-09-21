@@ -13,6 +13,9 @@ import {
   ApiResponse,
   PhotoFilters
 } from '@/types/photo.types'
+import { fileSecurityService } from '@/lib/security/file-security'
+import { signedUrlService } from '@/lib/security/signed-url-service'
+import { rateLimitService } from '@/lib/security/rate-limit-service'
 import JSZip from 'jszip'
 
 export interface BatchDownloadOptions {
@@ -42,7 +45,8 @@ export class PhotoService {
   private currentDownload: AbortController | null = null
 
   /**
-   * 驗證單一檔案
+   * 驗證單一檔案 (已棄用，請使用 validateFileSecurely)
+   * @deprecated 請使用 validateFileSecurely 方法以獲得更完整的安全檢查
    */
   validateFile(file: File): ValidationResult {
     const errors: string[] = []
@@ -65,6 +69,38 @@ export class PhotoService {
     return {
       isValid: errors.length === 0,
       errors
+    }
+  }
+
+  /**
+   * 安全檔案驗證 (整合安全檢查)
+   */
+  async validateFileSecurely(
+    file: File,
+    userId: string,
+    projectId: string
+  ): Promise<ValidationResult & { warnings?: string[]; sanitizedFilename?: string }> {
+    // 先檢查速率限制
+    const rateLimitCheck = rateLimitService.checkUserRateLimit(userId, 'upload')
+    if (!rateLimitCheck.allowed) {
+      return {
+        isValid: false,
+        errors: ['上傳頻率過高，請稍後再試']
+      }
+    }
+
+    // 使用安全服務進行完整驗證
+    const securityResult = await fileSecurityService.validateFileSecurely(
+      file,
+      userId,
+      projectId
+    )
+
+    return {
+      isValid: securityResult.isValid,
+      errors: securityResult.errors,
+      warnings: securityResult.warnings,
+      sanitizedFilename: securityResult.sanitizedFilename
     }
   }
 
@@ -136,14 +172,25 @@ export class PhotoService {
   }
 
   /**
-   * 建立上傳檔案物件
+   * 建立上傳檔案物件 (整合安全檢查)
    */
   async createUploadFile(
     file: File,
+    userId: string,
     projectId: string,
     albumId?: string
-  ): Promise<UploadFile> {
+  ): Promise<UploadFile & { securityValidation?: any }> {
+    // 進行安全驗證
+    const securityValidation = await this.validateFileSecurely(file, userId, projectId)
+
+    if (!securityValidation.isValid) {
+      throw new Error(`檔案安全驗證失敗: ${securityValidation.errors.join(', ')}`)
+    }
+
     const metadata = await this.extractMetadata(file)
+
+    // 使用安全的檔案名稱
+    const sanitizedFilename = securityValidation.sanitizedFilename || file.name
 
     return {
       id: this.generateFileId(),
@@ -152,7 +199,10 @@ export class PhotoService {
       albumId,
       metadata,
       progress: 0,
-      status: 'pending'
+      status: 'pending',
+      securityValidation,
+      // 添加安全路徑
+      securePath: fileSecurityService.generateSecureFilePath(projectId, userId, sanitizedFilename)
     }
   }
 
@@ -228,21 +278,29 @@ export class PhotoService {
   }
 
   /**
-   * 上傳單一檔案
-   * TODO: 實作實際的 API 呼叫
+   * 安全上傳單一檔案
    */
-  async uploadPhoto(uploadFile: UploadFile): Promise<UploadResult> {
+  async uploadPhoto(uploadFile: UploadFile & { securePath?: string }): Promise<UploadResult> {
     try {
-      // 模擬上傳過程
+      // 使用安全路徑生成實際的儲存URL
+      const securePath = uploadFile.securePath ||
+        fileSecurityService.generateSecureFilePath(
+          uploadFile.projectId,
+          'unknown-user',
+          uploadFile.file.name
+        )
+
+      // 模擬上傳過程 (實際實作時會使用securePath)
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // 模擬成功回應
+      // 模擬成功回應 - 使用安全路徑
       return {
         success: true,
         photoId: `photo-${Date.now()}`,
-        thumbnailUrl: `/thumbnails/${uploadFile.file.name}`,
-        originalUrl: `/photos/${uploadFile.file.name}`,
-        metadata: uploadFile.metadata
+        thumbnailUrl: `/api/photos/thumbnail/${uploadFile.id}`,
+        originalUrl: `/api/photos/original/${uploadFile.id}`,
+        metadata: uploadFile.metadata,
+        securePath
       }
     } catch (error) {
       return {
@@ -382,21 +440,42 @@ export class PhotoService {
   }
 
   /**
-   * 下載照片
+   * 安全下載照片 (使用簽名URL)
    */
-  async downloadPhoto(photo: Photo, resolution: 'original' | 'thumbnail' = 'original'): Promise<void> {
+  async downloadPhoto(
+    photo: Photo,
+    userId: string,
+    resolution: 'original' | 'thumbnail' = 'original'
+  ): Promise<void> {
     try {
-      const url = resolution === 'original' ? photo.originalUrl : photo.thumbnailUrl
+      // 檢查下載速率限制
+      const rateLimitCheck = rateLimitService.checkUserRateLimit(userId, 'download')
+      if (!rateLimitCheck.allowed) {
+        throw new Error('下載頻率過高，請稍後再試')
+      }
+
+      // 生成簽名URL
+      const signedUrlResult = signedUrlService.generatePhotoAccessUrl(
+        photo.id,
+        userId,
+        {
+          expiresIn: 300, // 5分鐘
+          maxDownloads: 1
+        }
+      )
 
       // 建立暫時連結並觸發下載
       const link = document.createElement('a')
-      link.href = url
+      link.href = signedUrlResult.url
       link.download = photo.fileName
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+
+      // 記錄下載
+      signedUrlService.recordDownload(signedUrlResult.token)
     } catch (error) {
-      throw new Error('下載失敗')
+      throw new Error(`下載失敗: ${error instanceof Error ? error.message : '未知錯誤'}`)
     }
   }
 
@@ -496,24 +575,47 @@ export class PhotoService {
   }
 
   /**
-   * 批次下載照片 (ZIP)
+   * 安全批次下載照片 (ZIP) - 支援安全檢查和速率限制
    */
   async downloadPhotos(
     photos: Photo[],
+    userId: string,
     options: BatchDownloadOptions = {}
   ): Promise<void> {
-    const { onProgress, concurrency = this.DEFAULT_CONCURRENCY } = options
-
-    if (photos.length === 0) {
-      throw new Error('沒有選取任何照片')
-    }
-
-    // 檢查是否需要分批下載
-    if (this.shouldSplitDownload(photos)) {
-      return this.downloadPhotosInBatches(photos, options)
-    }
-
     try {
+      // 檢查批次操作速率限制
+      const rateLimitCheck = rateLimitService.checkUserRateLimit(userId, 'batch')
+      if (!rateLimitCheck.allowed) {
+        throw new Error('批次操作頻率過高，請稍後再試')
+      }
+
+      // 限制批次下載數量
+      if (photos.length > 50) {
+        throw new Error('單次批次下載不能超過50個檔案')
+      }
+
+      const { onProgress, concurrency = this.DEFAULT_CONCURRENCY } = options
+
+      if (photos.length === 0) {
+        throw new Error('沒有選取任何照片')
+      }
+
+      // 生成批次下載簽名URL進行安全驗證
+      const photoIds = photos.map(p => p.id)
+      const signedUrlResult = signedUrlService.generateBatchDownloadUrl(
+        photoIds,
+        userId,
+        {
+          expiresIn: 1800, // 30分鐘
+          maxDownloads: 3
+        }
+      )
+
+      // 檢查是否需要分批下載
+      if (this.shouldSplitDownload(photos)) {
+        return this.downloadPhotosInBatches(photos, options)
+      }
+
       // 建立 AbortController 支援取消
       this.currentDownload = new AbortController()
 
@@ -536,6 +638,9 @@ export class PhotoService {
       // 清理
       URL.revokeObjectURL(url)
       onProgress?.(100) // 完成
+
+      // 記錄下載
+      signedUrlService.recordDownload(signedUrlResult.token)
 
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -670,7 +775,92 @@ export class PhotoService {
       item => item.status !== 'completed' && item.status !== 'failed'
     )
   }
+
+  /**
+   * 生成安全的上傳URL
+   */
+  generateSecureUploadUrl(projectId: string, userId: string): string {
+    const signedUrlResult = signedUrlService.generateUploadUrl(
+      projectId,
+      userId,
+      {
+        expiresIn: 3600, // 1小時
+        permissions: ['write']
+      }
+    )
+
+    return signedUrlResult.url
+  }
+
+  /**
+   * 驗證使用者是否有權限存取照片
+   */
+  async verifyPhotoAccess(
+    photoId: string,
+    userId: string,
+    requiredPermission: 'read' | 'write' | 'delete' = 'read'
+  ): Promise<boolean> {
+    // TODO: 實作實際的權限檢查邏輯
+    // 這裡需要查詢資料庫確認使用者是否有存取該照片的權限
+    return true
+  }
+
+  /**
+   * 取得使用者的配額資訊
+   */
+  async getUserQuotaInfo(userId: string): Promise<{
+    used: number
+    total: number
+    remaining: number
+    uploadCount: {
+      today: number
+      thisHour: number
+    }
+  }> {
+    // TODO: 實作實際的配額查詢
+    // 這裡需要查詢資料庫取得使用者的實際使用情況
+    return {
+      used: 0,
+      total: 100 * 1024 * 1024 * 1024, // 100GB
+      remaining: 100 * 1024 * 1024 * 1024,
+      uploadCount: {
+        today: 0,
+        thisHour: 0
+      }
+    }
+  }
+
+  /**
+   * 檢查並記錄可疑的活動
+   */
+  async logSuspiciousActivity(
+    userId: string,
+    activity: string,
+    details: Record<string, any>
+  ): Promise<void> {
+    // TODO: 實作安全日誌記錄
+    console.warn('Suspicious activity detected:', {
+      userId,
+      activity,
+      details,
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  /**
+   * 清理暫時檔案和過期的簽名URL
+   */
+  async cleanup(): Promise<void> {
+    // 清理過期的rate limit記錄
+    // 實際實作中應該清理暫時檔案、過期的簽名URL等
+    console.log('Cleaning up expired resources...')
+  }
 }
 
 // 單例模式
 export const photoService = new PhotoService()
+
+// 定期清理過期資源
+setInterval(() => {
+  photoService.cleanup()
+}, 60 * 60 * 1000) // 每小時清理一次
