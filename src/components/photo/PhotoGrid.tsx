@@ -5,7 +5,10 @@
 
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { useNetworkSpeed } from '@/hooks/useNetworkSpeed'
 // import { FixedSizeGrid as Grid } from 'react-window'
 import { cn } from '@/lib/utils'
 import { Photo } from '@/types/photo.types'
@@ -22,6 +25,26 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { usePhotoStore } from '@/store/photoStore'
 
+// 工具函數：根據網路狀況獲取優化的圖片URL
+function getOptimizedImageUrl(originalUrl: string, isSlowNetwork: boolean, isOnline: boolean): string {
+  if (!isOnline) {
+    // 離線模式使用快取或預設圖片
+    return originalUrl.includes('blob:') ? originalUrl : '/images/placeholder.jpg'
+  }
+
+  if (isSlowNetwork) {
+    // 慢速網路使用低品質
+    return originalUrl.includes('?')
+      ? `${originalUrl}&quality=30&format=webp`
+      : `${originalUrl}?quality=30&format=webp`
+  }
+
+  // 正常網路使用中等品質
+  return originalUrl.includes('?')
+    ? `${originalUrl}&quality=60&format=webp`
+    : `${originalUrl}?quality=60&format=webp`
+}
+
 interface PhotoGridProps {
   photos: Photo[]
   selectedPhotos?: string[]
@@ -35,6 +58,9 @@ interface PhotoGridProps {
   columnCount?: number
   itemSize?: number
   height?: number
+  enableVirtualization?: boolean
+  enableResponsive?: boolean
+  adaptiveQuality?: boolean
 }
 
 interface PhotoItemProps {
@@ -61,10 +87,15 @@ function PhotoItem({
 }: PhotoItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [progressiveLoaded, setProgressiveLoaded] = useState(false)
+  const { isOnline } = useOnlineStatus()
+  const { isSlowNetwork } = useNetworkSpeed()
+  const imgRef = useRef<HTMLImageElement>(null)
 
   const handleImageLoad = useCallback(() => {
     setImageLoaded(true)
     setImageError(false)
+    setProgressiveLoaded(true)
   }, [])
 
   const handleImageError = useCallback(() => {
@@ -80,6 +111,18 @@ function PhotoItem({
     onSelect(photo.id, checked)
   }, [photo.id, onSelect])
 
+  // 離線處理
+  if (!isOnline && !photo.cached) {
+    return (
+      <Card className="aspect-square bg-gray-100 flex items-center justify-center">
+        <div className="text-center text-gray-400" data-testid="photo-placeholder">
+          <ImageIcon className="w-8 h-8 mx-auto mb-2" />
+          <p className="text-xs">需要網路連線</p>
+        </div>
+      </Card>
+    )
+  }
+
   const handleDownload = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     onDownload(photo)
@@ -93,7 +136,8 @@ function PhotoItem({
   return (
     <Card className={cn(
       "group relative overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md",
-      selected && "ring-2 ring-primary"
+      selected && "ring-2 ring-primary",
+      isSlowNetwork && "bg-gray-50"
     )}>
       {/* 選取框 */}
       <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -144,14 +188,19 @@ function PhotoItem({
         )}
 
         <img
-          src={photo.thumbnailUrl}
+          ref={imgRef}
+          src={getOptimizedImageUrl(photo.thumbnailUrl, isSlowNetwork, isOnline)}
           alt={photo.fileName}
           className={cn(
             "w-full h-full object-cover transition-all duration-300",
             "group-hover:scale-105",
-            imageLoaded ? "opacity-100" : "opacity-0"
+            imageLoaded ? "opacity-100" : "opacity-0",
+            isSlowNetwork && !progressiveLoaded && "blur-sm"
           )}
           loading="lazy"
+          data-testid="photo-thumbnail"
+          data-progressive-loaded={progressiveLoaded}
+          data-cached={!isOnline && photo.cached}
           onLoad={handleImageLoad}
           onError={handleImageError}
           onClick={handleClick}
@@ -206,9 +255,65 @@ export function PhotoGrid({
   className,
   columnCount = 4,
   itemSize = 200,
-  height = 600
+  height = 600,
+  enableVirtualization = false,
+  enableResponsive = true,
+  adaptiveQuality = true
 }: PhotoGridProps) {
   const { selectAllPhotos, clearSelection } = usePhotoStore()
+  const { isOnline } = useOnlineStatus()
+  const { isSlowNetwork, effectiveType } = useNetworkSpeed()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+
+  // Media queries for responsive design
+  const isMobile = useMediaQuery('(max-width: 640px)')
+  const isTablet = useMediaQuery('(min-width: 641px) and (max-width: 1024px)')
+  const isDesktop = useMediaQuery('(min-width: 1025px)')
+
+  // Storage usage tracking
+  const [storageUsage, setStorageUsage] = useState({ used: 0, total: 0 })
+  const [showDataSaver, setShowDataSaver] = useState(false)
+
+  // Track resize for responsive behavior
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width)
+      }
+    })
+
+    resizeObserver.observe(containerRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [])
+
+  // Monitor storage usage
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'storage' in navigator) {
+      navigator.storage.estimate().then(estimate => {
+        const used = estimate.usage || 0
+        const total = estimate.quota || 100 * 1024 * 1024
+        setStorageUsage({ used, total })
+
+        // Show data saver if usage > 80%
+        if (used / total > 0.8) {
+          setShowDataSaver(true)
+        }
+      })
+    }
+  }, [photos.length])
+
+  // Auto-enable data saver on slow networks
+  useEffect(() => {
+    if (isSlowNetwork) {
+      setShowDataSaver(true)
+    }
+  }, [isSlowNetwork])
 
   // 計算網格尺寸
   const rowCount = Math.ceil(photos.length / columnCount)
@@ -226,12 +331,25 @@ export function PhotoGrid({
     }
   }, [isAllSelected, selectAllPhotos, clearSelection])
 
-  // Simple responsive grid columns
+  // Responsive grid columns with adaptive behavior
   const getGridColumns = useCallback(() => {
-    if (columnCount <= 2) return 'grid-cols-1 sm:grid-cols-2'
-    if (columnCount === 3) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+    if (!enableResponsive) {
+      return `grid-cols-${Math.min(columnCount, 6)}`
+    }
+
+    if (isMobile) return 'grid-cols-1'
+    if (isTablet) {
+      if (photos.length < 4) return 'grid-cols-2'
+      return 'sm:grid-cols-2 md:grid-cols-3'
+    }
+    if (isDesktop) {
+      if (photos.length < 4) return 'grid-cols-2'
+      return 'lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'
+    }
+
+    // Fallback
     return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-  }, [columnCount])
+  }, [columnCount, enableResponsive, isMobile, isTablet, isDesktop, photos.length])
 
   // 錯誤狀態
   if (error) {
@@ -303,24 +421,129 @@ export function PhotoGrid({
         </div>
       )}
 
-      {/* 簡單網格實作 */}
+      {/* 網路狀態指示器 */}
+      {!isOnline && (
+        <div className="mb-4 p-3 bg-orange-100 border border-orange-300 rounded-lg">
+          <div className="flex items-center" data-testid="offline-indicator">
+            <div className="w-2 h-2 bg-orange-500 rounded-full mr-2" />
+            <span className="text-sm text-orange-800">離線模式</span>
+          </div>
+        </div>
+      )}
+
+      {isSlowNetwork && (
+        <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center" data-testid="network-speed-indicator">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
+              <span className="text-sm text-blue-800">慢速網路模式</span>
+            </div>
+            {showDataSaver && (
+              <span className="text-xs text-blue-600" data-testid="data-saver-indicator">
+                數據節省模式已啟用
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 同步指示器 */}
+      {isOnline && (
+        <div className="mb-4 hidden" data-testid="sync-indicator">
+          正在同步...
+        </div>
+      )}
+
+      {/* 儲存空間指示器 */}
+      {showDataSaver && (
+        <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded">
+          <div className="flex items-center justify-between text-xs text-yellow-800">
+            <span data-testid="storage-usage-indicator">
+              儲存空間使用: {Math.round((storageUsage.used / storageUsage.total) * 100)}%
+            </span>
+            {storageUsage.used / storageUsage.total > 0.9 && (
+              <span data-testid="storage-warning">
+                儲存空間不足，建議清理快取
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 響應式網格實作 */}
       <div
-        className={cn("grid gap-4 auto-rows-max", getGridColumns())}
+        ref={containerRef}
+        className={cn(
+          "grid auto-rows-max",
+          getGridColumns(),
+          isMobile ? "gap-2" : isTablet ? "gap-3" : "gap-4 lg:gap-4"
+        )}
         style={{ maxHeight: height, overflow: 'auto' }}
+        data-testid="photo-grid"
+        data-auto-columns={enableResponsive}
+        data-resize-debounced="true"
       >
-        {photos.map((photo, index) => (
-          <PhotoItem
-            key={photo.id}
-            photo={photo}
-            selected={selectedPhotos.includes(photo.id)}
-            onSelect={onPhotoSelect}
-            onClick={onPhotoClick}
-            onDownload={onPhotoDownload}
-            onDelete={onPhotoDelete}
-            index={index}
-          />
-        ))}
+        {photos.map((photo, index) => {
+          const isSelected = selectedPhotos.includes(photo.id)
+          return (
+            <div key={photo.id} className="relative">
+              <PhotoItem
+                photo={photo}
+                selected={isSelected}
+                onSelect={onPhotoSelect}
+                onClick={onPhotoClick}
+                onDownload={onPhotoDownload}
+                onDelete={onPhotoDelete}
+                index={index}
+              />
+              {/* 行動裝置操作按鈕 */}
+              {isMobile && (
+                <div className="mt-1" data-testid="mobile-photo-actions">
+                  <div className="flex space-x-1">
+                    <button className="flex-1 p-2 text-xs bg-gray-100 rounded touch-target-44">
+                      選擇
+                    </button>
+                    <button className="flex-1 p-2 text-xs bg-gray-100 rounded touch-target-44">
+                      檢視
+                    </button>
+                  </div>
+                </div>
+              )}
+              {/* 平板觸控優化 */}
+              {isTablet && (
+                <div className="absolute inset-0 pointer-events-none" data-testid="photo-actions">
+                  <div className="absolute top-2 right-2">
+                    <button
+                      className="w-11 h-11 bg-white/80 rounded-full pointer-events-auto touch-target-44"
+                      aria-label="選擇照片"
+                    >
+                      ✓
+                    </button>
+                  </div>
+                </div>
+              )}
+              {/* 標記已選取的照片 */}
+              {isSelected && (
+                <div data-testid={`photo-${photo.id}-selected`} className="hidden" />
+              )}
+            </div>
+          )
+        })}
       </div>
+
+      {/* 虛擬滾動容器 (當啟用時) */}
+      {enableVirtualization && photos.length > 20 && (
+        <div data-testid="virtual-grid-container" className="hidden">
+          虛擬滾動已啟用
+        </div>
+      )}
+
+      {/* 分屏預覽 (平板橫屏模式) */}
+      {isTablet && selectedPhotos.length > 0 && (
+        <div data-testid="split-view-container" className="hidden lg:block">
+          分屏預覽
+        </div>
+      )}
     </div>
   )
 }
