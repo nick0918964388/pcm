@@ -24,7 +24,7 @@ import {
   User,
   Download
 } from 'lucide-react'
-import { PhotoUploader, PhotoGrid, PhotoLightbox, PhotoGalleryList } from '@/components/photo'
+import { PhotoUploader, PhotoGrid, PhotoLightbox, PhotoGalleryList, PhotoFilters } from '@/components/photo'
 import { DownloadProgress, BatchDownloadProgress } from '@/components/photo/DownloadProgress'
 import { usePhotoStore } from '@/store/photoStore'
 import { photoService, BatchDownloadOptions } from '@/services/photoService'
@@ -46,6 +46,26 @@ export default function PhotoGalleryPage() {
     canDelete: ['album-1']
   }
 
+  // TODO: 這些選項應該從 API 獲取
+  const tagOptions = [
+    { value: 'construction', label: '施工進度' },
+    { value: 'inspection', label: '品質檢查' },
+    { value: 'safety', label: '安全檢查' },
+    { value: 'equipment', label: '設備機具' },
+    { value: 'material', label: '材料驗收' },
+    { value: 'environment', label: '環境監測' },
+    { value: 'meeting', label: '會議記錄' },
+    { value: 'accident', label: '事故記錄' }
+  ]
+
+  const uploaderOptions = [
+    { value: 'user1', label: '張工程師' },
+    { value: 'user2', label: '李主任' },
+    { value: 'user3', label: '王技師' },
+    { value: 'user4', label: '陳監工' },
+    { value: 'user5', label: '林品管' }
+  ]
+
   const {
     photos,
     albums,
@@ -61,11 +81,13 @@ export default function PhotoGalleryPage() {
     setCurrentAlbum,
     setSearchQuery,
     setViewMode,
+    setFilters,
     selectPhoto,
     deselectPhoto,
     openLightbox,
     closeLightbox,
     getFilteredPhotos,
+    clearSelection,
     setLoading: setStoreLoading,
     setError: setStoreError
   } = usePhotoStore()
@@ -374,27 +396,13 @@ export default function PhotoGalleryPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center space-x-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      placeholder="搜尋照片檔名、描述或標籤..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  日期範圍
-                </Button>
-                <Button variant="outline" size="sm">
-                  <User className="w-4 h-4 mr-2" />
-                  上傳者
-                </Button>
-              </div>
+              <PhotoFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                tagOptions={tagOptions}
+                uploaderOptions={uploaderOptions}
+                showCounts={false}
+              />
             </CardContent>
           </Card>
         </div>
