@@ -11,7 +11,7 @@ import {
   logApiRequest,
   unauthorizedResponse,
   checkRateLimit,
-  rateLimitResponse
+  rateLimitErrorResponse
 } from '@/lib/utils/api-response';
 
 // POST /api/auth/change-password - 修改密碼
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const rateLimit = checkRateLimit(`change-password:${user.id}`, 5, 60 * 60 * 1000);
     
     if (!rateLimit.allowed) {
-      return rateLimitResponse('修改密碼次數過多，請稍後再試');
+      return rateLimitErrorResponse('修改密碼次數過多，請稍後再試');
     }
 
     // 驗證請求體

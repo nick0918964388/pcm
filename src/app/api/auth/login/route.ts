@@ -9,7 +9,7 @@ import {
   handleOptionsRequest,
   logApiRequest,
   checkRateLimit,
-  rateLimitResponse
+  rateLimitErrorResponse
 } from '@/lib/utils/api-response';
 
 // POST /api/auth/login - 用戶登入
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const rateLimit = checkRateLimit(`login:${clientIP}`, 5, 60 * 1000);
     
     if (!rateLimit.allowed) {
-      return rateLimitResponse('登入嘗試次數過多，請稍後再試');
+      return rateLimitErrorResponse('登入嘗試次數過多，請稍後再試');
     }
 
     // 驗證請求體

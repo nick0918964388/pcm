@@ -9,7 +9,7 @@ import {
   handleOptionsRequest,
   logApiRequest,
   checkRateLimit,
-  rateLimitResponse
+  rateLimitErrorResponse
 } from '@/lib/utils/api-response';
 
 // POST /api/auth/register - 用戶註冊
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const rateLimit = checkRateLimit(`register:${clientIP}`, 3, 60 * 60 * 1000);
     
     if (!rateLimit.allowed) {
-      return rateLimitResponse('註冊次數過多，請稍後再試');
+      return rateLimitErrorResponse('註冊次數過多，請稍後再試');
     }
 
     // 驗證請求體

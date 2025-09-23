@@ -1,0 +1,63 @@
+{
+  "name": "docker-oracle-migration",
+  "title": "Docker本地化資料庫與Oracle遷移",
+  "description": "將PCM工程關鍵指標平台的資料庫系統從遠端PostgreSQL遷移至本地Docker容器中的Oracle資料庫，實現完全的本地開發環境，並更新所有相關API以支援Oracle資料庫操作。",
+  "language": "zh-TW",
+  "type": "infrastructure-migration",
+  "priority": "high",
+  "complexity": "high",
+  "estimated_effort": "3-4 weeks",
+  "phase": "tasks-generated",
+  "status": "active",
+  "created_at": "2025-01-23T01:20:00Z",
+  "updated_at": "2025-01-23T01:40:00Z",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true,
+      "generated_at": "2025-01-23T01:20:00Z",
+      "approved_at": "2025-01-23T01:25:00Z"
+    },
+    "design": {
+      "generated": true,
+      "approved": true,
+      "generated_at": "2025-01-23T01:30:00Z",
+      "approved_at": "2025-01-23T01:35:00Z"
+    },
+    "tasks": {
+      "generated": true,
+      "approved": false,
+      "generated_at": "2025-01-23T01:40:00Z"
+    }
+  },
+  "stakeholders": [
+    "development-team",
+    "devops-engineer",
+    "system-architect",
+    "backend-developer",
+    "qa-engineer"
+  ],
+  "dependencies": [
+    "existing-postgresql-database",
+    "current-api-endpoints",
+    "docker-environment"
+  ],
+  "technical_requirements": {
+    "oracle_version": "19c or 21c Express Edition",
+    "docker_version": "20.x+",
+    "docker_compose_version": "2.x",
+    "node_version": "18+",
+    "performance_threshold": "150% of PostgreSQL response time",
+    "data_integrity": "100% data consistency"
+  },
+  "deliverables": [
+    "docker-compose.yml configuration",
+    "Oracle schema migration scripts",
+    "Updated database connection layer",
+    "Migrated API endpoints",
+    "Environment configuration",
+    "Data validation tools",
+    "Development tooling integration",
+    "Migration documentation"
+  ]
+}

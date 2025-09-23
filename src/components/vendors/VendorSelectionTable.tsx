@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { DataTable, Column } from '@/components/shared/DataTable'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Building2, Users, ArrowRight, Phone, Mail } from 'lucide-react'
 import { 

@@ -4,6 +4,26 @@
  */
 
 import crypto from 'crypto'
+
+// UUID生成函數，相容瀏覽器環境
+function generateUUID(): string {
+  // 在Node.js環境使用crypto.randomUUID
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  // 瀏覽器環境fallback
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID()
+  }
+
+  // 最終fallback - 生成RFC4122 v4 UUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
 import path from 'path'
 
 // 危險檔案副檔名黑名單
@@ -162,7 +182,7 @@ export class FileSecurityService {
    */
   generateSecureFilePath(projectId: string, userId: string, originalFilename: string): string {
     // 生成隨機檔案名避免路徑猜測
-    const fileId = crypto.randomUUID()
+    const fileId = generateUUID()
     const extension = path.extname(originalFilename)
     const secureFilename = `${fileId}${extension}`
 

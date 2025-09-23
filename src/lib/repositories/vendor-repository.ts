@@ -9,22 +9,23 @@ export class VendorRepository extends BaseRepository<Vendor> {
   }
 
   mapFromDB(row: any): Vendor {
+    // Oracle 返回大寫欄位名，需要處理兩種情況
     return {
-      id: row.id,
-      name: row.name,
-      type: row.type as VendorType,
-      status: row.status as VendorStatus,
-      contact_person: row.contact_person,
-      phone: row.phone,
-      email: row.email,
-      address: row.address,
-      contract_start: row.contract_start,
-      contract_end: row.contract_end,
-      rating: parseFloat(row.rating) || 0,
-      metadata: row.metadata ? JSON.parse(row.metadata) : null,
-      is_active: row.is_active,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
+      id: row.ID || row.id,
+      name: row.NAME || row.name,
+      type: (row.VENDOR_TYPE || row.vendor_type || row.TYPE || row.type) as VendorType,
+      status: (row.STATUS || row.status) as VendorStatus,
+      contact_person: row.CONTACT_PERSON || row.contact_person,
+      phone: row.PHONE || row.phone,
+      email: row.EMAIL || row.email,
+      address: row.ADDRESS || row.address,
+      contract_start: row.CONTRACT_START || row.contract_start,
+      contract_end: row.CONTRACT_END || row.contract_end,
+      rating: parseFloat(row.RATING || row.rating) || 0,
+      metadata: (row.METADATA || row.metadata) ? JSON.parse(row.METADATA || row.metadata) : null,
+      is_active: row.IS_ACTIVE !== undefined ? row.IS_ACTIVE : row.is_active,
+      created_at: row.CREATED_AT || row.created_at,
+      updated_at: row.UPDATED_AT || row.updated_at,
     };
   }
 

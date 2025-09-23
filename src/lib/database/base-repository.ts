@@ -47,7 +47,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
 
   // CRUD 基本操作
   async findById(id: string): Promise<T | null> {
-    const query = `SELECT * FROM ${this.tableName} WHERE ${this.primaryKey} = $1 AND is_active = true`;
+    const query = `SELECT * FROM ${this.tableName} WHERE ${this.primaryKey} = $1 AND is_active = 1`;
     const row = await db.queryOne(query, [id]);
     return row ? this.mapFromDB(row) : null;
   }
@@ -67,9 +67,9 @@ export abstract class BaseRepository<T extends BaseEntity> {
       .from(this.tableName)
       .orderBy(sortBy, sortOrder);
 
-    // 軟刪除篩選
+    // 軟刪除篩選 (Oracle 使用 1/0 代替 true/false)
     if (!includeInactive) {
-      builder.where('is_active = ?', true);
+      builder.where('is_active = ?', 1);
     }
 
     // 套用篩選條件
@@ -110,7 +110,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
 
   async create(data: Partial<T>): Promise<T> {
     const mappedData = this.mapToDB(data);
-    
+
     // 自動加入時間戳
     const now = new Date();
     mappedData.created_at = now;
@@ -129,42 +129,56 @@ export abstract class BaseRepository<T extends BaseEntity> {
     const query = `
       INSERT INTO ${this.tableName} (${fields.join(', ')})
       VALUES (${placeholders})
-      RETURNING *
     `;
 
-    const row = await db.queryOne(query, values);
-    return this.mapFromDB(row);
+    // 執行插入
+    await db.query(query, values);
+
+    // 查詢剛插入的記錄（Oracle不支援RETURNING *）
+    const insertedRow = await db.queryOne(
+      `SELECT * FROM ${this.tableName} WHERE ${this.primaryKey} = $1`,
+      [mappedData[this.primaryKey]]
+    );
+
+    return this.mapFromDB(insertedRow);
   }
 
   async update(id: string, data: Partial<T>): Promise<T | null> {
     const mappedData = this.mapToDB(data);
-    
+
     // 自動更新時間戳
     mappedData.updated_at = new Date();
 
     const fields = Object.keys(mappedData);
     const values = Object.values(mappedData);
-    
-    const setClause = fields.map((field, index) => 
+
+    const setClause = fields.map((field, index) =>
       `${field} = $${index + 1}`
     ).join(', ');
 
     const query = `
       UPDATE ${this.tableName}
       SET ${setClause}
-      WHERE ${this.primaryKey} = $${values.length + 1} AND is_active = true
-      RETURNING *
+      WHERE ${this.primaryKey} = $${values.length + 1} AND is_active = 1
     `;
 
-    const row = await db.queryOne(query, [...values, id]);
-    return row ? this.mapFromDB(row) : null;
+    // 執行更新
+    await db.query(query, [...values, id]);
+
+    // 查詢更新後的記錄（Oracle不支援RETURNING *）
+    const updatedRow = await db.queryOne(
+      `SELECT * FROM ${this.tableName} WHERE ${this.primaryKey} = $1`,
+      [id]
+    );
+
+    return updatedRow ? this.mapFromDB(updatedRow) : null;
   }
 
   async delete(id: string): Promise<boolean> {
     const query = `
       UPDATE ${this.tableName}
-      SET is_active = false, updated_at = $1
-      WHERE ${this.primaryKey} = $2 AND is_active = true
+      SET is_active = 0, updated_at = $1
+      WHERE ${this.primaryKey} = $2 AND is_active = 1
     `;
 
     const result = await db.query(query, [new Date(), id]);
@@ -178,7 +192,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
   }
 
   async exists(id: string): Promise<boolean> {
-    const query = `SELECT 1 FROM ${this.tableName} WHERE ${this.primaryKey} = $1 AND is_active = true`;
+    const query = `SELECT 1 FROM ${this.tableName} WHERE ${this.primaryKey} = $1 AND is_active = 1`;
     const row = await db.queryOne(query, [id]);
     return !!row;
   }
@@ -186,7 +200,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
   async count(filters: Record<string, any> = {}): Promise<number> {
     const builder = new QueryBuilder()
       .from(this.tableName)
-      .where('is_active = ?', true);
+      .where('is_active = ?', 1);
 
     this.applyFilters(builder, filters);
 
@@ -288,8 +302,18 @@ export abstract class BaseRepository<T extends BaseEntity> {
   }
 
   protected async generateId(): Promise<string> {
-    const result = await db.queryOne<{ id: string }>('SELECT gen_random_uuid() as id');
-    return result?.id || '';
+    // 檢查是否使用 Oracle (根據環境變數)
+    const USE_ORACLE = process.env.USE_ORACLE === 'true' || true;
+
+    if (USE_ORACLE) {
+      // Oracle 使用 sys_guid() 生成唯一 ID
+      const result = await db.queryOne<{ id: string }>('SELECT LOWER(REGEXP_REPLACE(RAWTOHEX(sys_guid()), \'([A-F0-9]{8})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{12})\', \'\\1-\\2-\\3-\\4-\\5\')) as id FROM dual');
+      return result?.id || '';
+    } else {
+      // PostgreSQL 使用 gen_random_uuid()
+      const result = await db.queryOne<{ id: string }>('SELECT gen_random_uuid() as id');
+      return result?.id || '';
+    }
   }
 
   // 自訂查詢方法

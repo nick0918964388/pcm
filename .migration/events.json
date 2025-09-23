@@ -1,0 +1,13 @@
+[
+  {
+    "phaseId": "environment-switch",
+    "type": "environment_switched",
+    "message": "環境從 postgresql 切換至 oracle",
+    "metadata": {
+      "from": "postgresql",
+      "to": "oracle"
+    },
+    "id": "event_1758599704104_f0iqheeso",
+    "timestamp": "2025-09-23T03:55:04.104Z"
+  }
+]

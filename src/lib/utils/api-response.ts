@@ -305,3 +305,6 @@ export function setSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   return response;
 }
+
+// 重新導出 rate limiting 功能
+export { checkRateLimit, rateLimitResponse as rateLimitErrorResponse, clearRateLimit } from './rate-limit';

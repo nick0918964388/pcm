@@ -4,6 +4,26 @@
  */
 
 import crypto from 'crypto'
+
+// UUID生成函數，相容瀏覽器環境
+function generateUUID(): string {
+  // 在Node.js環境使用crypto.randomUUID
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  // 瀏覽器環境fallback
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID()
+  }
+
+  // 最終fallback - 生成RFC4122 v4 UUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
 import { URL } from 'url'
 
 export interface SignedUrlOptions {
@@ -51,7 +71,7 @@ export class SignedUrlService {
       ipRestriction: options.ipRestriction,
       maxDownloads: options.maxDownloads,
       iat: Math.floor(Date.now() / 1000), // issued at
-      jti: crypto.randomUUID() // unique identifier
+      jti: generateUUID() // unique identifier
     }
 
     // 建立簽名

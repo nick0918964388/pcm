@@ -9,7 +9,7 @@ import {
   handleOptionsRequest,
   logApiRequest,
   checkRateLimit,
-  rateLimitResponse
+  rateLimitErrorResponse
 } from '@/lib/utils/api-response';
 
 // POST /api/auth/refresh - 刷新 Token
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const rateLimit = checkRateLimit(`refresh:${clientIP}`, 10, 60 * 1000);
     
     if (!rateLimit.allowed) {
-      return rateLimitResponse('Token 刷新次數過多，請稍後再試');
+      return rateLimitErrorResponse('Token 刷新次數過多，請稍後再試');
     }
 
     // 驗證請求體

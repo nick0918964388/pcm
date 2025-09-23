@@ -1,151 +1,139 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/database/connection'
+import { z } from 'zod'
 
-// 模擬專案資料
-const mockProjects = [
-  {
-    id: 'proj001',
-    code: 'F20P1',
-    name: 'FAB20 Phase1 專案',
-    description: '半導體廠建設專案第一期，包含主體建築及基礎設施',
-    status: '進行中',
-    type: '建築工程',
-    progress: 65,
-    startDate: '2024-01-01T00:00:00Z',
-    endDate: '2025-12-31T00:00:00Z',
-    actualStartDate: '2024-01-01T00:00:00Z',
-    managerId: 'mgr001',
-    managerName: '王建民',
-    teamMembers: [],
-    totalBudget: 500000000,
-    usedBudget: 325000000,
-    currency: 'TWD',
-    totalMilestones: 5,
-    completedMilestones: 3,
-    permissions: [],
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-08-31T00:00:00Z',
-    tags: ['建築', '半導體'],
-    location: '台南科學園區',
-    lastAccessDate: '2024-08-30T10:00:00Z',
-  },
-  {
-    id: 'proj002',
-    code: 'F21P2',
-    name: 'FAB21 Phase2 專案',
-    description: '廠房擴建專案，增加生產線設備及配套設施',
-    status: '規劃中',
-    type: '基礎設施',
-    progress: 25,
-    startDate: '2024-06-01T00:00:00Z',
-    endDate: '2026-05-31T00:00:00Z',
-    managerId: 'mgr002',
-    managerName: '李美玲',
-    teamMembers: [],
-    totalBudget: 750000000,
-    usedBudget: 187500000,
-    currency: 'TWD',
-    totalMilestones: 8,
-    completedMilestones: 2,
-    permissions: [],
-    createdAt: '2024-06-01T00:00:00Z',
-    updatedAt: '2024-08-31T00:00:00Z',
-    tags: ['擴建', '半導體'],
-    location: '新竹科學園區',
-    lastAccessDate: '2024-08-29T14:30:00Z',
-  },
-  {
-    id: 'proj003',
-    code: 'F22P3',
-    name: 'FAB22 Phase3 專案',
-    description: '智慧工廠建設專案，整合IoT和AI技術',
-    status: '已完成',
-    type: '建築工程',
-    progress: 100,
-    startDate: '2023-03-01T00:00:00Z',
-    endDate: '2024-02-29T00:00:00Z',
-    actualStartDate: '2023-03-01T00:00:00Z',
-    actualEndDate: '2024-02-28T00:00:00Z',
-    managerId: 'mgr003',
-    managerName: '陳志豪',
-    teamMembers: [],
-    totalBudget: 300000000,
-    usedBudget: 290000000,
-    currency: 'TWD',
-    totalMilestones: 4,
-    completedMilestones: 4,
-    permissions: [],
-    createdAt: '2023-03-01T00:00:00Z',
-    updatedAt: '2024-02-28T00:00:00Z',
-    tags: ['智慧工廠', 'IoT', 'AI'],
-    location: '高雄科學園區',
-    lastAccessDate: '2024-08-28T09:15:00Z',
+// 專案資料Schema
+const ProjectSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  status: z.enum(['planning', 'active', 'completed', 'cancelled']).default('planning'),
+  type: z.enum(['construction', 'infrastructure', 'maintenance']).default('construction'),
+  priority: z.number().int().min(1).max(10).default(5),
+  start_date: z.string().datetime().optional(),
+  end_date: z.string().datetime().optional(),
+  budget: z.number().positive().optional(),
+  progress: z.number().min(0).max(100).default(0),
+  manager_id: z.string().optional(),
+  metadata: z.record(z.any()).optional()
+})
+
+// 查詢參數Schema
+const QueryParamsSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(100).default(10),
+  search: z.string().optional(),
+  status: z.string().optional(),
+  start_date_from: z.string().datetime().optional(),
+  start_date_to: z.string().datetime().optional()
+})
+
+// 格式化回傳的日期
+function formatResponseDate(oracleDate: any): string | null {
+  if (!oracleDate) return null
+  if (oracleDate instanceof Date) {
+    return oracleDate.toISOString()
   }
-]
+  return new Date(oracleDate).toISOString()
+}
+
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  
-  // 取得查詢參數
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '10')
-  const sortBy = searchParams.get('sortBy') || 'updatedAt'
-  const sortOrder = searchParams.get('sortOrder') || 'desc'
-  const search = searchParams.get('search') || ''
-  const status = searchParams.get('status')
-  
-  let filteredProjects = [...mockProjects]
-  
-  // 搜尋過濾
-  if (search) {
-    filteredProjects = filteredProjects.filter(project => 
-      project.name.toLowerCase().includes(search.toLowerCase()) ||
-      project.code.toLowerCase().includes(search.toLowerCase()) ||
-      project.description.toLowerCase().includes(search.toLowerCase())
-    )
-  }
-  
-  // 狀態過濾
-  if (status) {
-    filteredProjects = filteredProjects.filter(project => project.status === status)
-  }
-  
-  // 排序
-  filteredProjects.sort((a, b) => {
-    let aValue: any = a[sortBy as keyof typeof a]
-    let bValue: any = b[sortBy as keyof typeof b]
-    
-    if (sortBy === 'updatedAt' || sortBy === 'createdAt') {
-      aValue = new Date(aValue).getTime()
-      bValue = new Date(bValue).getTime()
+  return await getProjectsFromOracle(request)
+}
+
+async function getProjectsFromOracle(request: NextRequest) {
+  try {
+    // 簡單查詢，不使用複雜參數
+    const query = 'SELECT id, name, description, status, created_at, updated_at, is_active FROM projects WHERE is_active = 1 ORDER BY updated_at DESC'
+    const result = await db.query(query)
+
+    // 格式化資料
+    const projects = result.map((row: any) => ({
+      id: String(row.ID || row.id || ''),
+      name: String(row.NAME || row.name || ''),
+      description: String(row.DESCRIPTION || row.description || ''),
+      status: String(row.STATUS || row.status || ''),
+      created_at: formatResponseDate(row.CREATED_AT || row.created_at),
+      updated_at: formatResponseDate(row.UPDATED_AT || row.updated_at)
+    }))
+
+    const response = {
+      success: true,
+      data: projects,
+      pagination: {
+        page: 1,
+        pageSize: projects.length,
+        total: projects.length,
+        totalPages: 1
+      },
+      message: '專案資料取得成功'
     }
-    
-    if (sortOrder === 'desc') {
-      return bValue > aValue ? 1 : -1
-    } else {
-      return aValue > bValue ? 1 : -1
-    }
-  })
-  
-  // 分頁
-  const startIndex = (page - 1) * limit
-  const endIndex = startIndex + limit
-  const paginatedProjects = filteredProjects.slice(startIndex, endIndex)
-  
-  const response = {
-    success: true,
-    data: paginatedProjects,
-    pagination: {
-      page,
-      pageSize: limit,
-      total: filteredProjects.length,
-      totalPages: Math.ceil(filteredProjects.length / limit),
-    },
-    message: '專案資料取得成功',
-    timestamp: new Date().toISOString(),
+
+    return NextResponse.json(response)
+
+  } catch (error) {
+    console.error('GET /api/projects error:', error)
+
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Internal server error',
+      message: 'Failed to retrieve projects'
+    }, { status: 500 })
   }
-  
-  // 模擬網路延遲
-  await new Promise(resolve => setTimeout(resolve, 200))
-  
-  return NextResponse.json(response)
+}
+
+
+export async function POST(request: NextRequest) {
+  return await createProjectInOracle(request)
+}
+
+async function createProjectInOracle(request: NextRequest) {
+  try {
+    const body = await request.json()
+
+    // 簡化插入資料
+    const insertQuery = `
+      INSERT INTO projects (id, name, description, status, created_at, updated_at, is_active)
+      VALUES (:1, :2, :3, :4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1)
+    `
+
+    await db.query(insertQuery, [
+      body.id,
+      body.name,
+      body.description || '',
+      body.status || 'active'
+    ])
+
+    // 查詢新建立的專案
+    const result = await db.queryOne('SELECT * FROM projects WHERE id = :1', [body.id])
+
+    if (!result) {
+      throw new Error('Failed to retrieve created project')
+    }
+
+    const createdProject = {
+      id: result.ID || result.id,
+      name: result.NAME || result.name,
+      description: result.DESCRIPTION || result.description,
+      status: result.STATUS || result.status,
+      created_at: formatResponseDate(result.CREATED_AT || result.created_at),
+      updated_at: formatResponseDate(result.UPDATED_AT || result.updated_at)
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: createdProject,
+      message: 'Project created successfully'
+    }, { status: 201 })
+
+  } catch (error) {
+    console.error('POST /api/projects error:', error)
+
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Internal server error',
+      message: 'Failed to create project'
+    }, { status: 500 })
+  }
 }

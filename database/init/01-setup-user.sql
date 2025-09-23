@@ -1,71 +1,57 @@
--- PCM Photo Management Database Setup Script
--- This script creates the PCM user and grants necessary permissions
+-- Oracle初始化腳本: 建立PCM用戶和基本權限
+-- 這個腳本會在Oracle容器首次啟動時自動執行
 
--- Connect as SYS to create user
-CONNECT SYS/oracle AS SYSDBA;
+-- 設定session參數
+ALTER SESSION SET "_ORACLE_SCRIPT"=true;
 
--- Create PCM user if it doesn't exist
-DECLARE
-    user_count NUMBER;
-BEGIN
-    SELECT COUNT(*) INTO user_count FROM all_users WHERE username = 'PCM_USER';
-    IF user_count = 0 THEN
-        EXECUTE IMMEDIATE 'CREATE USER pcm_user IDENTIFIED BY oracle123';
-        DBMS_OUTPUT.PUT_LINE('User PCM_USER created successfully');
-    ELSE
-        DBMS_OUTPUT.PUT_LINE('User PCM_USER already exists');
-    END IF;
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Error creating user: ' || SQLERRM);
-END;
-/
+-- 建立PCM應用程式用戶
+CREATE USER pcm_user IDENTIFIED BY pcm_pass123;
 
--- Grant necessary privileges
-GRANT CONNECT, RESOURCE, CREATE VIEW, CREATE SEQUENCE TO pcm_user;
-GRANT CREATE TRIGGER, CREATE PROCEDURE, CREATE TYPE TO pcm_user;
-GRANT UNLIMITED TABLESPACE TO pcm_user;
-
--- Grant system privileges for text indexing
-GRANT CTXAPP TO pcm_user;
+-- 授予基本權限
 GRANT CREATE SESSION TO pcm_user;
+GRANT CREATE TABLE TO pcm_user;
+GRANT CREATE VIEW TO pcm_user;
+GRANT CREATE SEQUENCE TO pcm_user;
+GRANT CREATE PROCEDURE TO pcm_user;
+GRANT CREATE TRIGGER TO pcm_user;
+GRANT CREATE INDEX TO pcm_user;
+GRANT CREATE SYNONYM TO pcm_user;
 
--- Additional privileges for Oracle Text (full-text search)
-BEGIN
-    EXECUTE IMMEDIATE 'GRANT EXECUTE ON CTX_DDL TO pcm_user';
-    EXECUTE IMMEDIATE 'GRANT EXECUTE ON CTX_DOC TO pcm_user';
-    EXECUTE IMMEDIATE 'GRANT EXECUTE ON CTX_QUERY TO pcm_user';
-    DBMS_OUTPUT.PUT_LINE('Oracle Text privileges granted successfully');
-EXCEPTION
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Warning: Could not grant Oracle Text privileges: ' || SQLERRM);
-END;
-/
+-- 授予額外權限
+GRANT UNLIMITED TABLESPACE TO pcm_user;
+GRANT SELECT_CATALOG_ROLE TO pcm_user;
 
--- Switch to PCM_USER
-CONNECT pcm_user/oracle123@XEPDB1;
+-- 建立PCM schema (使用pcm_user)
+CONNECT pcm_user/pcm_pass123@XE;
 
--- Verify connection
-SELECT USER AS current_user, 
-       TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') AS connection_time 
-FROM DUAL;
-
--- Create a simple test table to verify permissions
-CREATE TABLE connection_test (
-    id NUMBER PRIMARY KEY,
-    test_message VARCHAR2(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- 建立基本的系統設定表
+CREATE TABLE system_info (
+    id NUMBER(10) PRIMARY KEY,
+    key_name VARCHAR2(100) NOT NULL,
+    key_value VARCHAR2(4000),
+    description VARCHAR2(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO connection_test (id, test_message) VALUES (1, 'PCM Database setup completed successfully');
+-- 插入系統資訊
+INSERT INTO system_info (id, key_name, key_value, description) VALUES
+(1, 'database_version', 'Oracle XE 21c', 'Oracle資料庫版本');
+
+INSERT INTO system_info (id, key_name, key_value, description) VALUES
+(2, 'schema_version', '1.0.0', 'PCM資料庫Schema版本');
+
+INSERT INTO system_info (id, key_name, key_value, description) VALUES
+(3, 'init_date', TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS'), '資料庫初始化日期');
+
+-- 建立序列
+CREATE SEQUENCE system_info_seq START WITH 4 INCREMENT BY 1 NOCACHE;
 
 COMMIT;
 
--- Display success message
-SELECT test_message FROM connection_test WHERE id = 1;
+-- 返回系統用戶繼續執行其他腳本
+CONNECT system/Oracle123@XE;
 
--- Clean up test table
-DROP TABLE connection_test;
-
--- Display setup completion
-SELECT 'PCM Database user setup completed successfully' AS status FROM DUAL;
+-- 確保pcm_user有正確的權限
+GRANT SELECT ON dba_objects TO pcm_user;
+GRANT SELECT ON user_objects TO pcm_user;

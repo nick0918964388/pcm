@@ -150,7 +150,7 @@ export function ProjectSelector({ inNavbar = false, className = '' }: ProjectSel
               // 已選擇專案
               <>
                 <div className="w-6 h-6 bg-[#00645A] rounded flex items-center justify-center text-white text-xs font-bold">
-                  {currentProject.code.slice(-2)}
+                  {(currentProject.code || currentProject.id || 'P').slice(-2)}
                 </div>
                 <span className="font-medium">{currentProject.name}</span>
                 <Badge variant="secondary" className="bg-gray-100 text-gray-700 text-xs">

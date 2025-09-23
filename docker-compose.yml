@@ -1,149 +1,58 @@
 services:
-  # Oracle XE Database
+  # Oracle XE Database for PCM
   oracle-db:
     image: gvenzl/oracle-xe:21-slim
-    container_name: photo-oracle-db
+    container_name: pcm-oracle-dev
     environment:
-      ORACLE_PASSWORD: Oracle123
-      ORACLE_DATABASE: pcm_db
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-Oracle123}
+      ORACLE_DATABASE: ${ORACLE_DATABASE:-pcm_db}
+      ORACLE_CHARACTERSET: AL32UTF8
     ports:
-      - "1521:1521"
-      - "5500:5500"
+      - "${ORACLE_PORT:-1521}:1521"
+      - "${ORACLE_WEB_PORT:-5500}:5500"
     volumes:
       - oracle_data:/opt/oracle/oradata
-      - ./backend/db/init:/docker-entrypoint-initdb.d
+      - ./database/init:/docker-entrypoint-initdb.d
     networks:
-      - photo-network
+      - pcm_network
     healthcheck:
-      test: ["CMD", "sqlplus", "-L", "sys/Oracle123@//localhost:1521/XE", "as", "sysdba", "@/dev/null"]
+      test: ["CMD", "sqlplus", "-L", "system/${ORACLE_PASSWORD:-Oracle123}@//localhost:1521/XE", "@/dev/null"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 120s
 
-  # Redis for caching and Celery broker
-  redis:
-    image: redis:7-alpine
-    container_name: photo-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - photo-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Backend FastAPI application
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: photo-backend
+  # SQL Developer Web (Optional Oracle Management Interface)
+  oracle-web:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: pcm-oracle-web
     environment:
-      - ORACLE_DSN=oracle-db:1521/XEPDB1
-      - ORACLE_USER=photo_user
-      - ORACLE_PASSWORD=photo_pass123
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
-      - DEBUG=${DEBUG:-True}
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
-      - uploads:/app/uploads
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-Oracle123}
     depends_on:
       oracle-db:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
-      - photo-network
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
-
-  # Celery worker for async tasks
-  celery-worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: photo-celery-worker
-    environment:
-      - ORACLE_DSN=oracle-db:1521/XEPDB1
-      - ORACLE_USER=photo_user
-      - ORACLE_PASSWORD=photo_pass123
-      - REDIS_URL=redis://redis:6379/0
-    volumes:
-      - ./backend:/app
-      - uploads:/app/uploads
-    depends_on:
-      - redis
-      - oracle-db
-    networks:
-      - photo-network
-    command: celery -A src.celery_app worker --loglevel=info
-
-  # Celery beat for scheduled tasks
-  celery-beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: photo-celery-beat
-    environment:
-      - ORACLE_DSN=oracle-db:1521/XEPDB1
-      - ORACLE_USER=photo_user
-      - ORACLE_PASSWORD=photo_pass123
-      - REDIS_URL=redis://redis:6379/0
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - redis
-      - oracle-db
-    networks:
-      - photo-network
-    command: celery -A src.celery_app beat --loglevel=info
-
-  # Frontend React application
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: photo-frontend
-    environment:
-      - REACT_APP_API_URL=http://localhost:8000
+      - pcm_network
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    networks:
-      - photo-network
-    command: npm start
-
-  # Flower for Celery monitoring (optional)
-  flower:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: photo-flower
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-    ports:
-      - "5555:5555"
-    depends_on:
-      - redis
-    networks:
-      - photo-network
-    command: celery -A src.celery_app flower
+      - "${ORACLE_APEX_PORT:-8080}:8080"
+    command: >
+      bash -c "
+        echo 'Enabling APEX and SQL Developer Web...'
+        sqlplus -s system/${ORACLE_PASSWORD:-Oracle123}@oracle-db:1521/XE <<EOF
+        ALTER USER APEX_PUBLIC_USER ACCOUNT UNLOCK;
+        ALTER USER APEX_PUBLIC_USER IDENTIFIED BY ${ORACLE_PASSWORD:-Oracle123};
+        exec ords_admin.enable_schema(p_enabled => TRUE, p_schema => 'HR', p_url_mapping_type => 'BASE_PATH', p_url_mapping_pattern => 'hr', p_auto_rest_auth => FALSE);
+        commit;
+        EXIT;
+        EOF
+      "
+    profiles:
+      - web-tools
 
 networks:
   pcm_network:
     driver: bridge
-  photo-network:  # Keep for backward compatibility
-    driver: bridge
 
 volumes:
   oracle_data:
-  redis_data:
-  uploads:
+    driver: local

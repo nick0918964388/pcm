@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { DatabaseConnection } from '@/lib/database/connection'
+import { db } from '@/lib/database/connection'
 import type { ApiResponse } from '@/types/photo.types'
 import { promises as fs } from 'fs'
 import path from 'path'
@@ -24,20 +24,15 @@ const THUMBNAIL_SIZES = {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  let connection: DatabaseConnection | null = null
-
   try {
-    const photoId = params.id
+    const resolvedParams = await params
+    const { id: photoId } = resolvedParams
     const { searchParams } = new URL(request.url)
     const size = (searchParams.get('size') as ThumbnailSize) || 'medium'
 
     console.log(`🖼️ 取得照片縮圖: ${photoId}, 尺寸: ${size}`)
-
-    // 建立資料庫連接
-    connection = new DatabaseConnection()
-    await connection.connect()
 
     // 查詢照片資訊
     const photoQuery = `
@@ -48,19 +43,22 @@ export async function GET(
         pa.project_id
       FROM photos p
       JOIN photo_albums pa ON p.album_id = pa.id
-      WHERE p.id = $1 AND p.deleted_at IS NULL
+      WHERE p.id = :1 AND p.deleted_at IS NULL
     `
 
-    const photoResult = await connection.query(photoQuery, [photoId])
+    const photoResult = await db.query(photoQuery, [photoId])
 
-    if (photoResult.rows.length === 0) {
+    if (!photoResult || photoResult.length === 0) {
       return NextResponse.json({
         success: false,
         error: '照片不存在'
       } as ApiResponse<never>, { status: 404 })
     }
 
-    const photo = photoResult.rows[0]
+    const photo = photoResult[0]
+
+    // 處理Oracle大小寫問題
+    let thumbnailPath = photo.THUMBNAIL_PATH || photo.thumbnail_path
 
     // TODO: 驗證使用者權限
     // const userId = await getUserIdFromRequest(request)
@@ -72,30 +70,49 @@ export async function GET(
     //   }, { status: 403 })
     // }
 
-    // 取得縮圖檔案路徑
-    let thumbnailPath = photo.thumbnail_path
-
     // 如果需要特定尺寸，檢查是否有對應的版本
     if (size !== 'medium') {
       const versionQuery = `
         SELECT file_path
         FROM photo_versions
-        WHERE photo_id = $1 AND version_type = $2
+        WHERE photo_id = :1 AND version_type = :2
       `
 
-      const versionResult = await connection.query(versionQuery, [photoId, `thumbnail_${size}`])
+      const versionResult = await db.query(versionQuery, [photoId, `thumbnail_${size}`])
 
-      if (versionResult.rows.length > 0) {
-        thumbnailPath = versionResult.rows[0].file_path
+      if (versionResult && versionResult.length > 0) {
+        thumbnailPath = versionResult[0].FILE_PATH || versionResult[0].file_path
       }
     }
 
+    // 讀取真實的縮圖檔案
     try {
-      // 檢查縮圖檔案是否存在
-      await fs.access(thumbnailPath)
+      let thumbnailBuffer: Buffer | null = null
+      let realPath: string | null = null
 
-      // 讀取縮圖檔案
-      const thumbnailBuffer = await fs.readFile(thumbnailPath)
+      // 如果有縮圖路徑，嘗試讀取
+      if (thumbnailPath) {
+        // 處理資料庫中的路徑（可能是絕對路徑或相對路徑）
+        if (thumbnailPath.startsWith('/uploads/')) {
+          // 資料庫儲存的是相對路徑，轉換為實際檔案系統路徑
+          realPath = path.join(process.cwd(), 'public', thumbnailPath)
+        } else {
+          realPath = thumbnailPath
+        }
+
+        try {
+          await fs.access(realPath)
+          thumbnailBuffer = await fs.readFile(realPath)
+          console.log(`✅ 讀取縮圖成功: ${realPath}`)
+        } catch (e) {
+          console.log(`⚠️ 縮圖檔案不存在: ${realPath}`)
+        }
+      }
+
+      if (!thumbnailBuffer) {
+        // 沒有找到縮圖，抛出錯誤以使用預設圖片
+        throw new Error('No thumbnail available')
+      }
 
       // 決定 Content-Type
       const mimeType = photo.mime_type || 'image/jpeg'
@@ -143,9 +160,7 @@ export async function GET(
     } as ApiResponse<never>, { status: 500 })
 
   } finally {
-    if (connection) {
-      await connection.close()
-    }
+    // db 連接由連接池管理，不需要手動關閉
   }
 }
 
@@ -153,10 +168,27 @@ export async function GET(
  * 生成預設佔位圖片 SVG
  */
 function generatePlaceholderSvg(size: number): string {
+  // 生成一個更美觀的測試圖片
+  const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8']
+  const randomColor = colors[Math.floor(Math.random() * colors.length)]
+
   return `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-    <rect width="100%" height="100%" fill="#f0f0f0"/>
-    <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#666" font-family="sans-serif" font-size="${size / 8}">
-      圖片載入中...
+    <defs>
+      <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:${randomColor};stop-opacity:0.8" />
+        <stop offset="100%" style="stop-color:${randomColor};stop-opacity:0.3" />
+      </linearGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#grad)"/>
+    <rect x="10%" y="10%" width="80%" height="80%" fill="white" opacity="0.3" rx="10"/>
+    <text x="50%" y="45%" text-anchor="middle" fill="white" font-family="sans-serif" font-size="${size / 10}" font-weight="bold">
+      工程照片
     </text>
+    <text x="50%" y="55%" text-anchor="middle" fill="white" font-family="sans-serif" font-size="${size / 15}">
+      ${new Date().toLocaleDateString('zh-TW')}
+    </text>
+    <path d="M${size*0.3} ${size*0.65} L${size*0.7} ${size*0.65} L${size*0.6} ${size*0.45} L${size*0.5} ${size*0.55} L${size*0.4} ${size*0.45} Z"
+          fill="white" opacity="0.5"/>
+    <circle cx="${size*0.35}" cy="${size*0.35}" r="${size*0.05}" fill="white" opacity="0.5"/>
   </svg>`
 }

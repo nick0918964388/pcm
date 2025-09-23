@@ -9,29 +9,28 @@ export async function GET(request: NextRequest) {
   try {
     console.log('嘗試連接資料庫...');
     
-    // 測試基本查詢
-    const testResult = await db.query('SELECT 1 as test');
+    // 測試基本查詢 (Oracle 需要 FROM dual)
+    const testResult = await db.query('SELECT 1 as test FROM dual');
     console.log('基本查詢結果:', testResult);
     
     // 取得連接池狀態
     const poolStatus = db.getPoolStatus();
     console.log('連接池狀態:', poolStatus);
     
-    // 測試查詢 pcm schema 中的表格
+    // 測試查詢表格 (Oracle 使用 user_tables)
     const tables = await db.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'pcm'
+      SELECT table_name
+      FROM user_tables
       ORDER BY table_name
     `);
-    console.log('PCM schema 表格:', tables);
+    console.log('Oracle 表格:', tables);
     
     return NextResponse.json({
       status: 'healthy',
       database: 'connected',
       poolStatus,
-      schema: 'pcm',
-      tables: tables.map(t => t.table_name),
+      schema: 'pcm_user',
+      tables: tables.map(t => t.TABLE_NAME || t.table_name),  // Oracle 返回大寫欄位名
       testResult: testResult[0],
       timestamp: new Date().toISOString()
     });

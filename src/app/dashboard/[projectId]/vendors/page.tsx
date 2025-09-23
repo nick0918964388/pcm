@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { VendorSearchFilters } from '@/components/vendors/VendorSearchFilters'
 import { VendorSelectionTable } from '@/components/vendors/VendorSelectionTable'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Plus, Download, Upload, RefreshCw, Building2, Users } from 'lucide-react'
 import { 
   Vendor,
