@@ -5,6 +5,8 @@
  */
 
 import { OracleProjectRepository } from './oracle-project-repository'
+import { OracleAlbumRepository } from './oracle-album-repository'
+import { OraclePhotoRepository } from './oracle-photo-repository'
 import { getOracleConnection } from '../database/oracle-connection'
 
 export class OracleRepositoryFactory {
@@ -18,6 +20,32 @@ export class OracleRepositoryFactory {
 
     if (!this.instances.has(key)) {
       this.instances.set(key, new OracleProjectRepository())
+    }
+
+    return this.instances.get(key)
+  }
+
+  /**
+   * 獲取Album Repository實例（單例模式）
+   */
+  static getAlbumRepository(): OracleAlbumRepository {
+    const key = 'album'
+
+    if (!this.instances.has(key)) {
+      this.instances.set(key, new OracleAlbumRepository())
+    }
+
+    return this.instances.get(key)
+  }
+
+  /**
+   * 獲取Photo Repository實例（單例模式）
+   */
+  static getPhotoRepository(): OraclePhotoRepository {
+    const key = 'photo'
+
+    if (!this.instances.has(key)) {
+      this.instances.set(key, new OraclePhotoRepository())
     }
 
     return this.instances.get(key)
@@ -50,6 +78,12 @@ export class OracleRepositoryFactory {
   static async initializeAll(): Promise<void> {
     // 預載Project Repository
     this.getProjectRepository()
+
+    // 預載Album Repository
+    this.getAlbumRepository()
+
+    // 預載Photo Repository
+    this.getPhotoRepository()
 
     // 檢查連線狀態
     const isConnected = await this.checkConnection()

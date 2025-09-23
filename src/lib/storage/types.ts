@@ -92,3 +92,73 @@ export const PATH_SECURITY = {
     'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
   ]
 }
+
+// === Enhanced File Security Types ===
+
+export interface PathValidationResult {
+  isValid: boolean
+  normalizedPath: string
+  errors: string[]
+  warnings: string[]
+}
+
+export interface QuotaInfo {
+  totalUsed: number
+  totalLimit: number
+  remaining: number
+  usagePercentage: number
+}
+
+export interface RateLimitInfo {
+  allowed: boolean
+  remaining: number
+  resetTime: number
+}
+
+export interface ProjectQuotaInfo {
+  projectUsed: number
+  projectLimit: number
+  projectRemaining: number
+}
+
+export interface StorageQuotaInfo {
+  canUpload: boolean
+  quotaInfo: QuotaInfo
+  rateLimitInfo: RateLimitInfo
+  projectQuota: ProjectQuotaInfo
+}
+
+export interface ConflictResolutionOption {
+  strategy: ConflictResolution
+  newPath: string
+  description: string
+}
+
+export interface FileConflictResult {
+  hasConflict: boolean
+  existingPath: string
+  originalName: string
+  suggestedResolutions: ConflictResolutionOption[]
+}
+
+export interface IntegrityCheckResult {
+  isValid: boolean
+  actualChecksum: string
+  expectedChecksum: string
+  fileSize: number
+  verificationTime: Date
+}
+
+export interface ValidationResult {
+  canProceed: boolean
+  securityValidation: {
+    isValid: boolean
+    errors: string[]
+    warnings: string[]
+    sanitizedFilename?: string
+  }
+  quotaValidation: StorageQuotaInfo
+  conflictCheck: FileConflictResult
+  recommendedPath: string
+  warnings: string[]
+}
