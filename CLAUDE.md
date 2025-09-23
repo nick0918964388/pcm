@@ -18,6 +18,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
 - `iphoto-architecture-improvement` - 改善 iPhone 圖片管理的整體架構
+- `iphoto2-enhanced-module` - 整合 NFS 儲存的增強型照片管理模組
 
 ## Development Guidelines
 - 以英文思考，但以繁體中文生成回應（Think in English, generate in Traditional Chinese）
