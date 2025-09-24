@@ -11,7 +11,7 @@ import {
   logApiRequest,
   unauthorizedResponse,
   checkRateLimit,
-  rateLimitErrorResponse
+  rateLimitErrorResponse,
 } from '@/lib/utils/api-response';
 
 // POST /api/auth/change-password - 修改密碼
@@ -32,8 +32,12 @@ export async function POST(request: NextRequest) {
     const user = authResult.user!;
 
     // 速率限制檢查 (每小時最多 5 次修改密碼嘗試)
-    const rateLimit = checkRateLimit(`change-password:${user.id}`, 5, 60 * 60 * 1000);
-    
+    const rateLimit = checkRateLimit(
+      `change-password:${user.id}`,
+      5,
+      60 * 60 * 1000
+    );
+
     if (!rateLimit.allowed) {
       return rateLimitErrorResponse('修改密碼次數過多，請稍後再試');
     }
@@ -53,11 +57,7 @@ export async function POST(request: NextRequest) {
     // 記錄請求日誌 (不記錄密碼)
     logApiRequest(request, { userId: user.id }, user, startTime);
 
-    return successResponse(
-      null,
-      '密碼修改成功'
-    );
-
+    return successResponse(null, '密碼修改成功');
   } catch (error: any) {
     logApiRequest(request, null, null, startTime);
     return handleKnownError(error);

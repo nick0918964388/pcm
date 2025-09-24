@@ -1,7 +1,19 @@
 // SQL Query Builder for dynamic query construction
 export interface QueryFilter {
   field: string;
-  operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'ILIKE' | 'IN' | 'NOT IN' | 'IS NULL' | 'IS NOT NULL';
+  operator:
+    | '='
+    | '!='
+    | '>'
+    | '<'
+    | '>='
+    | '<='
+    | 'LIKE'
+    | 'ILIKE'
+    | 'IN'
+    | 'NOT IN'
+    | 'IS NULL'
+    | 'IS NOT NULL';
   value?: any;
 }
 
@@ -64,12 +76,14 @@ export class QueryBuilder {
 
   whereIn(field: string, values: any[]): QueryBuilder {
     if (values.length === 0) return this;
-    
-    const placeholders = values.map((_, index) => {
-      this.parameters.push(values[index]);
-      return `$${this.parameters.length}`;
-    }).join(', ');
-    
+
+    const placeholders = values
+      .map((_, index) => {
+        this.parameters.push(values[index]);
+        return `$${this.parameters.length}`;
+      })
+      .join(', ');
+
     this.whereClauses.push(`${field} IN (${placeholders})`);
     return this;
   }
@@ -80,7 +94,11 @@ export class QueryBuilder {
     return this;
   }
 
-  whereDateRange(field: string, startDate?: string, endDate?: string): QueryBuilder {
+  whereDateRange(
+    field: string,
+    startDate?: string,
+    endDate?: string
+  ): QueryBuilder {
     if (startDate) {
       this.parameters.push(startDate);
       this.whereClauses.push(`${field} >= $${this.parameters.length}`);
@@ -180,7 +198,7 @@ export class QueryBuilder {
 
     return {
       query: query.trim(),
-      params: this.parameters
+      params: this.parameters,
     };
   }
 
@@ -202,7 +220,7 @@ export class QueryBuilder {
 
     return {
       query: query.trim(),
-      params: this.parameters
+      params: this.parameters,
     };
   }
 
@@ -235,20 +253,27 @@ export const QueryPatterns = {
   },
 
   // 日期範圍查詢
-  dateRange: (builder: QueryBuilder, field: string, startDate?: string, endDate?: string) => {
+  dateRange: (
+    builder: QueryBuilder,
+    field: string,
+    startDate?: string,
+    endDate?: string
+  ) => {
     return builder.whereDateRange(field, startDate, endDate);
   },
 
   // 搜尋查詢
   search: (builder: QueryBuilder, fields: string[], searchTerm: string) => {
     if (!searchTerm) return builder;
-    
-    const searchClauses = fields.map(field => `${field} ILIKE '%${searchTerm}%'`);
+
+    const searchClauses = fields.map(
+      field => `${field} ILIKE '%${searchTerm}%'`
+    );
     return builder.where(`(${searchClauses.join(' OR ')})`);
   },
 
   // 分頁查詢
   paginated: (builder: QueryBuilder, page: number, pageSize: number) => {
     return builder.paginate({ page, pageSize });
-  }
+  },
 };

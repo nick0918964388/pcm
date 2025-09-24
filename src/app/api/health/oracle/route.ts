@@ -15,12 +15,12 @@ export async function GET(request: NextRequest) {
     const connectionConfig = {
       user: process.env.ORACLE_USER || 'pcm_user',
       password: process.env.ORACLE_PASSWORD || 'pcm_pass123',
-      connectString: process.env.ORACLE_CONNECT_STRING || 'localhost:1521/XE'
+      connectString: process.env.ORACLE_CONNECT_STRING || 'localhost:1521/XE',
     };
 
     console.log('Oracle連線配置:', {
       user: connectionConfig.user,
-      connectString: connectionConfig.connectString
+      connectString: connectionConfig.connectString,
     });
 
     // 建立連線
@@ -47,9 +47,10 @@ export async function GET(request: NextRequest) {
       WHERE key_name = 'schema_version'
     `);
 
-    const schemaVersion = versionResult.rows && versionResult.rows.length > 0
-      ? (versionResult.rows[0] as any[])[0]
-      : '未知';
+    const schemaVersion =
+      versionResult.rows && versionResult.rows.length > 0
+        ? (versionResult.rows[0] as any[])[0]
+        : '未知';
 
     // 檢查記錄總數
     const counts: Record<string, number> = {};
@@ -57,8 +58,12 @@ export async function GET(request: NextRequest) {
 
     for (const table of coreTable) {
       try {
-        const countResult = await connection.execute(`SELECT COUNT(*) FROM ${table}`);
-        counts[table] = countResult.rows ? (countResult.rows[0] as any[])[0] : 0;
+        const countResult = await connection.execute(
+          `SELECT COUNT(*) FROM ${table}`
+        );
+        counts[table] = countResult.rows
+          ? (countResult.rows[0] as any[])[0]
+          : 0;
       } catch (error) {
         counts[table] = -1; // 表示表格不存在或查詢失敗
       }
@@ -70,17 +75,16 @@ export async function GET(request: NextRequest) {
       connection: 'connected',
       config: {
         user: connectionConfig.user,
-        connectString: connectionConfig.connectString
+        connectString: connectionConfig.connectString,
       },
       schema: {
         version: schemaVersion,
         tables: tablesResult.rows?.map(row => (row as any[])[0]) || [],
-        recordCounts: counts
+        recordCounts: counts,
       },
       testResult: testResult.rows?.[0],
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     console.error('Oracle資料庫健康檢查失敗:', error);
 
@@ -94,18 +98,20 @@ export async function GET(request: NextRequest) {
 
     const connectionInfo = {
       user: process.env.ORACLE_USER || 'pcm_user',
-      connectString: process.env.ORACLE_CONNECT_STRING || 'localhost:1521/XE'
+      connectString: process.env.ORACLE_CONNECT_STRING || 'localhost:1521/XE',
     };
 
-    return NextResponse.json({
-      status: 'unhealthy',
-      database: 'oracle',
-      connection: 'error',
-      error: errorDetails || 'Oracle連接失敗',
-      connectionInfo,
-      timestamp: new Date().toISOString()
-    }, { status: 503 });
-
+    return NextResponse.json(
+      {
+        status: 'unhealthy',
+        database: 'oracle',
+        connection: 'error',
+        error: errorDetails || 'Oracle連接失敗',
+        connectionInfo,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 503 }
+    );
   } finally {
     if (connection) {
       try {

@@ -35,22 +35,28 @@ export class WBSRepository extends BaseRepository<WBSItem> {
 
   mapToDB(entity: Partial<WBSItem>): Record<string, any> {
     const mapped: Record<string, any> = {};
-    
+
     if (entity.project_id !== undefined) mapped.project_id = entity.project_id;
     if (entity.parent_id !== undefined) mapped.parent_id = entity.parent_id;
     if (entity.wbs_code !== undefined) mapped.wbs_code = entity.wbs_code;
     if (entity.name !== undefined) mapped.name = entity.name;
-    if (entity.description !== undefined) mapped.description = entity.description;
+    if (entity.description !== undefined)
+      mapped.description = entity.description;
     if (entity.level !== undefined) mapped.level = entity.level;
     if (entity.status !== undefined) mapped.status = entity.status;
     if (entity.priority !== undefined) mapped.priority = entity.priority;
-    if (entity.assigned_to !== undefined) mapped.assigned_to = entity.assigned_to;
-    if (entity.estimated_hours !== undefined) mapped.estimated_hours = entity.estimated_hours;
-    if (entity.actual_hours !== undefined) mapped.actual_hours = entity.actual_hours;
+    if (entity.assigned_to !== undefined)
+      mapped.assigned_to = entity.assigned_to;
+    if (entity.estimated_hours !== undefined)
+      mapped.estimated_hours = entity.estimated_hours;
+    if (entity.actual_hours !== undefined)
+      mapped.actual_hours = entity.actual_hours;
     if (entity.start_date !== undefined) mapped.start_date = entity.start_date;
     if (entity.end_date !== undefined) mapped.end_date = entity.end_date;
-    if (entity.completion_percentage !== undefined) mapped.completion_percentage = entity.completion_percentage;
-    if (entity.dependencies !== undefined) mapped.dependencies = entity.dependencies;
+    if (entity.completion_percentage !== undefined)
+      mapped.completion_percentage = entity.completion_percentage;
+    if (entity.dependencies !== undefined)
+      mapped.dependencies = entity.dependencies;
     if (entity.metadata !== undefined) {
       mapped.metadata = JSON.stringify(entity.metadata);
     }
@@ -60,25 +66,31 @@ export class WBSRepository extends BaseRepository<WBSItem> {
   }
 
   // 根據專案 ID 查找所有 WBS 項目
-  async findByProjectId(projectId: string, options: FindOptions = {}): Promise<WBSItem[]> {
+  async findByProjectId(
+    projectId: string,
+    options: FindOptions = {}
+  ): Promise<WBSItem[]> {
     const filters = { project_id: projectId, ...(options.filters || {}) };
-    const result = await this.findAll({ 
-      ...options, 
+    const result = await this.findAll({
+      ...options,
       filters,
       sortBy: 'wbs_code',
-      sortOrder: 'ASC'
+      sortOrder: 'ASC',
     });
     return result.data;
   }
 
   // 根據父節點查找子項目
-  async findByParentId(parentId: string, options: FindOptions = {}): Promise<WBSItem[]> {
+  async findByParentId(
+    parentId: string,
+    options: FindOptions = {}
+  ): Promise<WBSItem[]> {
     const filters = { parent_id: parentId, ...(options.filters || {}) };
-    const result = await this.findAll({ 
-      ...options, 
+    const result = await this.findAll({
+      ...options,
       filters,
       sortBy: 'wbs_code',
-      sortOrder: 'ASC'
+      sortOrder: 'ASC',
     });
     return result.data;
   }
@@ -119,7 +131,10 @@ export class WBSRepository extends BaseRepository<WBSItem> {
   }
 
   // 根據 WBS 代碼查找
-  async findByWBSCode(projectId: string, wbsCode: string): Promise<WBSItem | null> {
+  async findByWBSCode(
+    projectId: string,
+    wbsCode: string
+  ): Promise<WBSItem | null> {
     const query = `
       SELECT * FROM wbs_items 
       WHERE project_id = $1 AND wbs_code = $2 AND is_active = true
@@ -129,7 +144,11 @@ export class WBSRepository extends BaseRepository<WBSItem> {
   }
 
   // 檢查 WBS 代碼是否已存在
-  async isWBSCodeExists(projectId: string, wbsCode: string, excludeId?: string): Promise<boolean> {
+  async isWBSCodeExists(
+    projectId: string,
+    wbsCode: string,
+    excludeId?: string
+  ): Promise<boolean> {
     let query = `
       SELECT 1 FROM wbs_items 
       WHERE project_id = $1 AND wbs_code = $2 AND is_active = true
@@ -146,7 +165,10 @@ export class WBSRepository extends BaseRepository<WBSItem> {
   }
 
   // 根據分配者查找任務
-  async findByAssignee(assigneeId: string, projectId?: string): Promise<WBSItem[]> {
+  async findByAssignee(
+    assigneeId: string,
+    projectId?: string
+  ): Promise<WBSItem[]> {
     let query = `
       SELECT * FROM wbs_items 
       WHERE assigned_to = $1 AND is_active = true
@@ -165,7 +187,10 @@ export class WBSRepository extends BaseRepository<WBSItem> {
   }
 
   // 根據狀態查找 WBS 項目
-  async findByStatus(status: WBSStatus, projectId?: string): Promise<WBSItem[]> {
+  async findByStatus(
+    status: WBSStatus,
+    projectId?: string
+  ): Promise<WBSItem[]> {
     let query = `
       SELECT * FROM wbs_items 
       WHERE status = $1 AND is_active = true
@@ -226,7 +251,10 @@ export class WBSRepository extends BaseRepository<WBSItem> {
   }
 
   // 更新完成度
-  async updateCompletion(wbsId: string, completionPercentage: number): Promise<void> {
+  async updateCompletion(
+    wbsId: string,
+    completionPercentage: number
+  ): Promise<void> {
     const query = `
       UPDATE wbs_items 
       SET completion_percentage = $1, updated_at = NOW()
@@ -280,33 +308,33 @@ export class WBSRepository extends BaseRepository<WBSItem> {
     const queries = [
       // 總項目數
       'SELECT COUNT(*) as total FROM wbs_items WHERE project_id = $1 AND is_active = true',
-      
+
       // 已完成項目數
-      'SELECT COUNT(*) as completed FROM wbs_items WHERE project_id = $1 AND status = \'completed\' AND is_active = true',
-      
+      "SELECT COUNT(*) as completed FROM wbs_items WHERE project_id = $1 AND status = 'completed' AND is_active = true",
+
       // 進行中項目數
-      'SELECT COUNT(*) as in_progress FROM wbs_items WHERE project_id = $1 AND status = \'in_progress\' AND is_active = true',
-      
+      "SELECT COUNT(*) as in_progress FROM wbs_items WHERE project_id = $1 AND status = 'in_progress' AND is_active = true",
+
       // 未開始項目數
-      'SELECT COUNT(*) as not_started FROM wbs_items WHERE project_id = $1 AND status = \'not_started\' AND is_active = true',
-      
+      "SELECT COUNT(*) as not_started FROM wbs_items WHERE project_id = $1 AND status = 'not_started' AND is_active = true",
+
       // 逾期項目數
       `SELECT COUNT(*) as overdue FROM wbs_items 
        WHERE project_id = $1 AND end_date < CURRENT_DATE 
        AND status NOT IN ('completed', 'cancelled') AND is_active = true`,
-      
+
       // 工時統計
       `SELECT 
          SUM(estimated_hours) as total_estimated,
          SUM(actual_hours) as total_actual,
          AVG(completion_percentage) as avg_completion
        FROM wbs_items WHERE project_id = $1 AND is_active = true`,
-      
+
       // 按狀態分組
       'SELECT status, COUNT(*) as count FROM wbs_items WHERE project_id = $1 AND is_active = true GROUP BY status',
-      
+
       // 按優先級分組
-      'SELECT priority, COUNT(*) as count FROM wbs_items WHERE project_id = $1 AND is_active = true GROUP BY priority'
+      'SELECT priority, COUNT(*) as count FROM wbs_items WHERE project_id = $1 AND is_active = true GROUP BY priority',
     ];
 
     const [
@@ -317,12 +345,12 @@ export class WBSRepository extends BaseRepository<WBSItem> {
       overdueResult,
       hoursResult,
       statusResults,
-      priorityResults
+      priorityResults,
     ] = await Promise.all(
-      queries.map(query => 
-        query.includes('GROUP BY') ? 
-          db.query<{ [key: string]: any }>(query, [projectId]) :
-          db.queryOne<{ [key: string]: number }>(query, [projectId])
+      queries.map(query =>
+        query.includes('GROUP BY')
+          ? db.query<{ [key: string]: any }>(query, [projectId])
+          : db.queryOne<{ [key: string]: number }>(query, [projectId])
       )
     );
 
@@ -346,13 +374,13 @@ export class WBSRepository extends BaseRepository<WBSItem> {
       totalActualHours: (hoursResult as any)?.total_actual || 0,
       averageCompletion: (hoursResult as any)?.avg_completion || 0,
       itemsByStatus,
-      itemsByPriority
+      itemsByPriority,
     };
   }
 
   // 移動 WBS 項目 (重新指定父節點)
   async moveItem(itemId: string, newParentId?: string): Promise<void> {
-    await db.transaction(async (client) => {
+    await db.transaction(async client => {
       // 獲取原始項目信息
       const item = await this.findById(itemId);
       if (!item) throw new Error('WBS 項目不存在');
@@ -366,11 +394,14 @@ export class WBSRepository extends BaseRepository<WBSItem> {
       }
 
       // 更新項目
-      await client.query(`
+      await client.query(
+        `
         UPDATE wbs_items 
         SET parent_id = $1, level = $2, updated_at = NOW()
         WHERE id = $3
-      `, [newParentId, newLevel, itemId]);
+      `,
+        [newParentId, newLevel, itemId]
+      );
 
       // 遞迴更新所有子項目的層級
       await this.updateChildLevels(client, itemId, newLevel);
@@ -378,20 +409,27 @@ export class WBSRepository extends BaseRepository<WBSItem> {
   }
 
   // 遞迴更新子項目層級
-  private async updateChildLevels(client: any, parentId: string, parentLevel: number): Promise<void> {
+  private async updateChildLevels(
+    client: any,
+    parentId: string,
+    parentLevel: number
+  ): Promise<void> {
     const children = await client.query(
       'SELECT id FROM wbs_items WHERE parent_id = $1 AND is_active = true',
       [parentId]
     );
 
     const newChildLevel = parentLevel + 1;
-    
+
     for (const child of children.rows) {
-      await client.query(`
+      await client.query(
+        `
         UPDATE wbs_items 
         SET level = $1, updated_at = NOW()
         WHERE id = $2
-      `, [newChildLevel, child.id]);
+      `,
+        [newChildLevel, child.id]
+      );
 
       // 遞迴更新孫子項目
       await this.updateChildLevels(client, child.id, newChildLevel);
@@ -400,21 +438,27 @@ export class WBSRepository extends BaseRepository<WBSItem> {
 
   // 刪除 WBS 項目及其所有子項目
   async deleteWithChildren(itemId: string): Promise<void> {
-    await db.transaction(async (client) => {
+    await db.transaction(async client => {
       // 遞迴標記刪除所有子項目
       await this.markChildrenAsDeleted(client, itemId);
-      
+
       // 標記主項目為已刪除
-      await client.query(`
+      await client.query(
+        `
         UPDATE wbs_items 
         SET is_active = false, updated_at = NOW()
         WHERE id = $1
-      `, [itemId]);
+      `,
+        [itemId]
+      );
     });
   }
 
   // 遞迴標記子項目為已刪除
-  private async markChildrenAsDeleted(client: any, parentId: string): Promise<void> {
+  private async markChildrenAsDeleted(
+    client: any,
+    parentId: string
+  ): Promise<void> {
     const children = await client.query(
       'SELECT id FROM wbs_items WHERE parent_id = $1 AND is_active = true',
       [parentId]
@@ -423,13 +467,16 @@ export class WBSRepository extends BaseRepository<WBSItem> {
     for (const child of children.rows) {
       // 先處理孫子項目
       await this.markChildrenAsDeleted(client, child.id);
-      
+
       // 標記子項目為已刪除
-      await client.query(`
+      await client.query(
+        `
         UPDATE wbs_items 
         SET is_active = false, updated_at = NOW()
         WHERE id = $1
-      `, [child.id]);
+      `,
+        [child.id]
+      );
     }
   }
 }

@@ -13,20 +13,23 @@ export async function GET(
 ) {
   try {
     const { projectId } = params;
-    
+
     // 取得當前值班人員
-    const currentDuty = await dutyScheduleService.getCurrentDutyPersonnel(projectId);
-    
+    const currentDuty =
+      await dutyScheduleService.getCurrentDutyPersonnel(projectId);
+
     return NextResponse.json({
       projectId,
       currentDuty,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('取得當前值班人員失敗:', error);
-    
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '取得當前值班人員失敗' },
+      {
+        error: error instanceof Error ? error.message : '取得當前值班人員失敗',
+      },
       { status: 500 }
     );
   }

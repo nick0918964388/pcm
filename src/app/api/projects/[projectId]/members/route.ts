@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 
 // Mock 專案成員資料
 const mockMembers = [
@@ -17,7 +17,7 @@ const mockMembers = [
     skills: ['專案管理', 'BIM', '工程監造'],
     phone: '0912-345-678',
     avatar: null,
-    permissions: ['READ', 'WRITE', 'DELETE']
+    permissions: ['READ', 'WRITE', 'DELETE'],
   },
   {
     id: '2',
@@ -34,7 +34,7 @@ const mockMembers = [
     skills: ['AutoCAD', '結構設計', '鋼結構'],
     phone: '0923-456-789',
     avatar: null,
-    permissions: ['READ', 'WRITE']
+    permissions: ['READ', 'WRITE'],
   },
   {
     id: '3',
@@ -51,7 +51,7 @@ const mockMembers = [
     skills: ['溝通協調', '進度管控', 'MS Project'],
     phone: '0934-567-890',
     avatar: null,
-    permissions: ['READ', 'WRITE']
+    permissions: ['READ', 'WRITE'],
   },
   {
     id: '4',
@@ -68,7 +68,7 @@ const mockMembers = [
     skills: ['文件管理', 'Excel', '會議安排'],
     phone: '0945-678-901',
     avatar: null,
-    permissions: ['READ']
+    permissions: ['READ'],
   },
   {
     id: '5',
@@ -85,7 +85,7 @@ const mockMembers = [
     skills: ['施工管理', '品質控制', '安全管理'],
     phone: '0956-789-012',
     avatar: null,
-    permissions: ['READ', 'WRITE']
+    permissions: ['READ', 'WRITE'],
   },
   {
     id: '6',
@@ -102,7 +102,7 @@ const mockMembers = [
     skills: ['品質檢驗', 'ISO管理', '報告撰寫'],
     phone: '0967-890-123',
     avatar: null,
-    permissions: ['READ', 'WRITE']
+    permissions: ['READ', 'WRITE'],
   },
   {
     id: '7',
@@ -119,7 +119,7 @@ const mockMembers = [
     skills: ['工安管理', '風險評估', '教育訓練'],
     phone: '0978-901-234',
     avatar: null,
-    permissions: ['READ', 'WRITE']
+    permissions: ['READ', 'WRITE'],
   },
   {
     id: '8',
@@ -136,7 +136,7 @@ const mockMembers = [
     skills: ['環境監測', '法規遵循', '廢棄物管理'],
     phone: '0989-012-345',
     avatar: null,
-    permissions: ['READ', 'WRITE']
+    permissions: ['READ', 'WRITE'],
   },
   {
     id: '9',
@@ -153,7 +153,7 @@ const mockMembers = [
     skills: ['專業施工', '機具操作', '團隊管理'],
     phone: '0990-123-456',
     avatar: null,
-    permissions: ['READ']
+    permissions: ['READ'],
   },
   {
     id: '10',
@@ -170,53 +170,58 @@ const mockMembers = [
     skills: ['基礎作業', '文件整理'],
     phone: '0901-234-567',
     avatar: null,
-    permissions: ['READ']
-  }
-]
+    permissions: ['READ'],
+  },
+];
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { projectId: string } }
 ) {
-  const { searchParams } = new URL(request.url)
-  const page = parseInt(searchParams.get('page') || '1')
-  const pageSize = parseInt(searchParams.get('pageSize') || '10')
-  const search = searchParams.get('search')
-  const role = searchParams.get('role')
-  const status = searchParams.get('status')
-  const department = searchParams.get('department')
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = parseInt(searchParams.get('pageSize') || '10');
+  const search = searchParams.get('search');
+  const role = searchParams.get('role');
+  const status = searchParams.get('status');
+  const department = searchParams.get('department');
 
-  let filteredMembers = [...mockMembers]
+  let filteredMembers = [...mockMembers];
 
   // 搜索篩選
   if (search) {
-    filteredMembers = filteredMembers.filter(member => 
-      member.userName.includes(search) ||
-      member.email.includes(search) ||
-      member.department.includes(search) ||
-      member.position.includes(search)
-    )
+    filteredMembers = filteredMembers.filter(
+      member =>
+        member.userName.includes(search) ||
+        member.email.includes(search) ||
+        member.department.includes(search) ||
+        member.position.includes(search)
+    );
   }
 
   // 角色篩選
   if (role) {
-    filteredMembers = filteredMembers.filter(member => member.role === role)
+    filteredMembers = filteredMembers.filter(member => member.role === role);
   }
 
   // 狀態篩選
   if (status) {
-    filteredMembers = filteredMembers.filter(member => member.status === status)
+    filteredMembers = filteredMembers.filter(
+      member => member.status === status
+    );
   }
 
   // 部門篩選
   if (department) {
-    filteredMembers = filteredMembers.filter(member => member.department === department)
+    filteredMembers = filteredMembers.filter(
+      member => member.department === department
+    );
   }
 
   // 分頁處理
-  const startIndex = (page - 1) * pageSize
-  const endIndex = startIndex + pageSize
-  const paginatedMembers = filteredMembers.slice(startIndex, endIndex)
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedMembers = filteredMembers.slice(startIndex, endIndex);
 
   const response = {
     success: true,
@@ -228,10 +233,10 @@ export async function GET(
         totalItems: filteredMembers.length,
         totalPages: Math.ceil(filteredMembers.length / pageSize),
         hasNextPage: endIndex < filteredMembers.length,
-        hasPreviousPage: page > 1
-      }
-    }
-  }
+        hasPreviousPage: page > 1,
+      },
+    },
+  };
 
-  return NextResponse.json(response)
+  return NextResponse.json(response);
 }

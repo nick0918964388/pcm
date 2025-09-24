@@ -11,6 +11,7 @@ npm run docker:oracle:start
 ```
 
 該命令會：
+
 - 自動拉取Oracle XE 21c Docker映像檔
 - 啟動Oracle容器
 - 執行初始化腳本
@@ -29,6 +30,7 @@ npm run docker:oracle:logs
 ```
 
 即時查看日誌：
+
 ```bash
 npm run docker:oracle:logs:follow
 ```
@@ -57,6 +59,7 @@ npm run docker:oracle:reset
 ## 🌐 管理工具
 
 ### SQL Developer Web
+
 訪問: http://localhost:5500/ords/sql-developer
 
 使用系統用戶登入即可管理資料庫。
@@ -93,8 +96,8 @@ services:
       ORACLE_DATABASE: ${ORACLE_DATABASE:-pcm_db}
       ORACLE_CHARACTERSET: AL32UTF8
     ports:
-      - "${ORACLE_PORT:-1521}:1521"
-      - "${ORACLE_WEB_PORT:-5500}:5500"
+      - '${ORACLE_PORT:-1521}:1521'
+      - '${ORACLE_WEB_PORT:-5500}:5500'
     volumes:
       - oracle_data:/opt/oracle/oradata
       - ./database/init:/docker-entrypoint-initdb.d
@@ -105,10 +108,10 @@ services:
 ### 連線管理器使用
 
 ```typescript
-import { getOracleConnection } from '@/lib/database/oracle-connection'
+import { getOracleConnection } from '@/lib/database/oracle-connection';
 
 // 獲取連線管理器實例
-const oracle = getOracleConnection()
+const oracle = getOracleConnection();
 
 // 初始化連線池
 await oracle.initialize({
@@ -119,47 +122,47 @@ await oracle.initialize({
   poolMax: 20,
   poolIncrement: 2,
   poolTimeout: 60,
-  enableStatistics: true
-})
+  enableStatistics: true,
+});
 
 // 執行查詢
-const result = await oracle.executeQuery<{id: number, name: string}>(
+const result = await oracle.executeQuery<{ id: number; name: string }>(
   'SELECT id, name FROM projects WHERE status = :status',
   { status: 'active' }
-)
+);
 
 if (result.success) {
-  console.log('Projects:', result.data)
+  console.log('Projects:', result.data);
 } else {
-  console.error('Query failed:', result.error)
+  console.error('Query failed:', result.error);
 }
 
 // 健康檢查
-const health = await oracle.healthCheck()
-console.log('Database healthy:', health.data?.isHealthy)
+const health = await oracle.healthCheck();
+console.log('Database healthy:', health.data?.isHealthy);
 
 // 關閉連線池
-await oracle.shutdown()
+await oracle.shutdown();
 ```
 
 ### 容器管理程式使用
 
 ```typescript
-import { OracleContainerManager } from '@/lib/docker/oracle-container-manager'
+import { OracleContainerManager } from '@/lib/docker/oracle-container-manager';
 
-const containerManager = new OracleContainerManager()
+const containerManager = new OracleContainerManager();
 
 // 檢查容器狀態
-const status = await containerManager.getContainerStatus()
-console.log('Container state:', status.data?.state)
+const status = await containerManager.getContainerStatus();
+console.log('Container state:', status.data?.state);
 
 // 執行健康檢查
-const health = await containerManager.performHealthCheck()
-console.log('Oracle ready:', health.data?.isHealthy)
+const health = await containerManager.performHealthCheck();
+console.log('Oracle ready:', health.data?.isHealthy);
 
 // 監控日誌
 for await (const logEntry of containerManager.monitorLogs()) {
-  console.log(`[${logEntry.level}] ${logEntry.message}`)
+  console.log(`[${logEntry.level}] ${logEntry.message}`);
 }
 ```
 
@@ -176,18 +179,21 @@ for await (const logEntry of containerManager.monitorLogs()) {
 ### 容器啟動失敗
 
 1. 檢查Docker是否運行：
+
 ```bash
 docker --version
 docker-compose --version
 ```
 
 2. 檢查埠口是否被佔用：
+
 ```bash
 lsof -i :1521
 lsof -i :5500
 ```
 
 3. 查看容器日誌：
+
 ```bash
 npm run docker:oracle:logs
 ```
@@ -195,16 +201,19 @@ npm run docker:oracle:logs
 ### 連線失敗
 
 1. 確認容器運行正常：
+
 ```bash
 npm run docker:oracle:status
 ```
 
 2. 測試資料庫連線：
+
 ```bash
 docker exec pcm-oracle-dev sqlplus system/Oracle123@//localhost:1521/XE
 ```
 
 3. 檢查用戶權限：
+
 ```sql
 SELECT username, account_status FROM dba_users WHERE username = 'PCM_USER';
 ```
@@ -212,6 +221,7 @@ SELECT username, account_status FROM dba_users WHERE username = 'PCM_USER';
 ### 資料遺失
 
 如果需要完全重置環境：
+
 ```bash
 npm run docker:oracle:reset
 npm run docker:oracle:start
@@ -236,12 +246,12 @@ await oracle.initialize({
   connectString: 'localhost:1521/XE',
   user: 'pcm_user',
   password: 'pcm_pass123',
-  poolMin: 10,           // 增加最小連線數
-  poolMax: 50,           // 增加最大連線數
-  poolIncrement: 5,      // 增加遞增量
-  poolTimeout: 30,       // 減少超時時間
-  enableStatistics: true
-})
+  poolMin: 10, // 增加最小連線數
+  poolMax: 50, // 增加最大連線數
+  poolIncrement: 5, // 增加遞增量
+  poolTimeout: 30, // 減少超時時間
+  enableStatistics: true,
+});
 ```
 
 ### 連線監控
@@ -249,19 +259,19 @@ await oracle.initialize({
 ```typescript
 // 定期檢查連線池狀態
 setInterval(() => {
-  const status = oracle.getPoolStatus()
-  console.log('Pool status:', status)
-}, 30000)
+  const status = oracle.getPoolStatus();
+  console.log('Pool status:', status);
+}, 30000);
 ```
 
 ## 📞 支援
 
 如有問題，請參考：
+
 - [Oracle XE 文檔](https://docs.oracle.com/en/database/oracle/oracle-database/21/xeinl/)
 - [node-oracledb 文檔](https://node-oracledb.readthedocs.io/)
 - [Docker Compose 文檔](https://docs.docker.com/compose/)
 
 ---
 
-*建立時間: 2025-01-23*
-*適用版本: PCM v0.1.0*
+_建立時間: 2025-01-23_ _適用版本: PCM v0.1.0_

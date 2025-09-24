@@ -42,7 +42,10 @@ class OraclePoolClient {
       for (let i = 0; i < params.length; i++) {
         const pgParam = `$${i + 1}`;
         const oracleParam = `:${i + 1}`;
-        oracleSql = oracleSql.replace(new RegExp('\\' + pgParam, 'g'), oracleParam);
+        oracleSql = oracleSql.replace(
+          new RegExp('\\' + pgParam, 'g'),
+          oracleParam
+        );
 
         // 轉換 boolean 值為數字 (Oracle 不支援 boolean)
         if (typeof params[i] === 'boolean') {
@@ -97,7 +100,10 @@ class OraclePoolClient {
     }
 
     // 3. ILIKE -> UPPER() LIKE UPPER()
-    oracleSql = oracleSql.replace(/(\w+)\s+ILIKE\s+('[^']*'|\:\d+)/gi, 'UPPER($1) LIKE UPPER($2)');
+    oracleSql = oracleSql.replace(
+      /(\w+)\s+ILIKE\s+('[^']*'|\:\d+)/gi,
+      'UPPER($1) LIKE UPPER($2)'
+    );
 
     // 4. PostgreSQL boolean (true/false) -> Oracle (1/0)
     oracleSql = oracleSql.replace(/\btrue\b/gi, '1');
@@ -153,7 +159,9 @@ class DatabaseConnection {
       max: parseInt(process.env.DB_MAX_CONNECTIONS || '20'),
       min: parseInt(process.env.DB_MIN_CONNECTIONS || '5'),
       idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '10000'),
-      connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '5000'),
+      connectionTimeoutMillis: parseInt(
+        process.env.DB_CONNECTION_TIMEOUT || '5000'
+      ),
     };
 
     console.log('Oracle database config:', {
@@ -202,7 +210,9 @@ class DatabaseConnection {
 
       // 慢查詢警告 (超過 1 秒)
       if (duration > 1000) {
-        console.warn(`Slow query detected: ${duration}ms - ${text.substring(0, 100)}...`);
+        console.warn(
+          `Slow query detected: ${duration}ms - ${text.substring(0, 100)}...`
+        );
       }
 
       return result.rows as T[];

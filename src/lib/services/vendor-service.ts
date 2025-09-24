@@ -6,7 +6,7 @@ import {
   QueryVendorInput,
   UpdateRatingInput,
   UpdateStatusInput,
-  RenewContractInput
+  RenewContractInput,
 } from '../validations/vendor-schemas';
 
 export class VendorService {
@@ -40,17 +40,36 @@ export class VendorService {
    * 取得廠商列表
    */
   async getVendors(query: QueryVendorInput) {
-    const { page = 1, limit = 20, search, sortBy = 'created_at', sortOrder = 'desc', ...filters } = query;
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      sortBy = 'created_at',
+      sortOrder = 'desc',
+      ...filters
+    } = query;
 
     const options = {
       limit,
       offset: (page - 1) * limit,
       sort: [{ field: sortBy, order: sortOrder }],
       filters,
-      search: search ? {
-        fields: ['v.code', 'v.name', 'v.short_name', 'v.phone', 'v.email', 'vc.name', 'vc.phone', 'vc.email', 'vc.mvpn'],
-        query: search
-      } : undefined
+      search: search
+        ? {
+            fields: [
+              'v.code',
+              'v.name',
+              'v.short_name',
+              'v.phone',
+              'v.email',
+              'vc.name',
+              'vc.phone',
+              'vc.email',
+              'vc.mvpn',
+            ],
+            query: search,
+          }
+        : undefined,
     };
 
     const result = await this.vendorRepo.findAll(options);
@@ -63,8 +82,8 @@ export class VendorService {
         total: result.total,
         totalPages: Math.ceil(result.total / limit),
         hasNext: page < Math.ceil(result.total / limit),
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     };
   }
 
@@ -166,7 +185,10 @@ export class VendorService {
   /**
    * 續約
    */
-  async renewVendorContract(id: string, data: RenewContractInput): Promise<void> {
+  async renewVendorContract(
+    id: string,
+    data: RenewContractInput
+  ): Promise<void> {
     // 檢查廠商是否存在
     const vendor = await this.vendorRepo.findById(id);
     if (!vendor) {
@@ -176,7 +198,7 @@ export class VendorService {
     // 檢查新的結束日期是否合理
     const newEndDate = new Date(data.contract_end);
     const currentDate = new Date();
-    
+
     if (newEndDate <= currentDate) {
       throw new Error('新的合約結束日期必須晚於今天');
     }
@@ -233,7 +255,7 @@ export class VendorService {
     if (minRating < 1 || minRating > 5 || maxRating < 1 || maxRating > 5) {
       throw new Error('評分必須在 1-5 之間');
     }
-    
+
     if (minRating > maxRating) {
       throw new Error('最小評分不能大於最大評分');
     }
@@ -270,7 +292,10 @@ export class VendorService {
   /**
    * 批次更新廠商狀態
    */
-  async batchUpdateStatus(vendorIds: string[], status: VendorStatus): Promise<void> {
+  async batchUpdateStatus(
+    vendorIds: string[],
+    status: VendorStatus
+  ): Promise<void> {
     for (const id of vendorIds) {
       await this.updateVendorStatus(id, { status });
     }
@@ -281,13 +306,25 @@ export class VendorService {
    */
   async exportVendors(format: 'json' | 'csv' = 'json') {
     const vendors = await this.vendorRepo.findAll({ limit: 10000 });
-    
+
     if (format === 'json') {
       return vendors.data;
     }
-    
+
     // CSV 格式
-    const headers = ['ID', '名稱', '類型', '狀態', '聯絡人', '電話', '電子郵件', '地址', '合約開始', '合約結束', '評分'];
+    const headers = [
+      'ID',
+      '名稱',
+      '類型',
+      '狀態',
+      '聯絡人',
+      '電話',
+      '電子郵件',
+      '地址',
+      '合約開始',
+      '合約結束',
+      '評分',
+    ];
     const rows = vendors.data.map(v => [
       v.id,
       v.name,
@@ -299,9 +336,9 @@ export class VendorService {
       v.address || '',
       v.contract_start?.toString() || '',
       v.contract_end?.toString() || '',
-      v.rating?.toString() || ''
+      v.rating?.toString() || '',
     ]);
-    
+
     return [headers, ...rows];
   }
 }

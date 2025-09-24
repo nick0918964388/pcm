@@ -21,7 +21,7 @@ import type {
   BackupMetadata,
   DataComparisonResult,
   DataExportResult,
-  DataImportResult
+  DataImportResult,
 } from '../migration-types';
 
 describe('Data Migrator', () => {
@@ -35,7 +35,7 @@ describe('Data Migrator', () => {
     mockPostgresConnection = {
       query: vi.fn(),
       end: vi.fn(),
-      connect: vi.fn().mockResolvedValue(undefined)
+      connect: vi.fn().mockResolvedValue(undefined),
     };
 
     // Mock Oracle connection
@@ -43,7 +43,7 @@ describe('Data Migrator', () => {
       execute: vi.fn(),
       close: vi.fn(),
       commit: vi.fn(),
-      rollback: vi.fn()
+      rollback: vi.fn(),
     };
 
     mockConverter = new DataTypeConverter();
@@ -58,18 +58,29 @@ describe('Data Migrator', () => {
     it('should export data from PostgreSQL in batches', async () => {
       // RED: 測試尚未實作的批次匯出功能
       const mockTableData = [
-        { id: '123e4567-e89b-12d3-a456-426614174000', name: 'Test User 1', created_at: new Date() },
-        { id: '223e4567-e89b-12d3-a456-426614174001', name: 'Test User 2', created_at: new Date() }
+        {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          name: 'Test User 1',
+          created_at: new Date(),
+        },
+        {
+          id: '223e4567-e89b-12d3-a456-426614174001',
+          name: 'Test User 2',
+          created_at: new Date(),
+        },
       ];
 
-      mockPostgresConnection.query.mockResolvedValueOnce({ rows: mockTableData, rowCount: 2 });
+      mockPostgresConnection.query.mockResolvedValueOnce({
+        rows: mockTableData,
+        rowCount: 2,
+      });
 
       const options: DataMigrationOptions = {
         batchSize: 1000,
         parallelTables: 2,
         validateEachBatch: true,
         continueOnError: false,
-        compressionEnabled: true
+        compressionEnabled: true,
       };
 
       const result = await dataMigrator.exportTableData(
@@ -94,16 +105,27 @@ describe('Data Migrator', () => {
 
       // 模擬分批返回數據
       mockPostgresConnection.query
-        .mockResolvedValueOnce({ rows: new Array(batchSize).fill(0).map((_, i) => ({ id: i })), rowCount: batchSize })
-        .mockResolvedValueOnce({ rows: new Array(batchSize).fill(0).map((_, i) => ({ id: i + batchSize })), rowCount: batchSize })
-        .mockResolvedValueOnce({ rows: new Array(5).fill(0).map((_, i) => ({ id: i + 20 })), rowCount: 5 });
+        .mockResolvedValueOnce({
+          rows: new Array(batchSize).fill(0).map((_, i) => ({ id: i })),
+          rowCount: batchSize,
+        })
+        .mockResolvedValueOnce({
+          rows: new Array(batchSize)
+            .fill(0)
+            .map((_, i) => ({ id: i + batchSize })),
+          rowCount: batchSize,
+        })
+        .mockResolvedValueOnce({
+          rows: new Array(5).fill(0).map((_, i) => ({ id: i + 20 })),
+          rowCount: 5,
+        });
 
       const options: DataMigrationOptions = {
         batchSize,
         parallelTables: 1,
         validateEachBatch: false,
         continueOnError: false,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       const result = await dataMigrator.exportTableData(
@@ -120,14 +142,16 @@ describe('Data Migrator', () => {
 
     it('should handle export errors gracefully', async () => {
       // RED: 測試匯出錯誤處理
-      mockPostgresConnection.query.mockRejectedValueOnce(new Error('Connection timeout'));
+      mockPostgresConnection.query.mockRejectedValueOnce(
+        new Error('Connection timeout')
+      );
 
       const options: DataMigrationOptions = {
         batchSize: 1000,
         parallelTables: 1,
         validateEachBatch: true,
         continueOnError: false,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       const result = await dataMigrator.exportTableData(
@@ -145,17 +169,20 @@ describe('Data Migrator', () => {
       // RED: 測試數據壓縮功能
       const mockData = new Array(1000).fill(0).map((_, i) => ({
         id: i,
-        data: 'Large text content that should be compressed'.repeat(100)
+        data: 'Large text content that should be compressed'.repeat(100),
       }));
 
-      mockPostgresConnection.query.mockResolvedValueOnce({ rows: mockData, rowCount: 1000 });
+      mockPostgresConnection.query.mockResolvedValueOnce({
+        rows: mockData,
+        rowCount: 1000,
+      });
 
       const options: DataMigrationOptions = {
         batchSize: 1000,
         parallelTables: 1,
         validateEachBatch: false,
         continueOnError: false,
-        compressionEnabled: true
+        compressionEnabled: true,
       };
 
       const result = await dataMigrator.exportTableData(
@@ -175,7 +202,7 @@ describe('Data Migrator', () => {
       // RED: 測試批次匯入功能
       const mockData = [
         { id: '123e4567-e89b-12d3-a456-426614174000', name: 'Test User 1' },
-        { id: '223e4567-e89b-12d3-a456-426614174001', name: 'Test User 2' }
+        { id: '223e4567-e89b-12d3-a456-426614174001', name: 'Test User 2' },
       ];
 
       mockOracleConnection.execute.mockResolvedValue({ rowsAffected: 1 });
@@ -185,7 +212,7 @@ describe('Data Migrator', () => {
         parallelTables: 1,
         validateEachBatch: true,
         continueOnError: false,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       const result = await dataMigrator.importTableData(
@@ -205,7 +232,7 @@ describe('Data Migrator', () => {
       // RED: 測試Oracle批次插入最佳化
       const mockData = new Array(5000).fill(0).map((_, i) => ({
         id: `id_${i}`,
-        name: `User ${i}`
+        name: `User ${i}`,
       }));
 
       mockOracleConnection.execute.mockResolvedValue({ rowsAffected: 1000 });
@@ -215,7 +242,7 @@ describe('Data Migrator', () => {
         parallelTables: 1,
         validateEachBatch: false,
         continueOnError: false,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       const result = await dataMigrator.importTableData(
@@ -239,8 +266,8 @@ describe('Data Migrator', () => {
           id: '123e4567-e89b-12d3-a456-426614174000',
           metadata: { key: 'value' },
           is_active: true,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ];
 
       mockOracleConnection.execute.mockResolvedValue({ rowsAffected: 1 });
@@ -250,7 +277,7 @@ describe('Data Migrator', () => {
         parallelTables: 1,
         validateEachBatch: true,
         continueOnError: false,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       const result = await dataMigrator.importTableData(
@@ -272,7 +299,7 @@ describe('Data Migrator', () => {
       const mockData = [
         { id: 'valid_id_1', name: 'Valid User 1' },
         { id: 'invalid_id', name: null }, // 會導致錯誤
-        { id: 'valid_id_2', name: 'Valid User 2' }
+        { id: 'valid_id_2', name: 'Valid User 2' },
       ];
 
       mockOracleConnection.execute
@@ -285,7 +312,7 @@ describe('Data Migrator', () => {
         parallelTables: 1,
         validateEachBatch: false,
         continueOnError: true,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       const result = await dataMigrator.importTableData(
@@ -306,11 +333,11 @@ describe('Data Migrator', () => {
     it('should validate data integrity between PostgreSQL and Oracle', async () => {
       // RED: 測試資料完整性驗證
       mockPostgresConnection.query.mockResolvedValueOnce({
-        rows: [{ count: '1000' }]
+        rows: [{ count: '1000' }],
       });
 
       mockOracleConnection.execute.mockResolvedValueOnce({
-        rows: [{ COUNT: 1000 }]
+        rows: [{ COUNT: 1000 }],
       });
 
       const report = await dataMigrator.validateDataIntegrity(
@@ -329,11 +356,11 @@ describe('Data Migrator', () => {
     it('should detect count mismatches', async () => {
       // RED: 測試數量不匹配檢測
       mockPostgresConnection.query.mockResolvedValueOnce({
-        rows: [{ count: '1000' }]
+        rows: [{ count: '1000' }],
       });
 
       mockOracleConnection.execute.mockResolvedValueOnce({
-        rows: [{ COUNT: 995 }]
+        rows: [{ COUNT: 995 }],
       });
 
       const report = await dataMigrator.validateDataIntegrity(
@@ -345,22 +372,24 @@ describe('Data Migrator', () => {
       expect(report.isValid).toBe(false);
       expect(report.postgresCount).toBe(1000);
       expect(report.oracleCount).toBe(995);
-      expect(report.issues).toContain('Count mismatch: PostgreSQL has 1000 records, Oracle has 995');
+      expect(report.issues).toContain(
+        'Count mismatch: PostgreSQL has 1000 records, Oracle has 995'
+      );
     });
 
     it('should validate sample data content', async () => {
       // RED: 測試樣本數據內容驗證
       const sampleData = [
         { id: '123', name: 'User 1', email: 'user1@test.com' },
-        { id: '456', name: 'User 2', email: 'user2@test.com' }
+        { id: '456', name: 'User 2', email: 'user2@test.com' },
       ];
 
       mockPostgresConnection.query.mockResolvedValueOnce({
-        rows: sampleData
+        rows: sampleData,
       });
 
       mockOracleConnection.execute.mockResolvedValueOnce({
-        rows: sampleData
+        rows: sampleData,
       });
 
       const report = await dataMigrator.validateSampleData(
@@ -379,19 +408,19 @@ describe('Data Migrator', () => {
     it('should detect data content differences', async () => {
       // RED: 測試數據內容差異檢測
       const postgresData = [
-        { id: '123', name: 'User 1', email: 'user1@test.com' }
+        { id: '123', name: 'User 1', email: 'user1@test.com' },
       ];
 
       const oracleData = [
-        { ID: '123', NAME: 'User 1', EMAIL: 'different@test.com' }
+        { ID: '123', NAME: 'User 1', EMAIL: 'different@test.com' },
       ];
 
       mockPostgresConnection.query.mockResolvedValueOnce({
-        rows: postgresData
+        rows: postgresData,
       });
 
       mockOracleConnection.execute.mockResolvedValueOnce({
-        rows: oracleData
+        rows: oracleData,
       });
 
       const report = await dataMigrator.validateSampleData(
@@ -433,7 +462,9 @@ describe('Data Migrator', () => {
       expect(comparison.totalTables).toBe(3);
       expect(comparison.matchingTables).toBe(2);
       expect(comparison.mismatchedTables).toBe(1);
-      expect(comparison.results.find(r => r.tableName === 'projects')?.isMatch).toBe(false);
+      expect(
+        comparison.results.find(r => r.tableName === 'projects')?.isMatch
+      ).toBe(false);
     });
 
     it('should generate detailed comparison report', async () => {
@@ -441,11 +472,11 @@ describe('Data Migrator', () => {
       const tables = ['users'];
 
       mockPostgresConnection.query.mockResolvedValueOnce({
-        rows: [{ count: '100' }]
+        rows: [{ count: '100' }],
       });
 
       mockOracleConnection.execute.mockResolvedValueOnce({
-        rows: [{ COUNT: 95 }]
+        rows: [{ COUNT: 95 }],
       });
 
       const comparison = await dataMigrator.compareAllTableCounts(
@@ -466,21 +497,21 @@ describe('Data Migrator', () => {
       const postgresData = [
         { id: '1', name: 'User 1' },
         { id: '2', name: 'User 2' },
-        { id: '3', name: 'User 3' }
+        { id: '3', name: 'User 3' },
       ];
 
       const oracleData = [
         { ID: '1', NAME: 'User 1' },
-        { ID: '3', NAME: 'User 3' }
+        { ID: '3', NAME: 'User 3' },
         // 缺少 ID: '2'
       ];
 
       mockPostgresConnection.query.mockResolvedValueOnce({
-        rows: postgresData
+        rows: postgresData,
       });
 
       mockOracleConnection.execute.mockResolvedValueOnce({
-        rows: oracleData
+        rows: oracleData,
       });
 
       const analysis = await dataMigrator.analyzeMissingRecords(
@@ -506,11 +537,11 @@ describe('Data Migrator', () => {
 
       // 模擬成功的遷移
       mockPostgresConnection.query.mockResolvedValue({
-        rows: [{ id: '1', name: 'Test' }]
+        rows: [{ id: '1', name: 'Test' }],
       });
 
       mockOracleConnection.execute.mockResolvedValue({
-        rowsAffected: 1
+        rowsAffected: 1,
       });
 
       const options: DataMigrationOptions = {
@@ -518,7 +549,7 @@ describe('Data Migrator', () => {
         parallelTables: 1,
         validateEachBatch: false,
         continueOnError: false,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       const result = await dataMigrator.migrateAllTables(
@@ -543,11 +574,11 @@ describe('Data Migrator', () => {
       };
 
       mockPostgresConnection.query.mockResolvedValue({
-        rows: new Array(100).fill(0).map((_, i) => ({ id: i }))
+        rows: new Array(100).fill(0).map((_, i) => ({ id: i })),
       });
 
       mockOracleConnection.execute.mockResolvedValue({
-        rowsAffected: 100
+        rowsAffected: 100,
       });
 
       const options: DataMigrationOptions = {
@@ -555,7 +586,7 @@ describe('Data Migrator', () => {
         parallelTables: 1,
         validateEachBatch: false,
         continueOnError: false,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       await dataMigrator.migrateTable(
@@ -574,11 +605,13 @@ describe('Data Migrator', () => {
     it('should track error details and recovery actions', async () => {
       // RED: 測試錯誤詳情和恢復操作追蹤
       mockPostgresConnection.query.mockResolvedValue({
-        rows: [{ id: '1', invalid_data: null }]
+        rows: [{ id: '1', invalid_data: null }],
       });
 
       mockOracleConnection.execute.mockRejectedValue(
-        new Error('ORA-01400: cannot insert NULL into ("SCHEMA"."TABLE"."COLUMN")')
+        new Error(
+          'ORA-01400: cannot insert NULL into ("SCHEMA"."TABLE"."COLUMN")'
+        )
       );
 
       const progressCallback = vi.fn();
@@ -588,7 +621,7 @@ describe('Data Migrator', () => {
         parallelTables: 1,
         validateEachBatch: false,
         continueOnError: true,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       const result = await dataMigrator.migrateTable(
@@ -613,7 +646,7 @@ describe('Data Migrator', () => {
       const backupPath = '/tmp/backup_20231201_120000.sql';
 
       mockOracleConnection.execute.mockResolvedValue({
-        rows: [{ TABLE_NAME: 'USERS' }, { TABLE_NAME: 'PROJECTS' }]
+        rows: [{ TABLE_NAME: 'USERS' }, { TABLE_NAME: 'PROJECTS' }],
       });
 
       const backup = await dataMigrator.createBackup(
@@ -641,11 +674,11 @@ describe('Data Migrator', () => {
       // 模擬檔案讀取
       vi.doMock('fs', () => ({
         readFileSync: vi.fn().mockReturnValue(mockBackupContent),
-        existsSync: vi.fn().mockReturnValue(true)
+        existsSync: vi.fn().mockReturnValue(true),
       }));
 
       mockOracleConnection.execute.mockResolvedValue({
-        rowsAffected: 1
+        rowsAffected: 1,
       });
 
       const restore = await dataMigrator.restoreFromBackup(
@@ -668,7 +701,7 @@ describe('Data Migrator', () => {
         checksum: 'abc123def456',
         includesData: true,
         compressed: true,
-        oracleVersion: '21c'
+        oracleVersion: '21c',
       };
 
       const validation = await dataMigrator.validateBackup(
@@ -696,13 +729,15 @@ describe('Data Migrator', () => {
           checksum: 'wrong_checksum',
           includesData: true,
           compressed: false,
-          oracleVersion: '21c'
+          oracleVersion: '21c',
         }
       );
 
       expect(validation.isValid).toBe(false);
       expect(validation.checksumMatch).toBe(false);
-      expect(validation.issues).toContain('Checksum mismatch - backup may be corrupted');
+      expect(validation.issues).toContain(
+        'Checksum mismatch - backup may be corrupted'
+      );
     });
   });
 
@@ -712,7 +747,7 @@ describe('Data Migrator', () => {
       const oracleErrors = [
         { code: 'ORA-00001', message: 'unique constraint violated' },
         { code: 'ORA-01400', message: 'cannot insert NULL' },
-        { code: 'ORA-12541', message: 'TNS:no listener' }
+        { code: 'ORA-12541', message: 'TNS:no listener' },
       ];
 
       for (const error of oracleErrors) {
@@ -743,7 +778,7 @@ describe('Data Migrator', () => {
         parallelTables: 1,
         validateEachBatch: false,
         continueOnError: false,
-        compressionEnabled: false
+        compressionEnabled: false,
       };
 
       const result = await dataMigrator.importTableData(

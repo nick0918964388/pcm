@@ -10,14 +10,17 @@ import {
   TableMetadata,
   ComparisonSummary,
   ComparisonError,
-  ProgressCallback
+  ProgressCallback,
 } from './data-comparison.types';
 
 export class DataComparisonService implements DataComparisonTool {
   private sourceConnection: DatabaseConnection;
   private targetConnection: DatabaseConnection;
 
-  constructor(sourceConnection: DatabaseConnection, targetConnection: DatabaseConnection) {
+  constructor(
+    sourceConnection: DatabaseConnection,
+    targetConnection: DatabaseConnection
+  ) {
     this.sourceConnection = sourceConnection;
     this.targetConnection = targetConnection;
   }
@@ -27,11 +30,18 @@ export class DataComparisonService implements DataComparisonTool {
 
     for (const tableName of tables) {
       try {
-        const sourceCount = await this.getRowCountFromConnection(this.sourceConnection, tableName);
-        const targetCount = await this.getRowCountFromConnection(this.targetConnection, tableName);
+        const sourceCount = await this.getRowCountFromConnection(
+          this.sourceConnection,
+          tableName
+        );
+        const targetCount = await this.getRowCountFromConnection(
+          this.targetConnection,
+          tableName
+        );
 
         const difference = Math.abs(sourceCount - targetCount);
-        const percentageDiff = sourceCount === 0 ? 0 : (difference / sourceCount) * 100;
+        const percentageDiff =
+          sourceCount === 0 ? 0 : (difference / sourceCount) * 100;
 
         results.push({
           tableName,
@@ -39,17 +49,22 @@ export class DataComparisonService implements DataComparisonTool {
           targetCount,
           countMatch: sourceCount === targetCount,
           difference,
-          percentageDiff
+          percentageDiff,
         });
       } catch (error) {
-        throw new Error(`Failed to compare counts for table ${tableName}: ${error}`);
+        throw new Error(
+          `Failed to compare counts for table ${tableName}: ${error}`
+        );
       }
     }
 
     return results;
   }
 
-  async compareTableContent(tables: string[], sampleSize = 1000): Promise<ContentComparisonResult[]> {
+  async compareTableContent(
+    tables: string[],
+    sampleSize = 1000
+  ): Promise<ContentComparisonResult[]> {
     const results: ContentComparisonResult[] = [];
 
     for (const tableName of tables) {
@@ -65,35 +80,52 @@ export class DataComparisonService implements DataComparisonTool {
           sampleSize
         );
 
-        const comparison = this.compareDataSets(sourceData, targetData, tableName);
+        const comparison = this.compareDataSets(
+          sourceData,
+          targetData,
+          tableName
+        );
         results.push(comparison);
       } catch (error) {
-        throw new Error(`Failed to compare content for table ${tableName}: ${error}`);
+        throw new Error(
+          `Failed to compare content for table ${tableName}: ${error}`
+        );
       }
     }
 
     return results;
   }
 
-  async compareTableStructure(tables: string[]): Promise<StructureComparisonResult[]> {
+  async compareTableStructure(
+    tables: string[]
+  ): Promise<StructureComparisonResult[]> {
     const results: StructureComparisonResult[] = [];
 
     for (const tableName of tables) {
       try {
-        const sourceMetadata = await this.sourceConnection.getMetadata(tableName);
-        const targetMetadata = await this.targetConnection.getMetadata(tableName);
+        const sourceMetadata =
+          await this.sourceConnection.getMetadata(tableName);
+        const targetMetadata =
+          await this.targetConnection.getMetadata(tableName);
 
-        const comparison = this.compareTableStructures(sourceMetadata, targetMetadata);
+        const comparison = this.compareTableStructures(
+          sourceMetadata,
+          targetMetadata
+        );
         results.push(comparison);
       } catch (error) {
-        throw new Error(`Failed to compare structure for table ${tableName}: ${error}`);
+        throw new Error(
+          `Failed to compare structure for table ${tableName}: ${error}`
+        );
       }
     }
 
     return results;
   }
 
-  async performFullComparison(config: ComparisonConfig): Promise<ComparisonReport> {
+  async performFullComparison(
+    config: ComparisonConfig
+  ): Promise<ComparisonReport> {
     const startTime = Date.now();
     const executionId = `comp_${startTime}`;
     const errors: ComparisonError[] = [];
@@ -104,11 +136,18 @@ export class DataComparisonService implements DataComparisonTool {
 
       // 執行各種比對
       const countResults = await this.compareTableCounts(config.tables);
-      const contentResults = await this.compareTableContent(config.tables, config.maxSampleSize);
+      const contentResults = await this.compareTableContent(
+        config.tables,
+        config.maxSampleSize
+      );
       const structureResults = await this.compareTableStructure(config.tables);
 
       // 生成摘要
-      const summary = this.generateSummary(countResults, contentResults, structureResults);
+      const summary = this.generateSummary(
+        countResults,
+        contentResults,
+        structureResults
+      );
 
       // 確保執行時間至少為 1ms
       const executionTime = Math.max(1, Date.now() - startTime);
@@ -122,14 +161,14 @@ export class DataComparisonService implements DataComparisonTool {
         contentResults,
         structureResults,
         errors,
-        executionTime
+        executionTime,
       };
     } catch (error) {
       errors.push({
         operation: 'full_comparison',
         errorCode: 'COMPARISON_FAILED',
         message: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       throw error;
@@ -140,12 +179,25 @@ export class DataComparisonService implements DataComparisonTool {
 
   async getTableList(database: DatabaseConfig): Promise<string[]> {
     // 簡化實作，實際應該查詢資料庫元資料
-    return ['users', 'projects', 'wbs_items', 'project_members', 'vendors', 'duty_schedules'];
+    return [
+      'users',
+      'projects',
+      'wbs_items',
+      'project_members',
+      'vendors',
+      'duty_schedules',
+    ];
   }
 
-  async getTableMetadata(database: DatabaseConfig, tableName: string): Promise<TableMetadata> {
+  async getTableMetadata(
+    database: DatabaseConfig,
+    tableName: string
+  ): Promise<TableMetadata> {
     // 根據資料庫類型選擇連線
-    const connection = database.type === 'postgresql' ? this.sourceConnection : this.targetConnection;
+    const connection =
+      database.type === 'postgresql'
+        ? this.sourceConnection
+        : this.targetConnection;
 
     if (!connection.isConnected()) {
       await connection.connect();
@@ -154,13 +206,30 @@ export class DataComparisonService implements DataComparisonTool {
     return await connection.getMetadata(tableName);
   }
 
-  async extractSampleData(database: DatabaseConfig, tableName: string, sampleSize: number): Promise<any[]> {
-    const connection = database.type === 'postgresql' ? this.sourceConnection : this.targetConnection;
-    return await this.extractSampleDataFromConnection(connection, tableName, sampleSize);
+  async extractSampleData(
+    database: DatabaseConfig,
+    tableName: string,
+    sampleSize: number
+  ): Promise<any[]> {
+    const connection =
+      database.type === 'postgresql'
+        ? this.sourceConnection
+        : this.targetConnection;
+    return await this.extractSampleDataFromConnection(
+      connection,
+      tableName,
+      sampleSize
+    );
   }
 
-  async getRowCount(database: DatabaseConfig, tableName: string): Promise<number> {
-    const connection = database.type === 'postgresql' ? this.sourceConnection : this.targetConnection;
+  async getRowCount(
+    database: DatabaseConfig,
+    tableName: string
+  ): Promise<number> {
+    const connection =
+      database.type === 'postgresql'
+        ? this.sourceConnection
+        : this.targetConnection;
 
     if (!connection.isConnected()) {
       await connection.connect();
@@ -185,9 +254,15 @@ export class DataComparisonService implements DataComparisonTool {
     reportLines.push('-'.repeat(40));
     reportLines.push(`總表格數: ${results.summary.totalTables}`);
     reportLines.push(`計數不匹配: ${results.summary.tablesWithCountMismatch}`);
-    reportLines.push(`內容差異: ${results.summary.tablesWithContentDifferences}`);
-    reportLines.push(`結構差異: ${results.summary.tablesWithStructureDifferences}`);
-    reportLines.push(`資料完整性: ${results.summary.overallDataIntegrity.toFixed(2)}%`);
+    reportLines.push(
+      `內容差異: ${results.summary.tablesWithContentDifferences}`
+    );
+    reportLines.push(
+      `結構差異: ${results.summary.tablesWithStructureDifferences}`
+    );
+    reportLines.push(
+      `資料完整性: ${results.summary.overallDataIntegrity.toFixed(2)}%`
+    );
     reportLines.push('');
 
     // 計數結果
@@ -196,9 +271,13 @@ export class DataComparisonService implements DataComparisonTool {
       reportLines.push('-'.repeat(40));
       for (const result of results.countResults) {
         const status = result.countMatch ? '✓' : '✗';
-        reportLines.push(`${status} ${result.tableName}: ${result.sourceCount} -> ${result.targetCount}`);
+        reportLines.push(
+          `${status} ${result.tableName}: ${result.sourceCount} -> ${result.targetCount}`
+        );
         if (!result.countMatch) {
-          reportLines.push(`  差異: ${result.difference} (${result.percentageDiff.toFixed(2)}%)`);
+          reportLines.push(
+            `  差異: ${result.difference} (${result.percentageDiff.toFixed(2)}%)`
+          );
         }
       }
       reportLines.push('');
@@ -216,7 +295,10 @@ export class DataComparisonService implements DataComparisonTool {
     return reportLines.join('\n');
   }
 
-  async exportResults(results: ComparisonReport, format: 'json' | 'csv' | 'html'): Promise<Buffer> {
+  async exportResults(
+    results: ComparisonReport,
+    format: 'json' | 'csv' | 'html'
+  ): Promise<Buffer> {
     switch (format) {
       case 'json':
         return Buffer.from(JSON.stringify(results, null, 2), 'utf-8');
@@ -251,7 +333,10 @@ export class DataComparisonService implements DataComparisonTool {
     }
   }
 
-  private async getRowCountFromConnection(connection: DatabaseConnection, tableName: string): Promise<number> {
+  private async getRowCountFromConnection(
+    connection: DatabaseConnection,
+    tableName: string
+  ): Promise<number> {
     const query = `SELECT COUNT(*) as count FROM ${tableName}`;
     const result = await connection.executeQuery(query);
     return result[0]?.count || 0;
@@ -266,7 +351,11 @@ export class DataComparisonService implements DataComparisonTool {
     return await connection.executeQuery(query);
   }
 
-  private compareDataSets(sourceData: any[], targetData: any[], tableName: string): ContentComparisonResult {
+  private compareDataSets(
+    sourceData: any[],
+    targetData: any[],
+    tableName: string
+  ): ContentComparisonResult {
     const totalRecords = Math.max(sourceData.length, targetData.length);
     let exactMatches = 0;
     let partialMatches = 0;
@@ -295,11 +384,14 @@ export class DataComparisonService implements DataComparisonTool {
       partialMatches,
       missingInTarget,
       extraInTarget,
-      fieldDifferences: [] // 簡化版本暫不實作詳細差異
+      fieldDifferences: [], // 簡化版本暫不實作詳細差異
     };
   }
 
-  private compareTableStructures(source: TableMetadata, target: TableMetadata): StructureComparisonResult {
+  private compareTableStructures(
+    source: TableMetadata,
+    target: TableMetadata
+  ): StructureComparisonResult {
     const missingColumns = source.columns.filter(
       sc => !target.columns.some(tc => tc.name === sc.name)
     );
@@ -308,7 +400,8 @@ export class DataComparisonService implements DataComparisonTool {
       tc => !source.columns.some(sc => sc.name === tc.name)
     );
 
-    const structureMatch = missingColumns.length === 0 && extraColumns.length === 0;
+    const structureMatch =
+      missingColumns.length === 0 && extraColumns.length === 0;
 
     return {
       tableName: source.name,
@@ -317,7 +410,7 @@ export class DataComparisonService implements DataComparisonTool {
       extraColumns,
       columnDifferences: [],
       missingIndexes: [],
-      extraIndexes: []
+      extraIndexes: [],
     };
   }
 
@@ -327,14 +420,27 @@ export class DataComparisonService implements DataComparisonTool {
     structureResults: StructureComparisonResult[]
   ): ComparisonSummary {
     const totalTables = countResults.length;
-    const tablesWithCountMismatch = countResults.filter(r => !r.countMatch).length;
-    const tablesWithContentDifferences = contentResults.filter(r =>
-      r.exactMatches < r.totalRecords || r.missingInTarget > 0 || r.extraInTarget > 0
+    const tablesWithCountMismatch = countResults.filter(
+      r => !r.countMatch
     ).length;
-    const tablesWithStructureDifferences = structureResults.filter(r => !r.structureMatch).length;
+    const tablesWithContentDifferences = contentResults.filter(
+      r =>
+        r.exactMatches < r.totalRecords ||
+        r.missingInTarget > 0 ||
+        r.extraInTarget > 0
+    ).length;
+    const tablesWithStructureDifferences = structureResults.filter(
+      r => !r.structureMatch
+    ).length;
 
-    const totalIssues = tablesWithCountMismatch + tablesWithContentDifferences + tablesWithStructureDifferences;
-    const overallDataIntegrity = totalTables === 0 ? 100 : ((totalTables - totalIssues) / totalTables) * 100;
+    const totalIssues =
+      tablesWithCountMismatch +
+      tablesWithContentDifferences +
+      tablesWithStructureDifferences;
+    const overallDataIntegrity =
+      totalTables === 0
+        ? 100
+        : ((totalTables - totalIssues) / totalTables) * 100;
 
     return {
       totalTables,
@@ -343,7 +449,7 @@ export class DataComparisonService implements DataComparisonTool {
       tablesWithStructureDifferences,
       overallDataIntegrity,
       criticalIssues: tablesWithCountMismatch,
-      warnings: tablesWithContentDifferences + tablesWithStructureDifferences
+      warnings: tablesWithContentDifferences + tablesWithStructureDifferences,
     };
   }
 
@@ -353,17 +459,21 @@ export class DataComparisonService implements DataComparisonTool {
 
   private generateCSVReport(results: ComparisonReport): Buffer {
     const lines: string[] = [];
-    lines.push('Table,Source Count,Target Count,Count Match,Difference,Percentage Diff');
+    lines.push(
+      'Table,Source Count,Target Count,Count Match,Difference,Percentage Diff'
+    );
 
     for (const result of results.countResults) {
-      lines.push([
-        result.tableName,
-        result.sourceCount,
-        result.targetCount,
-        result.countMatch,
-        result.difference,
-        result.percentageDiff.toFixed(2)
-      ].join(','));
+      lines.push(
+        [
+          result.tableName,
+          result.sourceCount,
+          result.targetCount,
+          result.countMatch,
+          result.difference,
+          result.percentageDiff.toFixed(2),
+        ].join(',')
+      );
     }
 
     return Buffer.from(lines.join('\n'), 'utf-8');
@@ -405,7 +515,9 @@ export class DataComparisonService implements DataComparisonTool {
             <th>狀態</th>
             <th>差異</th>
         </tr>
-        ${results.countResults.map(r => `
+        ${results.countResults
+          .map(
+            r => `
         <tr>
             <td>${r.tableName}</td>
             <td>${r.sourceCount}</td>
@@ -415,7 +527,9 @@ export class DataComparisonService implements DataComparisonTool {
             </td>
             <td>${r.difference}</td>
         </tr>
-        `).join('')}
+        `
+          )
+          .join('')}
     </table>
 </body>
 </html>`;

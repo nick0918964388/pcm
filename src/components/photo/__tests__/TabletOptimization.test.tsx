@@ -3,46 +3,46 @@
  * 測試照片庫在平板裝置上的佈局和操作優化
  */
 
-import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import '@testing-library/jest-dom'
-import { PhotoGrid } from '../PhotoGrid'
-import { PhotoLightbox } from '../PhotoLightbox'
-import PhotoGalleryPage from '@/app/dashboard/[projectId]/photos/page'
-import { mockPhotos } from '@/mocks/data/photos.json'
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import '@testing-library/jest-dom';
+import { PhotoGrid } from '../PhotoGrid';
+import { PhotoLightbox } from '../PhotoLightbox';
+import PhotoGalleryPage from '@/app/dashboard/[projectId]/photos/page';
+import { mockPhotos } from '@/mocks/data/photos.json';
 
 // Mock tablet viewport
 const mockTabletViewport = () => {
-  Object.defineProperty(window, 'innerWidth', { value: 768, writable: true })
-  Object.defineProperty(window, 'innerHeight', { value: 1024, writable: true })
+  Object.defineProperty(window, 'innerWidth', { value: 768, writable: true });
+  Object.defineProperty(window, 'innerHeight', { value: 1024, writable: true });
   Object.defineProperty(window, 'screen', {
     value: {
       width: 768,
       height: 1024,
-      orientation: { angle: 0, type: 'portrait-primary' }
+      orientation: { angle: 0, type: 'portrait-primary' },
     },
-    writable: true
-  })
-}
+    writable: true,
+  });
+};
 
 // Mock landscape tablet
 const mockTabletLandscape = () => {
-  Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true })
-  Object.defineProperty(window, 'innerHeight', { value: 768, writable: true })
+  Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+  Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
   Object.defineProperty(window, 'screen', {
     value: {
       width: 1024,
       height: 768,
-      orientation: { angle: 90, type: 'landscape-primary' }
+      orientation: { angle: 90, type: 'landscape-primary' },
     },
-    writable: true
-  })
-}
+    writable: true,
+  });
+};
 
 // Mock matchMedia for tablet
 const mockMatchMediaTablet = (query: string) => {
-  const tabletQueries = ['(min-width: 768px)', '(max-width: 1024px)']
+  const tabletQueries = ['(min-width: 768px)', '(max-width: 1024px)'];
   return {
     matches: tabletQueries.some(tq => query.includes(tq.slice(1, -1))),
     media: query,
@@ -52,28 +52,28 @@ const mockMatchMediaTablet = (query: string) => {
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
-  }
-}
+  };
+};
 
 describe('TabletOptimization', () => {
-  let originalMatchMedia: typeof window.matchMedia
+  let originalMatchMedia: typeof window.matchMedia;
 
   beforeAll(() => {
-    originalMatchMedia = window.matchMedia
-    window.matchMedia = jest.fn().mockImplementation(mockMatchMediaTablet)
-  })
+    originalMatchMedia = window.matchMedia;
+    window.matchMedia = jest.fn().mockImplementation(mockMatchMediaTablet);
+  });
 
   afterAll(() => {
-    window.matchMedia = originalMatchMedia
-  })
+    window.matchMedia = originalMatchMedia;
+  });
 
   describe('Tablet Portrait Layout', () => {
     beforeEach(() => {
-      mockTabletViewport()
-    })
+      mockTabletViewport();
+    });
 
     test('should use optimized grid layout for tablet portrait', () => {
-      const photos = mockPhotos.slice(0, 12)
+      const photos = mockPhotos.slice(0, 12);
 
       render(
         <PhotoGrid
@@ -88,16 +88,16 @@ describe('TabletOptimization', () => {
           columnCount={4}
           height={600}
         />
-      )
+      );
 
-      const grid = screen.getByTestId('photo-grid')
+      const grid = screen.getByTestId('photo-grid');
 
       // Should use 2-3 columns on tablet portrait
-      expect(grid).toHaveClass(['grid-cols-2', 'md:grid-cols-3'])
-    })
+      expect(grid).toHaveClass(['grid-cols-2', 'md:grid-cols-3']);
+    });
 
     test('should show larger thumbnails on tablet', () => {
-      const photos = mockPhotos.slice(0, 6)
+      const photos = mockPhotos.slice(0, 6);
 
       render(
         <PhotoGrid
@@ -112,16 +112,16 @@ describe('TabletOptimization', () => {
           columnCount={3}
           height={600}
         />
-      )
+      );
 
-      const thumbnails = screen.getAllByTestId('photo-thumbnail')
+      const thumbnails = screen.getAllByTestId('photo-thumbnail');
 
       // Thumbnails should be larger on tablet
-      expect(thumbnails[0]).toHaveClass('h-48')
-    })
+      expect(thumbnails[0]).toHaveClass('h-48');
+    });
 
     test('should position controls optimally for touch', () => {
-      const photos = mockPhotos.slice(0, 4)
+      const photos = mockPhotos.slice(0, 4);
 
       render(
         <PhotoGrid
@@ -136,24 +136,24 @@ describe('TabletOptimization', () => {
           columnCount={3}
           height={600}
         />
-      )
+      );
 
-      const actionButtons = screen.getAllByTestId('photo-actions')
+      const actionButtons = screen.getAllByTestId('photo-actions');
 
       // Action buttons should be positioned for easy touch access
       actionButtons.forEach(button => {
-        expect(button).toHaveClass('touch-target-44')
-      })
-    })
-  })
+        expect(button).toHaveClass('touch-target-44');
+      });
+    });
+  });
 
   describe('Tablet Landscape Layout', () => {
     beforeEach(() => {
-      mockTabletLandscape()
-    })
+      mockTabletLandscape();
+    });
 
     test('should use expanded grid for landscape mode', () => {
-      const photos = mockPhotos.slice(0, 15)
+      const photos = mockPhotos.slice(0, 15);
 
       render(
         <PhotoGrid
@@ -168,16 +168,16 @@ describe('TabletOptimization', () => {
           columnCount={4}
           height={600}
         />
-      )
+      );
 
-      const grid = screen.getByTestId('photo-grid')
+      const grid = screen.getByTestId('photo-grid');
 
       // Should use more columns in landscape
-      expect(grid).toHaveClass(['lg:grid-cols-4', 'xl:grid-cols-5'])
-    })
+      expect(grid).toHaveClass(['lg:grid-cols-4', 'xl:grid-cols-5']);
+    });
 
     test('should show sidebar in landscape mode', async () => {
-      mockTabletLandscape()
+      mockTabletLandscape();
 
       // Mock router params
       jest.mock('next/navigation', () => ({
@@ -185,26 +185,26 @@ describe('TabletOptimization', () => {
         useRouter: () => ({
           push: jest.fn(),
           replace: jest.fn(),
-          pathname: '/dashboard/test-project/photos'
-        })
-      }))
+          pathname: '/dashboard/test-project/photos',
+        }),
+      }));
 
-      render(<PhotoGalleryPage />)
+      render(<PhotoGalleryPage />);
 
       await waitFor(() => {
-        const sidebar = screen.queryByTestId('photo-sidebar')
-        expect(sidebar).toBeInTheDocument()
-      })
-    })
-  })
+        const sidebar = screen.queryByTestId('photo-sidebar');
+        expect(sidebar).toBeInTheDocument();
+      });
+    });
+  });
 
   describe('Touch Optimization', () => {
     beforeEach(() => {
-      mockTabletViewport()
-    })
+      mockTabletViewport();
+    });
 
     test('should have appropriate touch targets', () => {
-      const photos = mockPhotos.slice(0, 6)
+      const photos = mockPhotos.slice(0, 6);
 
       render(
         <PhotoGrid
@@ -219,21 +219,21 @@ describe('TabletOptimization', () => {
           columnCount={3}
           height={600}
         />
-      )
+      );
 
-      const selectButtons = screen.getAllByLabelText(/選擇照片/)
+      const selectButtons = screen.getAllByLabelText(/選擇照片/);
 
       // Touch targets should meet minimum size requirements (44px)
       selectButtons.forEach(button => {
-        const computedStyle = window.getComputedStyle(button)
-        expect(parseInt(computedStyle.minWidth)).toBeGreaterThanOrEqual(44)
-        expect(parseInt(computedStyle.minHeight)).toBeGreaterThanOrEqual(44)
-      })
-    })
+        const computedStyle = window.getComputedStyle(button);
+        expect(parseInt(computedStyle.minWidth)).toBeGreaterThanOrEqual(44);
+        expect(parseInt(computedStyle.minHeight)).toBeGreaterThanOrEqual(44);
+      });
+    });
 
     test('should support multi-touch gestures in lightbox', () => {
-      const photos = mockPhotos.slice(0, 3)
-      const onClose = jest.fn()
+      const photos = mockPhotos.slice(0, 3);
+      const onClose = jest.fn();
 
       render(
         <PhotoLightbox
@@ -244,17 +244,17 @@ describe('TabletOptimization', () => {
           enableTouchGestures={true}
           enableZoom={true}
         />
-      )
+      );
 
-      const image = screen.getByRole('img')
+      const image = screen.getByRole('img');
 
       // Should support pinch-to-zoom on tablet
-      expect(image).toHaveAttribute('data-touch-zoom', 'enabled')
-    })
+      expect(image).toHaveAttribute('data-touch-zoom', 'enabled');
+    });
 
     test('should handle edge swipes properly', () => {
-      const photos = mockPhotos.slice(0, 5)
-      const onClose = jest.fn()
+      const photos = mockPhotos.slice(0, 5);
+      const onClose = jest.fn();
 
       render(
         <PhotoLightbox
@@ -264,20 +264,20 @@ describe('TabletOptimization', () => {
           onClose={onClose}
           enableTouchGestures={true}
         />
-      )
+      );
 
-      const lightbox = screen.getByRole('dialog')
+      const lightbox = screen.getByRole('dialog');
 
       // Should handle edge swipes from screen edges
-      expect(lightbox).toHaveAttribute('data-edge-swipe', 'enabled')
-    })
-  })
+      expect(lightbox).toHaveAttribute('data-edge-swipe', 'enabled');
+    });
+  });
 
   describe('Split View Layout', () => {
     test('should support split view mode on larger tablets', () => {
-      mockTabletLandscape()
+      mockTabletLandscape();
 
-      const photos = mockPhotos.slice(0, 8)
+      const photos = mockPhotos.slice(0, 8);
 
       render(
         <PhotoGrid
@@ -292,17 +292,17 @@ describe('TabletOptimization', () => {
           columnCount={4}
           height={600}
         />
-      )
+      );
 
       // Should show split view with preview panel
-      const splitView = screen.queryByTestId('split-view-container')
-      expect(splitView).toBeInTheDocument()
-    })
+      const splitView = screen.queryByTestId('split-view-container');
+      expect(splitView).toBeInTheDocument();
+    });
 
     test('should maintain state when switching orientations', () => {
-      const photos = mockPhotos.slice(0, 6)
-      let selectedPhotos = ['photo-1', 'photo-2']
-      const onSelect = jest.fn()
+      const photos = mockPhotos.slice(0, 6);
+      let selectedPhotos = ['photo-1', 'photo-2'];
+      const onSelect = jest.fn();
 
       const { rerender } = render(
         <PhotoGrid
@@ -317,11 +317,11 @@ describe('TabletOptimization', () => {
           columnCount={3}
           height={600}
         />
-      )
+      );
 
       // Switch to landscape
-      mockTabletLandscape()
-      fireEvent(window, new Event('orientationchange'))
+      mockTabletLandscape();
+      fireEvent(window, new Event('orientationchange'));
 
       rerender(
         <PhotoGrid
@@ -336,17 +336,17 @@ describe('TabletOptimization', () => {
           columnCount={4}
           height={600}
         />
-      )
+      );
 
       // Selection should be preserved
-      const selectedElements = screen.getAllByTestId(/photo-.*-selected/)
-      expect(selectedElements).toHaveLength(2)
-    })
-  })
+      const selectedElements = screen.getAllByTestId(/photo-.*-selected/);
+      expect(selectedElements).toHaveLength(2);
+    });
+  });
 
   describe('Performance on Tablet', () => {
     test('should implement efficient rendering for tablet grids', () => {
-      const photos = mockPhotos.slice(0, 20)
+      const photos = mockPhotos.slice(0, 20);
 
       render(
         <PhotoGrid
@@ -361,15 +361,15 @@ describe('TabletOptimization', () => {
           columnCount={4}
           height={600}
         />
-      )
+      );
 
       // Should implement virtual scrolling for large lists
-      const virtualContainer = screen.getByTestId('virtual-grid-container')
-      expect(virtualContainer).toBeInTheDocument()
-    })
+      const virtualContainer = screen.getByTestId('virtual-grid-container');
+      expect(virtualContainer).toBeInTheDocument();
+    });
 
     test('should lazy load images for tablet display', () => {
-      const photos = mockPhotos.slice(0, 12)
+      const photos = mockPhotos.slice(0, 12);
 
       render(
         <PhotoGrid
@@ -384,14 +384,14 @@ describe('TabletOptimization', () => {
           columnCount={3}
           height={600}
         />
-      )
+      );
 
-      const images = screen.getAllByRole('img')
+      const images = screen.getAllByRole('img');
 
       // Images should have lazy loading attributes
       images.forEach(img => {
-        expect(img).toHaveAttribute('loading', 'lazy')
-      })
-    })
-  })
-})
+        expect(img).toHaveAttribute('loading', 'lazy');
+      });
+    });
+  });
+});

@@ -32,7 +32,7 @@ import type {
   RestoreResult,
   OracleErrorHandler,
   PerformanceMetrics,
-  RecordDifference
+  RecordDifference,
 } from './migration-types';
 
 export class DataMigrator {
@@ -59,7 +59,7 @@ export class DataMigrator {
       exportedData: [],
       originalSize: 0,
       duration: 0,
-      timestamp: startTime
+      timestamp: startTime,
     };
 
     try {
@@ -113,7 +113,6 @@ export class DataMigrator {
       result.duration = Date.now() - startTime.getTime();
 
       return result;
-
     } catch (error: any) {
       result.error = error.message;
       result.duration = Date.now() - startTime.getTime();
@@ -124,16 +123,19 @@ export class DataMigrator {
   private getPrimaryKeyColumn(tableName: string): string {
     // 簡化的主鍵列名推斷
     const primaryKeyMap: Record<string, string> = {
-      'users': 'id',
-      'projects': 'id',
-      'orders': 'id',
-      'large_table': 'id',
-      'large_content_table': 'id'
+      users: 'id',
+      projects: 'id',
+      orders: 'id',
+      large_table: 'id',
+      large_content_table: 'id',
     };
     return primaryKeyMap[tableName] || 'id';
   }
 
-  private async validateBatchData(batchData: any[], tableName: string): Promise<void> {
+  private async validateBatchData(
+    batchData: any[],
+    tableName: string
+  ): Promise<void> {
     // 基本的批次驗證邏輯
     for (const record of batchData) {
       if (!record.id) {
@@ -163,11 +165,11 @@ export class DataMigrator {
         jsonb: 0,
         boolean: 0,
         timestamp: 0,
-        serial: 0
+        serial: 0,
       },
       errors: [],
       duration: 0,
-      timestamp: startTime
+      timestamp: startTime,
     };
 
     try {
@@ -186,13 +188,19 @@ export class DataMigrator {
             // 逐筆插入
             for (const record of batch) {
               try {
-                const convertedRecord = await this.convertRecord(record, tableName);
-                await this.insertSingleRecord(oracleConnection, tableName, convertedRecord);
+                const convertedRecord = await this.convertRecord(
+                  record,
+                  tableName
+                );
+                await this.insertSingleRecord(
+                  oracleConnection,
+                  tableName,
+                  convertedRecord
+                );
                 result.insertedRecords++;
 
                 // 統計轉換
                 this.updateConversionStats(record, result.conversions!);
-
               } catch (error: any) {
                 result.failedRecords++;
 
@@ -210,7 +218,7 @@ export class DataMigrator {
                   isRetryable: this.isRetryableError(error),
                   suggestedAction: this.getSuggestedAction(error),
                   severity: this.getErrorSeverity(error),
-                  timestamp: new Date()
+                  timestamp: new Date(),
                 };
 
                 result.errors!.push(migrationError);
@@ -218,7 +226,12 @@ export class DataMigrator {
                 // 重試邏輯
                 if (migrationError.isRetryable) {
                   const retryResult = await this.retryOperation(
-                    () => this.insertSingleRecord(oracleConnection, tableName, convertedRecord),
+                    () =>
+                      this.insertSingleRecord(
+                        oracleConnection,
+                        tableName,
+                        convertedRecord
+                      ),
                     options.maxRetryAttempts || 3,
                     options.retryDelayMs || 1000
                   );
@@ -226,7 +239,8 @@ export class DataMigrator {
                   if (retryResult.success) {
                     result.insertedRecords++;
                     result.failedRecords--;
-                    result.retryAttempts = (result.retryAttempts || 0) + retryResult.attempts;
+                    result.retryAttempts =
+                      (result.retryAttempts || 0) + retryResult.attempts;
                   }
                 }
               }
@@ -244,7 +258,6 @@ export class DataMigrator {
       result.duration = Date.now() - startTime.getTime();
 
       return result;
-
     } catch (error: any) {
       result.duration = Date.now() - startTime.getTime();
       return result;
@@ -306,7 +319,8 @@ export class DataMigrator {
   }
 
   private isUUID(str: string): boolean {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(str);
   }
 
@@ -344,21 +358,24 @@ export class DataMigrator {
       'ORA-01400': 'Check for NULL values in NOT NULL columns',
       'ORA-00001': 'Check for duplicate values in unique constraints',
       'ORA-12541': 'Verify Oracle listener is running and accessible',
-      'ORA-12545': 'Check network connectivity to Oracle database'
+      'ORA-12545': 'Check network connectivity to Oracle database',
     };
 
-    return errorCode ? suggestions[errorCode] || 'Review error details and retry' : 'Unknown error - check logs';
+    return errorCode
+      ? suggestions[errorCode] || 'Review error details and retry'
+      : 'Unknown error - check logs';
   }
 
   private getErrorSeverity(error: any): 'low' | 'medium' | 'high' | 'critical' {
     const errorCode = this.extractOracleErrorCode(error.message);
 
-    const severityMap: Record<string, 'low' | 'medium' | 'high' | 'critical'> = {
-      'ORA-01400': 'medium',
-      'ORA-00001': 'medium',
-      'ORA-12541': 'high',
-      'ORA-12545': 'high'
-    };
+    const severityMap: Record<string, 'low' | 'medium' | 'high' | 'critical'> =
+      {
+        'ORA-01400': 'medium',
+        'ORA-00001': 'medium',
+        'ORA-12541': 'high',
+        'ORA-12545': 'high',
+      };
 
     return errorCode ? severityMap[errorCode] || 'medium' : 'medium';
   }
@@ -402,11 +419,13 @@ export class DataMigrator {
       isRetryable: this.isRetryableError(error),
       suggestedAction: this.getSuggestedAction(error),
       severity: this.getErrorSeverity(error),
-      retryStrategy: this.isRetryableError(error) ? {
-        maxAttempts: 3,
-        baseDelayMs: 1000,
-        backoffMultiplier: 2
-      } : undefined
+      retryStrategy: this.isRetryableError(error)
+        ? {
+            maxAttempts: 3,
+            baseDelayMs: 1000,
+            backoffMultiplier: 2,
+          }
+        : undefined,
     };
   }
 
@@ -423,26 +442,31 @@ export class DataMigrator {
       postgresCount: 0,
       oracleCount: 0,
       issues: [],
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     try {
       // 獲取PostgreSQL計數
-      const pgCountResult = await postgresConnection.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+      const pgCountResult = await postgresConnection.query(
+        `SELECT COUNT(*) as count FROM ${tableName}`
+      );
       report.postgresCount = parseInt(pgCountResult.rows[0].count);
 
       // 獲取Oracle計數
-      const oracleCountResult = await oracleConnection.execute(`SELECT COUNT(*) as COUNT FROM ${tableName}`);
+      const oracleCountResult = await oracleConnection.execute(
+        `SELECT COUNT(*) as COUNT FROM ${tableName}`
+      );
       report.oracleCount = oracleCountResult.rows[0].COUNT;
 
       // 比較計數
       if (report.postgresCount !== report.oracleCount) {
-        report.issues.push(`Count mismatch: PostgreSQL has ${report.postgresCount} records, Oracle has ${report.oracleCount}`);
+        report.issues.push(
+          `Count mismatch: PostgreSQL has ${report.postgresCount} records, Oracle has ${report.oracleCount}`
+        );
       }
 
       report.isValid = report.issues.length === 0;
       return report;
-
     } catch (error: any) {
       report.issues.push(`Validation error: ${error.message}`);
       return report;
@@ -466,8 +490,8 @@ export class DataMigrator {
         sampleSize: 0,
         matchedRecords: 0,
         mismatchedRecords: 0,
-        differences: []
-      }
+        differences: [],
+      },
     };
 
     try {
@@ -478,7 +502,8 @@ export class DataMigrator {
 
       // 獲取Oracle樣本數據
       const oracleSampleQuery = `SELECT * FROM ${tableName} WHERE ROWNUM <= ${sampleSize} ORDER BY ${this.getPrimaryKeyColumn(tableName)}`;
-      const oracleSampleResult = await oracleConnection.execute(oracleSampleQuery);
+      const oracleSampleResult =
+        await oracleConnection.execute(oracleSampleQuery);
       const oracleData = oracleSampleResult.rows;
 
       report.validationDetails!.sampleSize = pgData.length;
@@ -500,12 +525,12 @@ export class DataMigrator {
       }
 
       report.validationDetails!.matchedRecords = matchedRecords;
-      report.validationDetails!.mismatchedRecords = pgData.length - matchedRecords;
+      report.validationDetails!.mismatchedRecords =
+        pgData.length - matchedRecords;
       report.validationDetails!.differences = differences;
 
       report.isValid = differences.length === 0;
       return report;
-
     } catch (error: any) {
       report.issues.push(`Sample validation error: ${error.message}`);
       return report;
@@ -548,7 +573,7 @@ export class DataMigrator {
           field: key,
           postgresValue: pgValue,
           oracleValue: oracleValue,
-          differenceType: 'value_mismatch'
+          differenceType: 'value_mismatch',
         });
       }
     }
@@ -570,10 +595,14 @@ export class DataMigrator {
 
     for (const tableName of tables) {
       try {
-        const pgCountResult = await postgresConnection.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+        const pgCountResult = await postgresConnection.query(
+          `SELECT COUNT(*) as count FROM ${tableName}`
+        );
         const postgresCount = parseInt(pgCountResult.rows[0].count);
 
-        const oracleCountResult = await oracleConnection.execute(`SELECT COUNT(*) as COUNT FROM ${tableName}`);
+        const oracleCountResult = await oracleConnection.execute(
+          `SELECT COUNT(*) as COUNT FROM ${tableName}`
+        );
         const oracleCount = oracleCountResult.rows[0].COUNT;
 
         const isMatch = postgresCount === oracleCount;
@@ -585,13 +614,17 @@ export class DataMigrator {
           oracleCount,
           isMatch,
           difference: postgresCount - oracleCount,
-          percentageMatch: oracleCount === 0 ? 0 : (Math.min(postgresCount, oracleCount) / Math.max(postgresCount, oracleCount)) * 100
+          percentageMatch:
+            oracleCount === 0
+              ? 0
+              : (Math.min(postgresCount, oracleCount) /
+                  Math.max(postgresCount, oracleCount)) *
+                100,
         };
 
         results.push(result);
         totalPostgresRecords += postgresCount;
         totalOracleRecords += oracleCount;
-
       } catch (error: any) {
         results.push({
           tableName,
@@ -599,7 +632,7 @@ export class DataMigrator {
           oracleCount: 0,
           isMatch: false,
           difference: 0,
-          percentageMatch: 0
+          percentageMatch: 0,
         });
       }
     }
@@ -612,9 +645,9 @@ export class DataMigrator {
       summary: {
         totalPostgresRecords,
         totalOracleRecords,
-        overallMatch: totalPostgresRecords === totalOracleRecords
+        overallMatch: totalPostgresRecords === totalOracleRecords,
       },
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -625,12 +658,20 @@ export class DataMigrator {
     primaryKey: string
   ): Promise<MissingRecordsAnalysis> {
     // 獲取PostgreSQL所有主鍵
-    const pgKeysResult = await postgresConnection.query(`SELECT ${primaryKey} FROM ${tableName} ORDER BY ${primaryKey}`);
-    const pgKeys = pgKeysResult.rows.map((row: any) => row[primaryKey].toString());
+    const pgKeysResult = await postgresConnection.query(
+      `SELECT ${primaryKey} FROM ${tableName} ORDER BY ${primaryKey}`
+    );
+    const pgKeys = pgKeysResult.rows.map((row: any) =>
+      row[primaryKey].toString()
+    );
 
     // 獲取Oracle所有主鍵
-    const oracleKeysResult = await oracleConnection.execute(`SELECT ${primaryKey.toUpperCase()} FROM ${tableName} ORDER BY ${primaryKey.toUpperCase()}`);
-    const oracleKeys = oracleKeysResult.rows.map((row: any) => row[primaryKey.toUpperCase()].toString());
+    const oracleKeysResult = await oracleConnection.execute(
+      `SELECT ${primaryKey.toUpperCase()} FROM ${tableName} ORDER BY ${primaryKey.toUpperCase()}`
+    );
+    const oracleKeys = oracleKeysResult.rows.map((row: any) =>
+      row[primaryKey.toUpperCase()].toString()
+    );
 
     // 分析差異
     const missingInOracle = pgKeys.filter(key => !oracleKeys.includes(key));
@@ -647,8 +688,8 @@ export class DataMigrator {
         totalPostgres: pgKeys.length,
         totalOracle: oracleKeys.length,
         missing: missingInOracle.length,
-        extra: missingInPostgres.length
-      }
+        extra: missingInPostgres.length,
+      },
     };
   }
 
@@ -675,8 +716,8 @@ export class DataMigrator {
       summary: {
         tablesProcessed: [],
         tablesSkipped: [],
-        tablesFailed: []
-      }
+        tablesFailed: [],
+      },
     };
 
     for (let i = 0; i < tables.length; i++) {
@@ -688,12 +729,12 @@ export class DataMigrator {
           oracleConnection,
           tableName,
           options,
-          (progress) => {
+          progress => {
             if (progressCallback) {
               progressCallback({
                 ...progress,
                 tableIndex: i,
-                totalTables: tables.length
+                totalTables: tables.length,
               });
             }
           }
@@ -712,7 +753,6 @@ export class DataMigrator {
 
         result.totalRecords += tableResult.totalRecords;
         result.migratedRecords += tableResult.insertedRecords;
-
       } catch (error: any) {
         result.failedTables++;
         result.summary.tablesFailed.push(tableName);
@@ -733,7 +773,11 @@ export class DataMigrator {
     progressCallback?: (progress: MigrationProgress) => void
   ): Promise<DataImportResult> {
     // 匯出數據
-    const exportResult = await this.exportTableData(postgresConnection, tableName, options);
+    const exportResult = await this.exportTableData(
+      postgresConnection,
+      tableName,
+      options
+    );
 
     if (!exportResult.success) {
       return {
@@ -743,17 +787,19 @@ export class DataMigrator {
         insertedRecords: 0,
         failedRecords: 0,
         batchCount: 0,
-        errors: [{
-          tableName,
-          operation: 'export',
-          errorMessage: exportResult.error || 'Export failed',
-          isRetryable: false,
-          suggestedAction: 'Check source database connectivity',
-          severity: 'high',
-          timestamp: new Date()
-        }],
+        errors: [
+          {
+            tableName,
+            operation: 'export',
+            errorMessage: exportResult.error || 'Export failed',
+            isRetryable: false,
+            suggestedAction: 'Check source database connectivity',
+            severity: 'high',
+            timestamp: new Date(),
+          },
+        ],
         duration: 0,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
 
@@ -770,12 +816,17 @@ export class DataMigrator {
         percentComplete: 0,
         estimatedTimeRemaining: 0,
         currentOperation: 'import',
-        completed: false
+        completed: false,
       });
     }
 
     // 匯入數據
-    const importResult = await this.importTableData(oracleConnection, tableName, exportResult.exportedData, options);
+    const importResult = await this.importTableData(
+      oracleConnection,
+      tableName,
+      exportResult.exportedData,
+      options
+    );
 
     // 完成進度回調
     if (progressCallback) {
@@ -790,7 +841,7 @@ export class DataMigrator {
         percentComplete: 100,
         estimatedTimeRemaining: 0,
         currentOperation: 'import',
-        completed: true
+        completed: true,
       });
     }
 
@@ -828,9 +879,13 @@ export class DataMigrator {
 
         // 添加數據（如果啟用）
         if (options.includeData) {
-          const dataResult = await oracleConnection.execute(`SELECT * FROM ${tableName}`);
+          const dataResult = await oracleConnection.execute(
+            `SELECT * FROM ${tableName}`
+          );
           for (const row of dataResult.rows) {
-            const values = Object.values(row).map(v => `'${v}'`).join(',');
+            const values = Object.values(row)
+              .map(v => `'${v}'`)
+              .join(',');
             backupScript += `INSERT INTO ${tableName} VALUES (${values});\n`;
           }
           backupScript += '\n';
@@ -846,7 +901,10 @@ export class DataMigrator {
       fs.writeFileSync(backupPath, finalScript);
 
       // 計算校驗和
-      const checksum = crypto.createHash('sha256').update(backupScript).digest('hex');
+      const checksum = crypto
+        .createHash('sha256')
+        .update(backupScript)
+        .digest('hex');
 
       const metadata: BackupMetadata = {
         version: '1.0',
@@ -856,7 +914,7 @@ export class DataMigrator {
         checksum,
         includesData: options.includeData,
         compressed: options.compression,
-        oracleVersion: '21c'
+        oracleVersion: '21c',
       };
 
       return {
@@ -864,9 +922,8 @@ export class DataMigrator {
         backupPath,
         size: Buffer.byteLength(finalScript),
         metadata,
-        duration: Date.now() - startTime.getTime()
+        duration: Date.now() - startTime.getTime(),
       };
-
     } catch (error: any) {
       return {
         success: false,
@@ -880,10 +937,10 @@ export class DataMigrator {
           checksum: '',
           includesData: options.includeData,
           compressed: options.compression,
-          oracleVersion: '21c'
+          oracleVersion: '21c',
         },
         duration: Date.now() - startTime.getTime(),
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -933,9 +990,8 @@ export class DataMigrator {
         executedStatements,
         restoredTables,
         restoredRecords,
-        duration: Date.now() - startTime.getTime()
+        duration: Date.now() - startTime.getTime(),
       };
-
     } catch (error: any) {
       return {
         success: false,
@@ -944,7 +1000,7 @@ export class DataMigrator {
         restoredTables: 0,
         restoredRecords: 0,
         duration: Date.now() - startTime.getTime(),
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -961,12 +1017,15 @@ export class DataMigrator {
           structureValid: false,
           dataIntegrityCheck: false,
           issues: ['Backup file not found'],
-          recommendations: ['Ensure backup file exists and is accessible']
+          recommendations: ['Ensure backup file exists and is accessible'],
         };
       }
 
       const backupContent = fs.readFileSync(backupPath, 'utf8');
-      const actualChecksum = crypto.createHash('sha256').update(backupContent).digest('hex');
+      const actualChecksum = crypto
+        .createHash('sha256')
+        .update(backupContent)
+        .digest('hex');
 
       const issues: string[] = [];
       const recommendations: string[] = [];
@@ -979,14 +1038,17 @@ export class DataMigrator {
       }
 
       // 結構檢查
-      const structureValid = backupContent.includes('CREATE TABLE') || backupContent.includes('DROP TABLE');
+      const structureValid =
+        backupContent.includes('CREATE TABLE') ||
+        backupContent.includes('DROP TABLE');
       if (!structureValid) {
         issues.push('Backup does not contain valid table structures');
         recommendations.push('Verify backup generation process');
       }
 
       // 數據完整性檢查
-      const dataIntegrityCheck = !expectedMetadata.includesData || backupContent.includes('INSERT INTO');
+      const dataIntegrityCheck =
+        !expectedMetadata.includesData || backupContent.includes('INSERT INTO');
       if (!dataIntegrityCheck) {
         issues.push('Expected data not found in backup');
         recommendations.push('Check data export configuration');
@@ -998,9 +1060,8 @@ export class DataMigrator {
         structureValid,
         dataIntegrityCheck,
         issues,
-        recommendations
+        recommendations,
       };
-
     } catch (error: any) {
       return {
         isValid: false,
@@ -1008,7 +1069,7 @@ export class DataMigrator {
         structureValid: false,
         dataIntegrityCheck: false,
         issues: [`Backup validation error: ${error.message}`],
-        recommendations: ['Check file permissions and disk space']
+        recommendations: ['Check file permissions and disk space'],
       };
     }
   }

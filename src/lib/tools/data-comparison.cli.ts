@@ -7,7 +7,7 @@ import {
   DatabaseConfig,
   ComparisonConfig,
   ComparisonReport,
-  DatabaseConnection
+  DatabaseConnection,
 } from './data-comparison.types';
 import { DataComparisonService } from './data-comparison.service';
 
@@ -29,7 +29,7 @@ class PostgreSQLConnection implements DatabaseConnection {
         database: this.config.database,
         user: this.config.username,
         password: this.config.password,
-        ssl: false
+        ssl: false,
       });
     } catch (error) {
       throw new Error(`Failed to connect to PostgreSQL: ${error}`);
@@ -88,7 +88,7 @@ class PostgreSQLConnection implements DatabaseConnection {
       schema: 'public',
       columns,
       primaryKeys,
-      indexes: []
+      indexes: [],
     };
   }
 
@@ -112,7 +112,7 @@ class OracleConnection implements DatabaseConnection {
       this.connection = await oracledb.getConnection({
         user: this.config.username,
         password: this.config.password,
-        connectString: `${this.config.host}:${this.config.port}/${this.config.database}`
+        connectString: `${this.config.host}:${this.config.port}/${this.config.database}`,
       });
     } catch (error) {
       throw new Error(`Failed to connect to Oracle: ${error}`);
@@ -133,7 +133,7 @@ class OracleConnection implements DatabaseConnection {
 
     try {
       const result = await this.connection.execute(query, params || [], {
-        outFormat: 'OBJECT'
+        outFormat: 'OBJECT',
       });
       return result.rows;
     } catch (error) {
@@ -176,7 +176,7 @@ class OracleConnection implements DatabaseConnection {
       schema: this.config.schema || 'public',
       columns,
       primaryKeys,
-      indexes: []
+      indexes: [],
     };
   }
 
@@ -196,7 +196,11 @@ function loadConfig(configPath: string): ComparisonConfig {
 }
 
 // 結果儲存
-function saveResults(report: ComparisonReport, outputPath: string, format: string): void {
+function saveResults(
+  report: ComparisonReport,
+  outputPath: string,
+  format: string
+): void {
   let content: string;
 
   switch (format.toLowerCase()) {
@@ -241,9 +245,13 @@ function generateTextReport(report: ComparisonReport): string {
     lines.push('-'.repeat(40));
     for (const result of report.countResults) {
       const status = result.countMatch ? '✓' : '✗';
-      lines.push(`${status} ${result.tableName}: ${result.sourceCount} -> ${result.targetCount}`);
+      lines.push(
+        `${status} ${result.tableName}: ${result.sourceCount} -> ${result.targetCount}`
+      );
       if (!result.countMatch) {
-        lines.push(`  差異: ${result.difference} (${result.percentageDiff.toFixed(2)}%)`);
+        lines.push(
+          `  差異: ${result.difference} (${result.percentageDiff.toFixed(2)}%)`
+        );
       }
     }
     lines.push('');
@@ -269,7 +277,7 @@ async function main() {
     .option('--count-only', '只執行計數比對')
     .option('--content-only', '只執行內容比對')
     .option('--structure-only', '只執行結構比對')
-    .action(async (options) => {
+    .action(async options => {
       try {
         console.log('🔍 開始資料庫比對...');
 
@@ -278,20 +286,27 @@ async function main() {
 
         // 如果指定了表格，覆蓋配置
         if (options.tables) {
-          config.tables = options.tables.split(',').map((t: string) => t.trim());
+          config.tables = options.tables
+            .split(',')
+            .map((t: string) => t.trim());
         }
 
         // 建立連線
-        const sourceConnection = config.sourceDb.type === 'postgresql'
-          ? new PostgreSQLConnection(config.sourceDb)
-          : new OracleConnection(config.sourceDb);
+        const sourceConnection =
+          config.sourceDb.type === 'postgresql'
+            ? new PostgreSQLConnection(config.sourceDb)
+            : new OracleConnection(config.sourceDb);
 
-        const targetConnection = config.targetDb.type === 'postgresql'
-          ? new PostgreSQLConnection(config.targetDb)
-          : new OracleConnection(config.targetDb);
+        const targetConnection =
+          config.targetDb.type === 'postgresql'
+            ? new PostgreSQLConnection(config.targetDb)
+            : new OracleConnection(config.targetDb);
 
         // 建立比對服務
-        const comparisonTool = new DataComparisonService(sourceConnection, targetConnection);
+        const comparisonTool = new DataComparisonService(
+          sourceConnection,
+          targetConnection
+        );
 
         let report: ComparisonReport;
 
@@ -300,9 +315,15 @@ async function main() {
           await sourceConnection.connect();
           await targetConnection.connect();
 
-          const countResults = options.countOnly ? await comparisonTool.compareTableCounts(config.tables) : [];
-          const contentResults = options.contentOnly ? await comparisonTool.compareTableContent(config.tables) : [];
-          const structureResults = options.structureOnly ? await comparisonTool.compareTableStructure(config.tables) : [];
+          const countResults = options.countOnly
+            ? await comparisonTool.compareTableCounts(config.tables)
+            : [];
+          const contentResults = options.contentOnly
+            ? await comparisonTool.compareTableContent(config.tables)
+            : [];
+          const structureResults = options.structureOnly
+            ? await comparisonTool.compareTableStructure(config.tables)
+            : [];
 
           report = {
             executionId: `partial_${Date.now()}`,
@@ -310,18 +331,23 @@ async function main() {
             config,
             summary: {
               totalTables: config.tables.length,
-              tablesWithCountMismatch: countResults.filter(r => !r.countMatch).length,
-              tablesWithContentDifferences: contentResults.filter(r => r.exactMatches < r.totalRecords).length,
-              tablesWithStructureDifferences: structureResults.filter(r => !r.structureMatch).length,
+              tablesWithCountMismatch: countResults.filter(r => !r.countMatch)
+                .length,
+              tablesWithContentDifferences: contentResults.filter(
+                r => r.exactMatches < r.totalRecords
+              ).length,
+              tablesWithStructureDifferences: structureResults.filter(
+                r => !r.structureMatch
+              ).length,
               overallDataIntegrity: 100,
               criticalIssues: 0,
-              warnings: 0
+              warnings: 0,
             },
             countResults,
             contentResults,
             structureResults,
             errors: [],
-            executionTime: 0
+            executionTime: 0,
           };
 
           await sourceConnection.disconnect();
@@ -337,14 +363,17 @@ async function main() {
         // 顯示摘要
         console.log(`✅ 比對完成！`);
         console.log(`📊 總表格數: ${report.summary.totalTables}`);
-        console.log(`⚠️  計數不匹配: ${report.summary.tablesWithCountMismatch}`);
-        console.log(`📈 資料完整性: ${report.summary.overallDataIntegrity.toFixed(2)}%`);
+        console.log(
+          `⚠️  計數不匹配: ${report.summary.tablesWithCountMismatch}`
+        );
+        console.log(
+          `📈 資料完整性: ${report.summary.overallDataIntegrity.toFixed(2)}%`
+        );
         console.log(`💾 結果已儲存至: ${options.output}`);
 
         if (report.summary.tablesWithCountMismatch > 0) {
           process.exit(1);
         }
-
       } catch (error) {
         console.error(`❌ 錯誤: ${error}`);
         process.exit(1);
@@ -355,7 +384,7 @@ async function main() {
     .command('init')
     .description('建立預設配置檔案')
     .option('-o, --output <path>', '配置檔案路徑', './comparison-config.json')
-    .action((options) => {
+    .action(options => {
       const defaultConfig: ComparisonConfig = {
         sourceDb: {
           type: 'postgresql',
@@ -363,7 +392,7 @@ async function main() {
           port: 5432,
           database: 'pcm_source',
           username: 'postgres',
-          password: 'password'
+          password: 'password',
         },
         targetDb: {
           type: 'oracle',
@@ -371,7 +400,7 @@ async function main() {
           port: 1521,
           database: 'XE',
           username: 'pcm',
-          password: 'password'
+          password: 'password',
         },
         tables: [
           'users',
@@ -379,15 +408,19 @@ async function main() {
           'project_members',
           'wbs_items',
           'vendors',
-          'duty_schedules'
+          'duty_schedules',
         ],
         excludeColumns: ['created_at', 'updated_at'],
         includeSystemTables: false,
         maxSampleSize: 1000,
-        batchSize: 100
+        batchSize: 100,
       };
 
-      writeFileSync(options.output, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+      writeFileSync(
+        options.output,
+        JSON.stringify(defaultConfig, null, 2),
+        'utf-8'
+      );
       console.log(`✅ 預設配置檔案已建立: ${options.output}`);
       console.log('📝 請編輯配置檔案以符合您的環境設定');
     });
@@ -396,12 +429,12 @@ async function main() {
 }
 
 // 錯誤處理
-process.on('unhandledRejection', (error) => {
+process.on('unhandledRejection', error => {
   console.error('❌ 未處理的 Promise 拒絕:', error);
   process.exit(1);
 });
 
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('❌ 未捕獲的例外:', error);
   process.exit(1);
 });

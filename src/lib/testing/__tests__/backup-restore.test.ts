@@ -125,7 +125,9 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
     // Reset test state
   });
 
-  async function createDatabaseBackup(config: BackupConfiguration): Promise<BackupResult> {
+  async function createDatabaseBackup(
+    config: BackupConfiguration
+  ): Promise<BackupResult> {
     // RED: This will fail until Oracle backup functionality is implemented
     const connection = await import('../../../lib/database/connection');
     const dbConnection = connection.getConnection();
@@ -137,7 +139,9 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
 
     try {
       // Get Oracle SCN for consistency
-      const scnResult = await dbConnection.query('SELECT CURRENT_SCN FROM V$DATABASE');
+      const scnResult = await dbConnection.query(
+        'SELECT CURRENT_SCN FROM V$DATABASE'
+      );
       const currentScn = scnResult[0]?.CURRENT_SCN?.toString() || '0';
 
       let backupCommand: string;
@@ -161,7 +165,10 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
           break;
 
         case 'incremental':
-          backupPath = join(config.backupLocation, `${backupId}_incremental.bkp`);
+          backupPath = join(
+            config.backupLocation,
+            `${backupId}_incremental.bkp`
+          );
           backupCommand = `
             BACKUP INCREMENTAL LEVEL 1 DATABASE
             FORMAT '${backupPath}'
@@ -206,15 +213,17 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         success: true,
         includedSchemas: ['PCM_SCHEMA'],
         excludedTables: ['TEMP_LOGS', 'SESSION_DATA'],
-        oracleScn: currentScn
+        oracleScn: currentScn,
       };
 
       // Save backup metadata
-      const metadataPath = join(config.backupLocation, `${backupId}_metadata.json`);
+      const metadataPath = join(
+        config.backupLocation,
+        `${backupId}_metadata.json`
+      );
       writeFileSync(metadataPath, JSON.stringify(result, null, 2));
 
       return result;
-
     } catch (error) {
       const endTime = new Date();
       const duration = endTime.getTime() - startTime.getTime();
@@ -234,7 +243,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         errorMessage: error.message,
         includedSchemas: [],
         excludedTables: [],
-        oracleScn: '0'
+        oracleScn: '0',
       };
     }
   }
@@ -250,7 +259,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
       originalSize: 100 * 1024 * 1024, // 100MB
       compressedSize: 30 * 1024 * 1024, // 30MB
       compressionRatio: 0.3,
-      checksum: 'mock-md5-checksum-' + Math.random().toString(36).substring(7)
+      checksum: 'mock-md5-checksum-' + Math.random().toString(36).substring(7),
     };
 
     // Create mock backup file
@@ -327,11 +336,11 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         duration,
-        restoredObjects: validationResults.tableCount + validationResults.indexCount,
+        restoredObjects:
+          validationResults.tableCount + validationResults.indexCount,
         success: true,
-        validationResults
+        validationResults,
       };
-
     } catch (error) {
       const endTime = new Date();
       const duration = endTime.getTime() - startTime.getTime();
@@ -351,8 +360,8 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
           rowCount: 0,
           indexCount: 0,
           constraintCount: 0,
-          checksumValid: false
-        }
+          checksumValid: false,
+        },
       };
     }
   }
@@ -401,9 +410,8 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         rowCount: rowCountResult[0]?.total_rows || 0,
         indexCount: indexCountResult[0]?.index_count || 0,
         constraintCount: constraintCountResult[0]?.constraint_count || 0,
-        checksumValid: true // Would implement actual checksum validation
+        checksumValid: true, // Would implement actual checksum validation
       };
-
     } catch (error) {
       console.warn('Validation failed:', error);
       return {
@@ -411,7 +419,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         rowCount: 0,
         indexCount: 0,
         constraintCount: 0,
-        checksumValid: false
+        checksumValid: false,
       };
     }
   }
@@ -425,7 +433,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         'Data corruption detected',
         'Natural disaster affecting primary data center',
         'Security breach requiring data isolation',
-        'Planned maintenance requiring extended downtime'
+        'Planned maintenance requiring extended downtime',
       ],
       recoverySteps: [
         '1. Assess situation and declare disaster',
@@ -439,27 +447,27 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         '9. Perform user acceptance testing',
         '10. Switch production traffic to recovered system',
         '11. Monitor system performance and stability',
-        '12. Document lessons learned and update procedures'
+        '12. Document lessons learned and update procedures',
       ],
       estimatedRTO: 240, // 4 hours
-      estimatedRPO: 15,  // 15 minutes
+      estimatedRPO: 15, // 15 minutes
       dependencies: [
         'Backup data center availability',
         'Network connectivity between sites',
         'Oracle licenses for secondary site',
         'Trained personnel availability',
-        'Current backup and archive logs'
+        'Current backup and archive logs',
       ],
       communicationPlan: [
         'IT Operations Manager: Primary contact',
         'Database Administrator: Technical lead',
         'Application Team Lead: Application validation',
         'Business Stakeholders: Status updates',
-        'End Users: Service interruption notifications'
+        'End Users: Service interruption notifications',
       ],
       testSchedule: '0 0 15 */3 *', // Quarterly on 15th at midnight
       lastTested: new Date().toISOString(),
-      testResults: []
+      testResults: [],
     };
 
     return plan;
@@ -484,7 +492,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
       failedSteps: 0,
       issues: [],
       recommendations: [],
-      overallResult: 'passed'
+      overallResult: 'passed',
     };
 
     try {
@@ -494,7 +502,6 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         testResult.actualRTO = plan.estimatedRTO * 0.9; // Assume 10% improvement
         testResult.actualRPO = plan.estimatedRPO;
         testResult.recommendations.push('Consider automation for steps 4-6');
-
       } else if (testType === 'partial') {
         // Partial test - test backup/restore without full failover
         const backupConfig: BackupConfiguration = {
@@ -505,7 +512,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
           backupLocation: backupDir,
           scheduleExpression: '0 2 * * *',
           maxBackupSize: 10 * 1024 * 1024 * 1024, // 10GB
-          parallelProcesses: 4
+          parallelProcesses: 4,
         };
 
         const backupResult = await createDatabaseBackup(backupConfig);
@@ -521,14 +528,19 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
             targetDatabase: 'test_restore_db',
             restoreLocation: restoreDir,
             preserveData: false,
-            validateOnly: true
+            validateOnly: true,
           };
 
-          const restoreResult = await restoreFromBackup(backupResult, restoreConfig);
+          const restoreResult = await restoreFromBackup(
+            backupResult,
+            restoreConfig
+          );
 
           if (!restoreResult.success) {
             testResult.failedSteps++;
-            testResult.issues.push(`Restore validation failed: ${restoreResult.errorMessage}`);
+            testResult.issues.push(
+              `Restore validation failed: ${restoreResult.errorMessage}`
+            );
           } else {
             testResult.successfulSteps++;
           }
@@ -536,13 +548,17 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
 
         testResult.actualRTO = (Date.now() - testStartTime) / 1000 / 60; // minutes
         testResult.actualRPO = 15; // Based on backup frequency
-
       } else if (testType === 'full') {
         // Full test - complete failover simulation
         testResult.issues.push('Full DR test requires coordinated outage');
-        testResult.recommendations.push('Schedule full test during maintenance window');
-        testResult.successfulSteps = Math.floor(plan.recoverySteps.length * 0.8);
-        testResult.failedSteps = plan.recoverySteps.length - testResult.successfulSteps;
+        testResult.recommendations.push(
+          'Schedule full test during maintenance window'
+        );
+        testResult.successfulSteps = Math.floor(
+          plan.recoverySteps.length * 0.8
+        );
+        testResult.failedSteps =
+          plan.recoverySteps.length - testResult.successfulSteps;
         testResult.actualRTO = plan.estimatedRTO * 1.2; // Allow for real-world delays
         testResult.actualRPO = plan.estimatedRPO;
       }
@@ -558,13 +574,16 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
 
       // Add general recommendations
       if (testResult.actualRTO > plan.estimatedRTO) {
-        testResult.recommendations.push('Consider optimizing recovery procedures to meet RTO target');
+        testResult.recommendations.push(
+          'Consider optimizing recovery procedures to meet RTO target'
+        );
       }
 
       if (testResult.actualRPO > plan.estimatedRPO) {
-        testResult.recommendations.push('Increase backup frequency to meet RPO target');
+        testResult.recommendations.push(
+          'Increase backup frequency to meet RPO target'
+        );
       }
-
     } catch (error) {
       testResult.failedSteps = plan.recoverySteps.length;
       testResult.issues.push(`Test execution failed: ${error.message}`);
@@ -584,7 +603,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupLocation: backupDir,
         scheduleExpression: '0 2 * * *', // Daily at 2 AM
         maxBackupSize: 10 * 1024 * 1024 * 1024, // 10GB
-        parallelProcesses: 4
+        parallelProcesses: 4,
       };
 
       const result = await createDatabaseBackup(config);
@@ -594,7 +613,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         success: result.success,
         duration: result.duration,
         backupSize: result.backupSize,
-        compressionRatio: result.compressionRatio
+        compressionRatio: result.compressionRatio,
       });
 
       expect(result.success).toBe(true);
@@ -615,7 +634,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupLocation: backupDir,
         scheduleExpression: '0 */6 * * *', // Every 6 hours
         maxBackupSize: 1 * 1024 * 1024 * 1024, // 1GB
-        parallelProcesses: 2
+        parallelProcesses: 2,
       };
 
       const result = await createDatabaseBackup(config);
@@ -624,7 +643,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupId: result.backupId,
         success: result.success,
         backupType: result.backupType,
-        compressedSize: result.compressedSize
+        compressedSize: result.compressedSize,
       });
 
       expect(result.success).toBe(true);
@@ -642,7 +661,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupLocation: backupDir,
         scheduleExpression: '*/15 * * * *', // Every 15 minutes
         maxBackupSize: 500 * 1024 * 1024, // 500MB
-        parallelProcesses: 1
+        parallelProcesses: 1,
       };
 
       const result = await createDatabaseBackup(config);
@@ -651,7 +670,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupId: result.backupId,
         success: result.success,
         backupType: result.backupType,
-        oracleScn: result.oracleScn
+        oracleScn: result.oracleScn,
       });
 
       expect(result.success).toBe(true);
@@ -669,7 +688,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupLocation: backupDir,
         scheduleExpression: '0 3 * * 0', // Weekly on Sunday at 3 AM
         maxBackupSize: 5 * 1024 * 1024 * 1024, // 5GB
-        parallelProcesses: 3
+        parallelProcesses: 3,
       };
 
       const result = await createDatabaseBackup(config);
@@ -690,7 +709,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         metadataExists: existsSync(metadataPath),
         backupFileExists: existsSync(result.backupPath),
         checksumMD5: result.checksumMD5,
-        includedSchemas: result.includedSchemas.length
+        includedSchemas: result.includedSchemas.length,
       });
     });
   });
@@ -706,7 +725,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupLocation: backupDir,
         scheduleExpression: '0 2 * * *',
         maxBackupSize: 10 * 1024 * 1024 * 1024,
-        parallelProcesses: 4
+        parallelProcesses: 4,
       };
 
       const backupResult = await createDatabaseBackup(backupConfig);
@@ -719,17 +738,20 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         targetSchemas: ['PCM_SCHEMA'],
         restoreLocation: restoreDir,
         preserveData: false,
-        validateOnly: false
+        validateOnly: false,
       };
 
-      const restoreResult = await restoreFromBackup(backupResult, restoreConfig);
+      const restoreResult = await restoreFromBackup(
+        backupResult,
+        restoreConfig
+      );
 
       console.log('Full restore result:', {
         restoreId: restoreResult.restoreId,
         success: restoreResult.success,
         duration: restoreResult.duration,
         restoredObjects: restoreResult.restoredObjects,
-        validationResults: restoreResult.validationResults
+        validationResults: restoreResult.validationResults,
       });
 
       expect(restoreResult.success).toBe(true);
@@ -749,7 +771,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupLocation: backupDir,
         scheduleExpression: '0 */12 * * *',
         maxBackupSize: 5 * 1024 * 1024 * 1024,
-        parallelProcesses: 2
+        parallelProcesses: 2,
       };
 
       const backupResult = await createDatabaseBackup(backupConfig);
@@ -762,16 +784,19 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         oracleScn: backupResult.oracleScn,
         restoreLocation: restoreDir,
         preserveData: false,
-        validateOnly: false
+        validateOnly: false,
       };
 
-      const restoreResult = await restoreFromBackup(backupResult, restoreConfig);
+      const restoreResult = await restoreFromBackup(
+        backupResult,
+        restoreConfig
+      );
 
       console.log('Point-in-time restore result:', {
         restoreType: restoreResult.restoreType,
         success: restoreResult.success,
         targetScn: restoreConfig.oracleScn,
-        restoredObjects: restoreResult.restoredObjects
+        restoredObjects: restoreResult.restoredObjects,
       });
 
       expect(restoreResult.success).toBe(true);
@@ -787,7 +812,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupLocation: backupDir,
         scheduleExpression: '0 1 * * *',
         maxBackupSize: 8 * 1024 * 1024 * 1024,
-        parallelProcesses: 3
+        parallelProcesses: 3,
       };
 
       const backupResult = await createDatabaseBackup(backupConfig);
@@ -800,16 +825,19 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         targetTables: ['PROJECTS', 'USERS', 'VENDORS'],
         restoreLocation: restoreDir,
         preserveData: true,
-        validateOnly: false
+        validateOnly: false,
       };
 
-      const restoreResult = await restoreFromBackup(backupResult, restoreConfig);
+      const restoreResult = await restoreFromBackup(
+        backupResult,
+        restoreConfig
+      );
 
       console.log('Table recovery result:', {
         restoreType: restoreResult.restoreType,
         success: restoreResult.success,
         targetTables: restoreConfig.targetTables,
-        tableCount: restoreResult.validationResults.tableCount
+        tableCount: restoreResult.validationResults.tableCount,
       });
 
       expect(restoreResult.success).toBe(true);
@@ -828,7 +856,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupLocation: backupDir,
         scheduleExpression: '0 2 * * *',
         maxBackupSize: 10 * 1024 * 1024 * 1024,
-        parallelProcesses: 4
+        parallelProcesses: 4,
       };
 
       const backupResult = await createDatabaseBackup(backupConfig);
@@ -842,7 +870,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         checksumValid: verificationResult.checksumValid,
         fileExists: verificationResult.fileExists,
         sizeMatches: verificationResult.sizeMatches,
-        readable: verificationResult.readable
+        readable: verificationResult.readable,
       });
 
       expect(verificationResult.checksumValid).toBe(true);
@@ -859,7 +887,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         backupLocation: backupDir,
         scheduleExpression: '0 3 * * *',
         maxBackupSize: 10 * 1024 * 1024 * 1024,
-        parallelProcesses: 4
+        parallelProcesses: 4,
       };
 
       const backupResult = await createDatabaseBackup(backupConfig);
@@ -871,15 +899,18 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         targetDatabase: 'pcm_validation',
         restoreLocation: restoreDir,
         preserveData: false,
-        validateOnly: true
+        validateOnly: true,
       };
 
-      const restoreResult = await restoreFromBackup(backupResult, restoreConfig);
+      const restoreResult = await restoreFromBackup(
+        backupResult,
+        restoreConfig
+      );
 
       console.log('Restore validation result:', {
         success: restoreResult.success,
         validateOnly: restoreConfig.validateOnly,
-        validationResults: restoreResult.validationResults
+        validationResults: restoreResult.validationResults,
       });
 
       expect(restoreResult.success).toBe(true);
@@ -899,7 +930,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
           checksumValid: false,
           fileExists: false,
           sizeMatches: false,
-          readable: false
+          readable: false,
         };
       }
 
@@ -912,7 +943,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         checksumValid,
         fileExists,
         sizeMatches,
-        readable
+        readable,
       };
     }
   });
@@ -927,7 +958,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         estimatedRTO: drPlan.estimatedRTO,
         estimatedRPO: drPlan.estimatedRPO,
         recoverySteps: drPlan.recoverySteps.length,
-        dependencies: drPlan.dependencies.length
+        dependencies: drPlan.dependencies.length,
       });
 
       expect(drPlan.planId).toBeDefined();
@@ -947,7 +978,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         overallResult: testResult.overallResult,
         actualRTO: testResult.actualRTO,
         successfulSteps: testResult.successfulSteps,
-        recommendations: testResult.recommendations.length
+        recommendations: testResult.recommendations.length,
       });
 
       expect(testResult.testId).toBeDefined();
@@ -968,7 +999,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         actualRPO: testResult.actualRPO,
         successfulSteps: testResult.successfulSteps,
         failedSteps: testResult.failedSteps,
-        issues: testResult.issues
+        issues: testResult.issues,
       });
 
       expect(testResult.testId).toBeDefined();
@@ -992,7 +1023,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         hasRPODefined: drPlan.estimatedRPO > 0,
         hasDependencies: drPlan.dependencies.length > 0,
         hasCommunicationPlan: drPlan.communicationPlan.length > 0,
-        hasTestSchedule: drPlan.testSchedule.length > 0
+        hasTestSchedule: drPlan.testSchedule.length > 0,
       };
 
       const missingElements = Object.entries(completenessCheck)
@@ -1003,7 +1034,7 @@ describe('Backup and Restore Testing - Oracle Environment', () => {
         complete: missingElements.length === 0,
         missingElements,
         totalSteps: drPlan.recoverySteps.length,
-        dependencies: drPlan.dependencies.length
+        dependencies: drPlan.dependencies.length,
       });
 
       expect(completenessCheck.hasTriggerConditions).toBe(true);

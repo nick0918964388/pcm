@@ -7,6 +7,7 @@
 ## 核心實體
 
 ### Photo (照片)
+
 主要實體，代表系統中的單一照片記錄。
 
 ```python
@@ -32,6 +33,7 @@ class Photo:
 ```
 
 **驗證規則**:
+
 - filename: 必填，最大 255 字元，不可包含路徑分隔符號
 - file_size: 必須 > 0 且 ≤ 10MB (10,485,760 bytes)
 - mime_type: 必須為支援的圖片格式 (image/jpeg, image/png, image/gif, image/webp)
@@ -41,6 +43,7 @@ class Photo:
 - description: 最大 1000 字元
 
 ### Album (相簿)
+
 照片集合的組織單位，可包含多張相關照片。
 
 ```python
@@ -59,12 +62,14 @@ class Album:
 ```
 
 **驗證規則**:
+
 - name: 必填，最大 100 字元，同專案內不可重複
 - description: 最大 500 字元
 - privacy_level: 必須為有效值 (public, private, project)
 - photo_count: 由系統維護，只讀
 
 ### Annotation (標註)
+
 附加在照片上的文字標註資訊。
 
 ```python
@@ -82,11 +87,13 @@ class Annotation:
 ```
 
 **驗證規則**:
+
 - content: 必填，最大 500 字元
 - position_x, position_y: 必須在 0.0-1.0 範圍內
 - annotation_type: 必須為有效值 (text, date, location)
 
 ### PhotoAlbum (照片-相簿關聯)
+
 多對多關聯表，記錄照片與相簿的關係。
 
 ```python
@@ -100,10 +107,12 @@ class PhotoAlbum:
 ```
 
 **驗證規則**:
+
 - (photo_id, album_id): 唯一組合
 - sort_order: 必須 ≥ 0
 
 ### Thumbnail (縮圖)
+
 照片的縮圖版本記錄。
 
 ```python
@@ -120,6 +129,7 @@ class Thumbnail:
 ```
 
 **驗證規則**:
+
 - size_type: 必須為有效值 (thumb, small, medium)
 - (photo_id, size_type): 唯一組合
 - format: 必須為支援格式 (webp, jpeg)
@@ -127,6 +137,7 @@ class Thumbnail:
 ## 關聯關係
 
 ### 一對多關聯
+
 1. **User → Photo**: 一個使用者可以上傳多張照片
 2. **Project → Photo**: 一個專案可以包含多張照片
 3. **User → Album**: 一個使用者可以建立多個相簿
@@ -134,46 +145,49 @@ class Thumbnail:
 5. **Photo → Thumbnail**: 一張照片可以有多個縮圖
 
 ### 多對多關聯
+
 1. **Photo ↔ Album**: 照片可以屬於多個相簿，相簿可以包含多張照片
 
 ### 外鍵約束
+
 ```sql
 -- 照片表外鍵
-ALTER TABLE photos ADD CONSTRAINT fk_photo_uploader 
+ALTER TABLE photos ADD CONSTRAINT fk_photo_uploader
     FOREIGN KEY (uploader_id) REFERENCES users(id);
-ALTER TABLE photos ADD CONSTRAINT fk_photo_project 
+ALTER TABLE photos ADD CONSTRAINT fk_photo_project
     FOREIGN KEY (project_id) REFERENCES projects(id);
 
 -- 相簿表外鍵
-ALTER TABLE albums ADD CONSTRAINT fk_album_creator 
+ALTER TABLE albums ADD CONSTRAINT fk_album_creator
     FOREIGN KEY (creator_id) REFERENCES users(id);
-ALTER TABLE albums ADD CONSTRAINT fk_album_project 
+ALTER TABLE albums ADD CONSTRAINT fk_album_project
     FOREIGN KEY (project_id) REFERENCES projects(id);
-ALTER TABLE albums ADD CONSTRAINT fk_album_cover 
+ALTER TABLE albums ADD CONSTRAINT fk_album_cover
     FOREIGN KEY (cover_photo_id) REFERENCES photos(id);
 
 -- 標註表外鍵
-ALTER TABLE annotations ADD CONSTRAINT fk_annotation_photo 
+ALTER TABLE annotations ADD CONSTRAINT fk_annotation_photo
     FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE;
-ALTER TABLE annotations ADD CONSTRAINT fk_annotation_author 
+ALTER TABLE annotations ADD CONSTRAINT fk_annotation_author
     FOREIGN KEY (author_id) REFERENCES users(id);
 
 -- 照片相簿關聯表外鍵
-ALTER TABLE photo_albums ADD CONSTRAINT fk_photoalbum_photo 
+ALTER TABLE photo_albums ADD CONSTRAINT fk_photoalbum_photo
     FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE;
-ALTER TABLE photo_albums ADD CONSTRAINT fk_photoalbum_album 
+ALTER TABLE photo_albums ADD CONSTRAINT fk_photoalbum_album
     FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE;
-ALTER TABLE photo_albums ADD CONSTRAINT fk_photoalbum_adder 
+ALTER TABLE photo_albums ADD CONSTRAINT fk_photoalbum_adder
     FOREIGN KEY (added_by) REFERENCES users(id);
 
 -- 縮圖表外鍵
-ALTER TABLE thumbnails ADD CONSTRAINT fk_thumbnail_photo 
+ALTER TABLE thumbnails ADD CONSTRAINT fk_thumbnail_photo
     FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE;
 ```
 
 ## 索引策略
 
 ### 主要索引
+
 ```sql
 -- 基本索引
 CREATE INDEX idx_photos_project_id ON photos(project_id);
@@ -202,6 +216,7 @@ CREATE INDEX idx_thumbnails_photo_size ON thumbnails(photo_id, size_type);
 ```
 
 ### 複合索引
+
 ```sql
 -- 專案內的照片排序
 CREATE INDEX idx_photos_project_date ON photos(project_id, custom_date DESC);
@@ -213,13 +228,14 @@ CREATE INDEX idx_photos_uploader_date ON photos(uploader_id, uploaded_at DESC);
 CREATE INDEX idx_photoalbums_album_sort ON photo_albums(album_id, sort_order, added_at);
 
 -- 軟刪除過濾
-CREATE INDEX idx_photos_active ON photos(project_id, is_deleted, custom_date DESC) 
+CREATE INDEX idx_photos_active ON photos(project_id, is_deleted, custom_date DESC)
     WHERE is_deleted = false;
 ```
 
 ## 狀態管理
 
 ### 照片生命週期
+
 1. **uploading**: 上傳中
 2. **processing**: 處理縮圖中
 3. **active**: 可正常使用
@@ -227,6 +243,7 @@ CREATE INDEX idx_photos_active ON photos(project_id, is_deleted, custom_date DES
 5. **deleted**: 已刪除 (軟刪除)
 
 ### 相簿狀態
+
 1. **active**: 可正常使用
 2. **private**: 私人相簿
 3. **deleted**: 已刪除 (軟刪除)
@@ -234,16 +251,19 @@ CREATE INDEX idx_photos_active ON photos(project_id, is_deleted, custom_date DES
 ## 資料遷移考量
 
 ### 版本控制
+
 - 使用 Alembic 進行資料庫遷移
 - 每次結構變更都需要建立遷移腳本
 - 保持向後相容性，避免破壞性變更
 
 ### 效能考量
+
 - 大型資料表的遷移需要分批處理
 - 索引建立時考慮對生產環境的影響
 - 準備回滾計畫和資料備份
 
 ### 資料清理
+
 - 定期清理軟刪除的記錄
 - 清理無效的縮圖檔案
 - 維護搜尋向量的更新

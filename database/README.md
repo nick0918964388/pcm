@@ -44,11 +44,13 @@ GRANT ALL PRIVILEGES ON DATABASE app_db TO admin;
 ### 3. 執行初始化腳本
 
 **方法一：使用主腳本（推薦）**
+
 ```bash
 psql -U admin -d app_db -h localhost -f initialize-database.sql
 ```
 
 **方法二：逐步執行**
+
 ```bash
 psql -U admin -d app_db -h localhost -f 01-create-schema.sql
 psql -U admin -d app_db -h localhost -f 02-create-indexes.sql
@@ -61,6 +63,7 @@ psql -U admin -d app_db -h localhost -f 04-initial-data.sql
 ### 核心表結構
 
 #### 用戶認證模組
+
 - `users` - 用戶基本資訊
 - `roles` - 角色定義和權限
 - `user_roles` - 用戶角色關聯
@@ -68,35 +71,41 @@ psql -U admin -d app_db -h localhost -f 04-initial-data.sql
 - `login_logs` - 登入日誌記錄
 
 #### 專案管理模組
+
 - `projects` - 專案主表
 - `project_members` - 專案成員
 - `wbs_items` - WBS 工作分解結構
 - `project_milestones` - 專案里程碑
 
 #### 廠商排班模組
+
 - `vendors` - 廠商資訊
 - `duty_persons` - 值班人員
 - `duty_schedules` - 排班安排
 
 #### 系統管理模組
+
 - `audit_logs` - 審計日誌
 - `system_settings` - 系統設定
 
 ### 主要特性
 
 #### 🔐 安全性
+
 - bcrypt 密碼加密（12輪）
 - 帳號鎖定機制（5次失敗鎖定30分鐘）
 - 完整審計日誌記錄
 - 細粒度權限控制（RBAC）
 
 #### ⚡ 效能優化
+
 - 全面索引策略（B-tree、GIN、部分索引）
 - 連接池支援（20最大，5最小）
 - JSONB 欄位高效查詢
 - 查詢優化建議
 
 #### 🤖 自動化
+
 - 時間戳自動更新
 - 專案進度自動計算
 - 排班衝突自動檢查
@@ -108,6 +117,7 @@ psql -U admin -d app_db -h localhost -f 04-initial-data.sql
 系統會自動建立以下預設帳號：
 
 **系統管理員**
+
 - 用戶名：`admin`
 - 郵箱：`admin@pcm.system`
 - 密碼：`Admin123!`
@@ -179,7 +189,7 @@ ORDER BY mean_time DESC
 LIMIT 10;
 
 -- 查看索引使用情況
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -207,6 +217,7 @@ default_statistics_target = 100
 ### 常見問題
 
 **1. 連接失敗**
+
 ```
 解決方案：
 - 檢查 pg_hba.conf 設定
@@ -215,6 +226,7 @@ default_statistics_target = 100
 ```
 
 **2. 權限錯誤**
+
 ```sql
 -- 重設用戶權限
 GRANT ALL PRIVILEGES ON DATABASE app_db TO admin;
@@ -223,6 +235,7 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO admin;
 ```
 
 **3. 觸發器錯誤**
+
 ```sql
 -- 檢查觸發器狀態
 SELECT tgname, tgenabled FROM pg_trigger WHERE tgname LIKE 'trigger_%';
@@ -250,4 +263,4 @@ SELECT tgname, tgenabled FROM pg_trigger WHERE tgname LIKE 'trigger_%';
 
 ---
 
-*最後更新：2025-01-15*
+_最後更新：2025-01-15_

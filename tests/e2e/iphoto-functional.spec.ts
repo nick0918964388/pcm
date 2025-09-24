@@ -41,7 +41,10 @@ test.describe('iPhoto 2.0 照片庫功能測試 - 實際操作', () => {
     // 驗證關鍵字存在
     expect(pageContent).toContain('iPhoto');
     console.log('Current URL:', page.url());
-    console.log('Page title contains photo content:', pageContent.includes('照片'));
+    console.log(
+      'Page title contains photo content:',
+      pageContent.includes('照片')
+    );
   });
 
   test('測試頁面基本元素存在', async ({ page }) => {
@@ -68,7 +71,10 @@ test.describe('iPhoto 2.0 照片庫功能測試 - 實際操作', () => {
     await page.waitForTimeout(3000);
 
     // 尋找包含"上傳"文字的按鈕
-    const uploadButton = page.locator('button').filter({ hasText: '上傳' }).first();
+    const uploadButton = page
+      .locator('button')
+      .filter({ hasText: '上傳' })
+      .first();
 
     if (await uploadButton.isVisible()) {
       console.log('找到上傳按鈕，準備點擊');
@@ -79,7 +85,10 @@ test.describe('iPhoto 2.0 照片庫功能測試 - 實際操作', () => {
 
       // 檢查是否有變化
       const afterClickContent = await page.content();
-      console.log('點擊後頁面是否包含隱藏文字:', afterClickContent.includes('隱藏'));
+      console.log(
+        '點擊後頁面是否包含隱藏文字:',
+        afterClickContent.includes('隱藏')
+      );
     } else {
       console.log('未找到上傳按鈕');
     }
@@ -91,7 +100,10 @@ test.describe('iPhoto 2.0 照片庫功能測試 - 實際操作', () => {
     await page.waitForTimeout(3000);
 
     // 尋找相簿相關按鈕
-    const albumButton = page.locator('button').filter({ hasText: '相簿' }).first();
+    const albumButton = page
+      .locator('button')
+      .filter({ hasText: '相簿' })
+      .first();
 
     if (await albumButton.isVisible()) {
       console.log('找到相簿按鈕');
@@ -102,7 +114,7 @@ test.describe('iPhoto 2.0 照片庫功能測試 - 實際操作', () => {
     // 尋找新增相簿按鈕
     const newAlbumButton = page.locator('button').filter({ hasText: '新增' });
 
-    if (await newAlbumButton.count() > 0) {
+    if ((await newAlbumButton.count()) > 0) {
       console.log('找到新增相關按鈕');
       const addButtons = await newAlbumButton.allTextContents();
       console.log('新增按鈕:', addButtons);
@@ -139,7 +151,9 @@ test.describe('iPhoto 2.0 照片庫功能測試 - 實際操作', () => {
   test('直接測試API端點', async ({ page }) => {
     // 測試照片API是否可用
     try {
-      const response = await page.request.get('http://localhost:3001/api/projects/proj001/photos');
+      const response = await page.request.get(
+        'http://localhost:3001/api/projects/proj001/photos'
+      );
       console.log('照片API狀態:', response.status());
 
       if (response.ok()) {
@@ -165,6 +179,9 @@ test.describe('iPhoto 2.0 照片庫功能測試 - 實際操作', () => {
 
     // 檢查頁面內容
     const pageText = await page.textContent('body');
-    console.log('頁面是否包含照片相關內容:', pageText?.includes('照片') || false);
+    console.log(
+      '頁面是否包含照片相關內容:',
+      pageText?.includes('照片') || false
+    );
   });
 });

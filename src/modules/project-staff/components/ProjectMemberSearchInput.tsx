@@ -2,46 +2,48 @@
  * @fileoverview 專案人員搜索輸入組件
  * @version 1.0
  * @date 2025-08-31
- * 
+ *
  * 提供即時搜索、自動建議、搜索歷史等功能的搜索輸入組件
  */
 
-'use client'
+'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react'
-import { Search, X, Clock, Loader2 } from 'lucide-react'
-import { useProjectMemberSearch } from '@/hooks/useProjectMembers'
-import { SearchSuggestion } from '@/services/projectStaffWbsApi'
-import { cn } from '@/lib/utils'
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Search, X, Clock, Loader2 } from 'lucide-react';
+import { useProjectMemberSearch } from '@/hooks/useProjectMembers';
+import { SearchSuggestion } from '@/services/projectStaffWbsApi';
+import { cn } from '@/lib/utils';
 
 // ==================== TYPES ====================
 
 export interface ProjectMemberSearchInputProps {
   /** 專案 ID */
-  projectId: string
+  projectId: string;
   /** 搜索回調函數 */
-  onSearch: (query: string) => void
+  onSearch: (query: string) => void;
   /** 輸入框占位符 */
-  placeholder?: string
+  placeholder?: string;
   /** 是否顯示清除按鈕 */
-  showClearButton?: boolean
+  showClearButton?: boolean;
   /** 是否顯示搜索歷史 */
-  showHistory?: boolean
+  showHistory?: boolean;
   /** 搜索歷史記錄 */
-  searchHistory?: string[]
+  searchHistory?: string[];
   /** 最大歷史記錄數量 */
-  maxHistoryItems?: number
+  maxHistoryItems?: number;
   /** 組件類名 */
-  className?: string
+  className?: string;
   /** 是否禁用 */
-  disabled?: boolean
+  disabled?: boolean;
   /** 自動聚焦 */
-  autoFocus?: boolean
+  autoFocus?: boolean;
 }
 
 // ==================== COMPONENT ====================
 
-export const ProjectMemberSearchInput: React.FC<ProjectMemberSearchInputProps> = ({
+export const ProjectMemberSearchInput: React.FC<
+  ProjectMemberSearchInputProps
+> = ({
   projectId,
   onSearch,
   placeholder = '搜索專案成員...',
@@ -51,42 +53,36 @@ export const ProjectMemberSearchInput: React.FC<ProjectMemberSearchInputProps> =
   maxHistoryItems = 5,
   className,
   disabled = false,
-  autoFocus = false
+  autoFocus = false,
 }) => {
   // ===== STATES =====
-  const [inputValue, setInputValue] = useState('')
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [selectedIndex, setSelectedIndex] = useState(-1)
-  const [showHistoryList, setShowHistoryList] = useState(false)
+  const [inputValue, setInputValue] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [showHistoryList, setShowHistoryList] = useState(false);
 
   // ===== REFS =====
-  const inputRef = useRef<HTMLInputElement>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // ===== HOOKS =====
-  const { 
-    query,
-    suggestions, 
-    isLoading, 
-    error, 
-    search, 
-    clearSearch 
-  } = useProjectMemberSearch(projectId, {
-    debounceMs: 300,
-    minLength: 1
-  })
+  const { query, suggestions, isLoading, error, search, clearSearch } =
+    useProjectMemberSearch(projectId, {
+      debounceMs: 300,
+      minLength: 1,
+    });
 
   // ===== EFFECTS =====
   useEffect(() => {
     if (autoFocus && inputRef.current) {
-      inputRef.current.focus()
+      inputRef.current.focus();
     }
-  }, [autoFocus])
+  }, [autoFocus]);
 
   // 當有建議時顯示下拉選單
   useEffect(() => {
-    setIsDropdownOpen(suggestions.length > 0 && inputValue.length > 0)
-  }, [suggestions, inputValue])
+    setIsDropdownOpen(suggestions.length > 0 && inputValue.length > 0);
+  }, [suggestions, inputValue]);
 
   // 點擊外部關閉下拉選單
   useEffect(() => {
@@ -96,94 +92,109 @@ export const ProjectMemberSearchInput: React.FC<ProjectMemberSearchInputProps> =
         !dropdownRef.current.contains(event.target as Node) &&
         !inputRef.current?.contains(event.target as Node)
       ) {
-        setIsDropdownOpen(false)
-        setShowHistoryList(false)
-        setSelectedIndex(-1)
+        setIsDropdownOpen(false);
+        setShowHistoryList(false);
+        setSelectedIndex(-1);
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // ===== HANDLERS =====
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setInputValue(value)
-    setShowHistoryList(false)
-    
-    if (value.length > 0) {
-      search(value)
-      onSearch(value)
-      setSelectedIndex(-1)
-    } else {
-      onSearch('')
-    }
-  }, [search, onSearch])
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setInputValue(value);
+      setShowHistoryList(false);
+
+      if (value.length > 0) {
+        search(value);
+        onSearch(value);
+        setSelectedIndex(-1);
+      } else {
+        onSearch('');
+      }
+    },
+    [search, onSearch]
+  );
 
   const handleInputFocus = useCallback(() => {
     if (showHistory && searchHistory.length > 0 && inputValue.length === 0) {
-      setShowHistoryList(true)
+      setShowHistoryList(true);
     }
-  }, [showHistory, searchHistory.length, inputValue.length])
+  }, [showHistory, searchHistory.length, inputValue.length]);
 
   const handleClear = useCallback(() => {
-    setInputValue('')
-    clearSearch()
-    onSearch('')
-    setIsDropdownOpen(false)
-    setShowHistoryList(false)
-    setSelectedIndex(-1)
-    inputRef.current?.focus()
-  }, [clearSearch, onSearch])
+    setInputValue('');
+    clearSearch();
+    onSearch('');
+    setIsDropdownOpen(false);
+    setShowHistoryList(false);
+    setSelectedIndex(-1);
+    inputRef.current?.focus();
+  }, [clearSearch, onSearch]);
 
-  const handleSuggestionClick = useCallback((suggestion: SearchSuggestion | string) => {
-    const value = typeof suggestion === 'string' ? suggestion : suggestion.value
-    setInputValue(value)
-    onSearch(value)
-    setIsDropdownOpen(false)
-    setShowHistoryList(false)
-    setSelectedIndex(-1)
-    inputRef.current?.blur()
-  }, [onSearch])
+  const handleSuggestionClick = useCallback(
+    (suggestion: SearchSuggestion | string) => {
+      const value =
+        typeof suggestion === 'string' ? suggestion : suggestion.value;
+      setInputValue(value);
+      onSearch(value);
+      setIsDropdownOpen(false);
+      setShowHistoryList(false);
+      setSelectedIndex(-1);
+      inputRef.current?.blur();
+    },
+    [onSearch]
+  );
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const items = showHistoryList ? searchHistory : suggestions
-    
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        setSelectedIndex(prev => 
-          prev < items.length - 1 ? prev + 1 : 0
-        )
-        break
-        
-      case 'ArrowUp':
-        e.preventDefault()
-        setSelectedIndex(prev => 
-          prev > 0 ? prev - 1 : items.length - 1
-        )
-        break
-        
-      case 'Enter':
-        e.preventDefault()
-        if (selectedIndex >= 0 && selectedIndex < items.length) {
-          const selectedItem = items[selectedIndex]
-          handleSuggestionClick(selectedItem)
-        }
-        break
-        
-      case 'Escape':
-        setIsDropdownOpen(false)
-        setShowHistoryList(false)
-        setSelectedIndex(-1)
-        inputRef.current?.blur()
-        break
-    }
-  }, [selectedIndex, showHistoryList, searchHistory, suggestions, handleSuggestionClick])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const items = showHistoryList ? searchHistory : suggestions;
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedIndex(prev => (prev < items.length - 1 ? prev + 1 : 0));
+          break;
+
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedIndex(prev => (prev > 0 ? prev - 1 : items.length - 1));
+          break;
+
+        case 'Enter':
+          e.preventDefault();
+          if (selectedIndex >= 0 && selectedIndex < items.length) {
+            const selectedItem = items[selectedIndex];
+            handleSuggestionClick(selectedItem);
+          }
+          break;
+
+        case 'Escape':
+          setIsDropdownOpen(false);
+          setShowHistoryList(false);
+          setSelectedIndex(-1);
+          inputRef.current?.blur();
+          break;
+      }
+    },
+    [
+      selectedIndex,
+      showHistoryList,
+      searchHistory,
+      suggestions,
+      handleSuggestionClick,
+    ]
+  );
 
   // ===== RENDER HELPERS =====
-  const renderSuggestionItem = (suggestion: SearchSuggestion, index: number) => (
+  const renderSuggestionItem = (
+    suggestion: SearchSuggestion,
+    index: number
+  ) => (
     <div
       key={`${suggestion.type}-${suggestion.value}`}
       className={cn(
@@ -194,18 +205,18 @@ export const ProjectMemberSearchInput: React.FC<ProjectMemberSearchInputProps> =
       onClick={() => handleSuggestionClick(suggestion)}
       data-testid={`suggestion-${index}`}
     >
-      <div className="flex-1">
-        <div className="font-medium text-gray-900 dark:text-gray-100">
+      <div className='flex-1'>
+        <div className='font-medium text-gray-900 dark:text-gray-100'>
           {suggestion.label}
         </div>
         {suggestion.type && (
-          <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+          <div className='text-xs text-gray-500 dark:text-gray-400 capitalize'>
             {suggestion.type}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 
   const renderHistoryItem = (item: string, index: number) => (
     <div
@@ -218,21 +229,21 @@ export const ProjectMemberSearchInput: React.FC<ProjectMemberSearchInputProps> =
       onClick={() => handleSuggestionClick(item)}
       data-testid={`history-${index}`}
     >
-      <Clock className="w-4 h-4 mr-2 text-gray-400" />
-      <span className="text-gray-700 dark:text-gray-300">{item}</span>
+      <Clock className='w-4 h-4 mr-2 text-gray-400' />
+      <span className='text-gray-700 dark:text-gray-300'>{item}</span>
     </div>
-  )
+  );
 
   // ===== RENDER =====
   return (
     <div className={cn('relative w-full', className)}>
       {/* 搜索輸入框 */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-        
+      <div className='relative'>
+        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400' />
+
         <input
           ref={inputRef}
-          type="text"
+          type='text'
           value={inputValue}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
@@ -246,35 +257,38 @@ export const ProjectMemberSearchInput: React.FC<ProjectMemberSearchInputProps> =
             'dark:bg-gray-800 dark:border-gray-600 dark:text-white',
             'dark:focus:ring-blue-400'
           )}
-          aria-label="搜索專案成員"
+          aria-label='搜索專案成員'
           aria-expanded={isDropdownOpen || showHistoryList}
-          aria-haspopup="listbox"
-          role="combobox"
+          aria-haspopup='listbox'
+          role='combobox'
         />
 
         {/* 載入指示器 */}
         {isLoading && (
-          <div className="absolute right-8 top-1/2 transform -translate-y-1/2" data-testid="search-loading">
-            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+          <div
+            className='absolute right-8 top-1/2 transform -translate-y-1/2'
+            data-testid='search-loading'
+          >
+            <Loader2 className='w-4 h-4 animate-spin text-gray-400' />
           </div>
         )}
 
         {/* 清除按鈕 */}
         {showClearButton && inputValue && !isLoading && (
           <button
-            type="button"
+            type='button'
             onClick={handleClear}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            aria-label="清除搜索"
+            className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600'
+            aria-label='清除搜索'
           >
-            <X className="w-4 h-4" />
+            <X className='w-4 h-4' />
           </button>
         )}
       </div>
 
       {/* 錯誤提示 */}
       {error && (
-        <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+        <div className='absolute top-full left-0 right-0 mt-1 p-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400'>
           {error.message}
         </div>
       )}
@@ -288,17 +302,17 @@ export const ProjectMemberSearchInput: React.FC<ProjectMemberSearchInputProps> =
             'max-h-64 overflow-y-auto',
             'dark:bg-gray-800 dark:border-gray-600'
           )}
-          role="listbox"
+          role='listbox'
         >
           {/* 搜索歷史 */}
           {showHistoryList && searchHistory.length > 0 && (
             <>
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+              <div className='px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700'>
                 最近搜索
               </div>
-              {searchHistory.slice(0, maxHistoryItems).map((item, index) => 
-                renderHistoryItem(item, index)
-              )}
+              {searchHistory
+                .slice(0, maxHistoryItems)
+                .map((item, index) => renderHistoryItem(item, index))}
             </>
           )}
 
@@ -306,24 +320,27 @@ export const ProjectMemberSearchInput: React.FC<ProjectMemberSearchInputProps> =
           {isDropdownOpen && suggestions.length > 0 && (
             <>
               {showHistoryList && searchHistory.length > 0 && (
-                <div className="border-t border-gray-200 dark:border-gray-700" />
+                <div className='border-t border-gray-200 dark:border-gray-700' />
               )}
-              {suggestions.map((suggestion, index) => 
+              {suggestions.map((suggestion, index) =>
                 renderSuggestionItem(suggestion, index)
               )}
             </>
           )}
 
           {/* 無結果提示 */}
-          {isDropdownOpen && suggestions.length === 0 && inputValue && !isLoading && (
-            <div className="px-3 py-4 text-sm text-gray-500 text-center dark:text-gray-400">
-              沒有找到相關結果
-            </div>
-          )}
+          {isDropdownOpen &&
+            suggestions.length === 0 &&
+            inputValue &&
+            !isLoading && (
+              <div className='px-3 py-4 text-sm text-gray-500 text-center dark:text-gray-400'>
+                沒有找到相關結果
+              </div>
+            )}
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default ProjectMemberSearchInput
+export default ProjectMemberSearchInput;

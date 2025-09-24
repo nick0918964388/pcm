@@ -18,7 +18,7 @@ import type {
   ConversionResult,
   PostgreSQLType,
   OracleType,
-  ConversionOptions
+  ConversionOptions,
 } from '../types';
 
 describe('Data Type Converter', () => {
@@ -35,7 +35,9 @@ describe('Data Type Converter', () => {
       expect(result.success).toBe(true);
       expect(result.oracleType).toBe('VARCHAR2(36)');
       expect(result.constraints).toContain('CHECK (LENGTH(column_name) = 36)');
-      expect(result.constraints).toContain('CHECK (REGEXP_LIKE(column_name, \'^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$\'))');
+      expect(result.constraints).toContain(
+        "CHECK (REGEXP_LIKE(column_name, '^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$'))"
+      );
     });
 
     it('should convert UUID values correctly', () => {
@@ -48,7 +50,11 @@ describe('Data Type Converter', () => {
 
     it('should validate UUID format', () => {
       const invalidUuid = 'invalid-uuid';
-      const result = converter.convertValue(invalidUuid, 'UUID', 'VARCHAR2(36)');
+      const result = converter.convertValue(
+        invalidUuid,
+        'UUID',
+        'VARCHAR2(36)'
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Invalid UUID format');
@@ -72,7 +78,9 @@ describe('Data Type Converter', () => {
     });
 
     it('should fallback to CLOB for older Oracle versions', () => {
-      const result = converter.convertType('JSONB', null, { oracleVersion: '19c' });
+      const result = converter.convertType('JSONB', null, {
+        oracleVersion: '19c',
+      });
 
       expect(result.success).toBe(true);
       expect(result.oracleType).toBe('CLOB');
@@ -109,7 +117,7 @@ describe('Data Type Converter', () => {
     it('should convert PostgreSQL SERIAL to Oracle NUMBER with SEQUENCE', () => {
       const result = converter.convertType('SERIAL', null, {
         tableName: 'users',
-        columnName: 'id'
+        columnName: 'id',
       });
 
       expect(result.success).toBe(true);
@@ -122,7 +130,7 @@ describe('Data Type Converter', () => {
     it('should generate proper sequence DDL', () => {
       const result = converter.convertType('SERIAL', null, {
         tableName: 'users',
-        columnName: 'id'
+        columnName: 'id',
       });
 
       const sequenceDDL = result.additionalObjects?.sequence;
@@ -135,7 +143,7 @@ describe('Data Type Converter', () => {
     it('should generate proper trigger DDL for auto-increment', () => {
       const result = converter.convertType('SERIAL', null, {
         tableName: 'users',
-        columnName: 'id'
+        columnName: 'id',
       });
 
       const triggerDDL = result.additionalObjects?.trigger;
@@ -147,7 +155,7 @@ describe('Data Type Converter', () => {
     it('should handle BIGSERIAL conversion', () => {
       const result = converter.convertType('BIGSERIAL', null, {
         tableName: 'logs',
-        columnName: 'id'
+        columnName: 'id',
       });
 
       expect(result.success).toBe(true);
@@ -157,16 +165,26 @@ describe('Data Type Converter', () => {
 
   describe('TIMESTAMP WITH TIME ZONE Conversion', () => {
     it('should convert PostgreSQL TIMESTAMPTZ to Oracle TIMESTAMP', () => {
-      const result = converter.convertType('TIMESTAMP WITH TIME ZONE', null, {});
+      const result = converter.convertType(
+        'TIMESTAMP WITH TIME ZONE',
+        null,
+        {}
+      );
 
       expect(result.success).toBe(true);
       expect(result.oracleType).toBe('TIMESTAMP');
-      expect(result.migrationNotes).toContain('Time zone information will be lost');
+      expect(result.migrationNotes).toContain(
+        'Time zone information will be lost'
+      );
     });
 
     it('should convert timestamptz values to UTC', () => {
       const testTimestamp = '2023-12-01 10:30:00+08:00';
-      const result = converter.convertValue(testTimestamp, 'TIMESTAMP WITH TIME ZONE', 'TIMESTAMP');
+      const result = converter.convertValue(
+        testTimestamp,
+        'TIMESTAMP WITH TIME ZONE',
+        'TIMESTAMP'
+      );
 
       expect(result.success).toBe(true);
       // Should convert to UTC
@@ -174,7 +192,11 @@ describe('Data Type Converter', () => {
     });
 
     it('should handle current timestamp functions', () => {
-      const result = converter.convertValue('NOW()', 'TIMESTAMP WITH TIME ZONE', 'TIMESTAMP');
+      const result = converter.convertValue(
+        'NOW()',
+        'TIMESTAMP WITH TIME ZONE',
+        'TIMESTAMP'
+      );
 
       expect(result.success).toBe(true);
       expect(result.convertedValue).toBe('SYSTIMESTAMP');
@@ -215,7 +237,7 @@ describe('Data Type Converter', () => {
   describe('BOOLEAN to NUMBER Conversion', () => {
     it('should convert PostgreSQL BOOLEAN to Oracle NUMBER(1)', () => {
       const result = converter.convertType('BOOLEAN', null, {
-        columnName: 'is_active'
+        columnName: 'is_active',
       });
 
       expect(result.success).toBe(true);
@@ -236,7 +258,11 @@ describe('Data Type Converter', () => {
 
     it('should handle string boolean values', () => {
       const trueResult = converter.convertValue('true', 'BOOLEAN', 'NUMBER(1)');
-      const falseResult = converter.convertValue('false', 'BOOLEAN', 'NUMBER(1)');
+      const falseResult = converter.convertValue(
+        'false',
+        'BOOLEAN',
+        'NUMBER(1)'
+      );
 
       expect(trueResult.success).toBe(true);
       expect(trueResult.convertedValue).toBe(1);
@@ -269,7 +295,11 @@ describe('Data Type Converter', () => {
       const canReverse = converter.isReversible('UUID', 'VARCHAR2(36)');
       expect(canReverse).toBe(true);
 
-      const reverseResult = converter.reverseConvert('123E4567-E89B-12D3-A456-426614174000', 'VARCHAR2(36)', 'UUID');
+      const reverseResult = converter.reverseConvert(
+        '123E4567-E89B-12D3-A456-426614174000',
+        'VARCHAR2(36)',
+        'UUID'
+      );
       expect(reverseResult.success).toBe(true);
     });
 

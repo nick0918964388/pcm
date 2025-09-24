@@ -5,7 +5,7 @@ import {
   ContentComparisonResult,
   ComparisonReport,
   DatabaseConnection,
-  TableMetadata
+  TableMetadata,
 } from '../data-comparison.types';
 import { DataComparisonService } from '../data-comparison.service';
 
@@ -27,8 +27,18 @@ class MockDatabaseConnection implements DatabaseConnection {
     this.mockCounts.set('wbs_items', 200);
 
     this.mockData.set('users', [
-      { id: '1', username: 'user1', email: 'user1@test.com', created_at: '2024-01-01' },
-      { id: '2', username: 'user2', email: 'user2@test.com', created_at: '2024-01-02' }
+      {
+        id: '1',
+        username: 'user1',
+        email: 'user1@test.com',
+        created_at: '2024-01-01',
+      },
+      {
+        id: '2',
+        username: 'user2',
+        email: 'user2@test.com',
+        created_at: '2024-01-02',
+      },
     ]);
 
     this.mockMetadata.set('users', {
@@ -38,12 +48,17 @@ class MockDatabaseConnection implements DatabaseConnection {
         { name: 'id', dataType: 'varchar', isNullable: false },
         { name: 'username', dataType: 'varchar', isNullable: false },
         { name: 'email', dataType: 'varchar', isNullable: false },
-        { name: 'created_at', dataType: 'timestamp', isNullable: false }
+        { name: 'created_at', dataType: 'timestamp', isNullable: false },
       ],
       primaryKeys: ['id'],
       indexes: [
-        { name: 'users_pkey', columns: ['id'], isUnique: true, isPrimary: true }
-      ]
+        {
+          name: 'users_pkey',
+          columns: ['id'],
+          isUnique: true,
+          isPrimary: true,
+        },
+      ],
     });
 
     this.mockMetadata.set('projects', {
@@ -54,22 +69,25 @@ class MockDatabaseConnection implements DatabaseConnection {
         { name: 'name', dataType: 'varchar', isNullable: false },
         { name: 'description', dataType: 'text', isNullable: true },
         { name: 'status', dataType: 'varchar', isNullable: false },
-        { name: 'created_at', dataType: 'timestamp', isNullable: false }
+        { name: 'created_at', dataType: 'timestamp', isNullable: false },
       ],
       primaryKeys: ['id'],
       indexes: [
-        { name: 'projects_pkey', columns: ['id'], isUnique: true, isPrimary: true }
-      ]
+        {
+          name: 'projects_pkey',
+          columns: ['id'],
+          isUnique: true,
+          isPrimary: true,
+        },
+      ],
     });
 
     this.mockMetadata.set('empty_table', {
       name: 'empty_table',
       schema: 'public',
-      columns: [
-        { name: 'id', dataType: 'varchar', isNullable: false }
-      ],
+      columns: [{ name: 'id', dataType: 'varchar', isNullable: false }],
       primaryKeys: ['id'],
-      indexes: []
+      indexes: [],
     });
   }
 
@@ -94,7 +112,10 @@ class MockDatabaseConnection implements DatabaseConnection {
     }
 
     // 模擬取樣查詢
-    if (query.toLowerCase().includes('limit') || query.toLowerCase().includes('rownum')) {
+    if (
+      query.toLowerCase().includes('limit') ||
+      query.toLowerCase().includes('rownum')
+    ) {
       const tableName = this.extractTableNameFromQuery(query);
       return this.mockData.get(tableName) || [];
     }
@@ -140,7 +161,7 @@ describe('DataComparisonService', () => {
     port: 5432,
     database: 'pcm_source',
     username: 'test',
-    password: 'test'
+    password: 'test',
   };
 
   const targetConfig: DatabaseConfig = {
@@ -149,13 +170,16 @@ describe('DataComparisonService', () => {
     port: 1521,
     database: 'pcm_target',
     username: 'test',
-    password: 'test'
+    password: 'test',
   };
 
   beforeEach(() => {
     mockSourceConnection = new MockDatabaseConnection();
     mockTargetConnection = new MockDatabaseConnection();
-    comparisonTool = new DataComparisonService(mockSourceConnection, mockTargetConnection);
+    comparisonTool = new DataComparisonService(
+      mockSourceConnection,
+      mockTargetConnection
+    );
   });
 
   afterEach(async () => {
@@ -270,8 +294,9 @@ describe('DataComparisonService', () => {
       const tables = ['users'];
 
       // Act & Assert
-      await expect(comparisonTool.compareTableCounts(tables))
-        .rejects.toThrow('Database not connected');
+      await expect(comparisonTool.compareTableCounts(tables)).rejects.toThrow(
+        'Database not connected'
+      );
     });
   });
 
@@ -294,7 +319,10 @@ describe('DataComparisonService', () => {
       await mockSourceConnection.connect();
 
       // Act
-      const metadata = await comparisonTool.getTableMetadata(sourceConfig, 'users');
+      const metadata = await comparisonTool.getTableMetadata(
+        sourceConfig,
+        'users'
+      );
 
       // Assert
       expect(metadata.name).toBe('users');
@@ -308,8 +336,9 @@ describe('DataComparisonService', () => {
       await mockSourceConnection.connect();
 
       // Act & Assert
-      await expect(comparisonTool.getTableMetadata(sourceConfig, 'nonexistent_table'))
-        .rejects.toThrow('Table nonexistent_table not found');
+      await expect(
+        comparisonTool.getTableMetadata(sourceConfig, 'nonexistent_table')
+      ).rejects.toThrow('Table nonexistent_table not found');
     });
   });
 
@@ -338,7 +367,7 @@ describe('DataComparisonService', () => {
       const tables = ['users'];
       const testData = [
         { id: '1', username: 'user1', email: 'user1@test.com' },
-        { id: '2', username: 'user2', email: 'user2@test.com' }
+        { id: '2', username: 'user2', email: 'user2@test.com' },
       ];
 
       mockSourceConnection.setMockData('users', testData);
@@ -363,11 +392,15 @@ describe('DataComparisonService', () => {
       const tables = ['users'];
       const sourceData = [
         { id: '1', username: 'user1', email: 'user1@test.com' },
-        { id: '2', username: 'user2', email: 'user2@test.com' }
+        { id: '2', username: 'user2', email: 'user2@test.com' },
       ];
       const targetData = [
         { id: '1', username: 'user1', email: 'user1@test.com' },
-        { id: '2', username: 'user2_modified', email: 'user2_modified@test.com' }
+        {
+          id: '2',
+          username: 'user2_modified',
+          email: 'user2_modified@test.com',
+        },
       ];
 
       mockSourceConnection.setMockData('users', sourceData);
@@ -393,10 +426,10 @@ describe('DataComparisonService', () => {
       const sourceData = [
         { id: '1', username: 'user1', email: 'user1@test.com' },
         { id: '2', username: 'user2', email: 'user2@test.com' },
-        { id: '3', username: 'user3', email: 'user3@test.com' }
+        { id: '3', username: 'user3', email: 'user3@test.com' },
       ];
       const targetData = [
-        { id: '1', username: 'user1', email: 'user1@test.com' }
+        { id: '1', username: 'user1', email: 'user1@test.com' },
       ];
 
       mockSourceConnection.setMockData('users', sourceData);
@@ -419,12 +452,12 @@ describe('DataComparisonService', () => {
       // Arrange
       const tables = ['users'];
       const sourceData = [
-        { id: '1', username: 'user1', email: 'user1@test.com' }
+        { id: '1', username: 'user1', email: 'user1@test.com' },
       ];
       const targetData = [
         { id: '1', username: 'user1', email: 'user1@test.com' },
         { id: '2', username: 'user2', email: 'user2@test.com' },
-        { id: '3', username: 'user3', email: 'user3@test.com' }
+        { id: '3', username: 'user3', email: 'user3@test.com' },
       ];
 
       mockSourceConnection.setMockData('users', sourceData);
@@ -477,7 +510,7 @@ describe('DataComparisonService', () => {
         targetDb: targetConfig,
         tables: ['users', 'projects'],
         maxSampleSize: 100,
-        batchSize: 1000
+        batchSize: 1000,
       };
 
       // 設定測試資料
@@ -519,7 +552,11 @@ describe('DataComparisonService', () => {
       const mockReport = {
         executionId: 'test_001',
         timestamp: new Date('2024-01-01T10:00:00Z'),
-        config: { sourceDb: sourceConfig, targetDb: targetConfig, tables: ['users'] },
+        config: {
+          sourceDb: sourceConfig,
+          targetDb: targetConfig,
+          tables: ['users'],
+        },
         summary: {
           totalTables: 1,
           tablesWithCountMismatch: 0,
@@ -527,20 +564,22 @@ describe('DataComparisonService', () => {
           tablesWithStructureDifferences: 0,
           overallDataIntegrity: 100,
           criticalIssues: 0,
-          warnings: 0
+          warnings: 0,
         },
-        countResults: [{
-          tableName: 'users',
-          sourceCount: 100,
-          targetCount: 100,
-          countMatch: true,
-          difference: 0,
-          percentageDiff: 0
-        }],
+        countResults: [
+          {
+            tableName: 'users',
+            sourceCount: 100,
+            targetCount: 100,
+            countMatch: true,
+            difference: 0,
+            percentageDiff: 0,
+          },
+        ],
         contentResults: [],
         structureResults: [],
         errors: [],
-        executionTime: 1500
+        executionTime: 1500,
       } as ComparisonReport;
 
       // Act
@@ -559,7 +598,7 @@ describe('DataComparisonService', () => {
       const mockReport = {
         executionId: 'test_002',
         timestamp: new Date(),
-        summary: { totalTables: 1 }
+        summary: { totalTables: 1 },
       } as ComparisonReport;
 
       // Act

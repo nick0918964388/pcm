@@ -61,7 +61,10 @@ export class ProjectService {
   }
 
   // 創建專案
-  async createProject(projectData: CreateProjectData, createdBy: string): Promise<Project> {
+  async createProject(
+    projectData: CreateProjectData,
+    createdBy: string
+  ): Promise<Project> {
     // 驗證專案經理存在
     const manager = await this.userRepository.findById(projectData.managerId);
     if (!manager) {
@@ -69,8 +72,11 @@ export class ProjectService {
     }
 
     // 驗證日期邏輯
-    if (projectData.startDate && projectData.endDate && 
-        projectData.startDate > projectData.endDate) {
+    if (
+      projectData.startDate &&
+      projectData.endDate &&
+      projectData.startDate > projectData.endDate
+    ) {
       throw new Error('開始日期不能晚於結束日期');
     }
 
@@ -91,7 +97,7 @@ export class ProjectService {
       manager_id: projectData.managerId,
       client_info: projectData.clientInfo,
       metadata: projectData.metadata,
-      status: 'planning'
+      status: 'planning',
     });
 
     // 自動創建根節點 WBS
@@ -101,7 +107,11 @@ export class ProjectService {
   }
 
   // 更新專案
-  async updateProject(projectId: string, updateData: UpdateProjectData, updatedBy: string): Promise<Project | null> {
+  async updateProject(
+    projectId: string,
+    updateData: UpdateProjectData,
+    updatedBy: string
+  ): Promise<Project | null> {
     // 檢查專案存在
     const existingProject = await this.projectRepository.findById(projectId);
     if (!existingProject) {
@@ -134,7 +144,7 @@ export class ProjectService {
       budget: updateData.budget,
       manager_id: updateData.managerId,
       client_info: updateData.clientInfo,
-      metadata: updateData.metadata
+      metadata: updateData.metadata,
     });
 
     // 如果狀態變更為完成，自動更新進度為 100%
@@ -178,18 +188,20 @@ export class ProjectService {
   // 更新專案進度
   async updateProjectProgress(projectId: string): Promise<void> {
     // 從 WBS 計算專案進度
-    const progress = await this.wbsRepository.calculateProjectProgress(projectId);
+    const progress =
+      await this.wbsRepository.calculateProjectProgress(projectId);
     await this.projectRepository.updateProgress(projectId, progress);
   }
 
   // 複製專案
   async duplicateProject(
-    sourceProjectId: string, 
+    sourceProjectId: string,
     newProjectData: Partial<CreateProjectData>,
     createdBy: string
   ): Promise<Project> {
     // 檢查來源專案存在
-    const sourceProject = await this.projectRepository.findById(sourceProjectId);
+    const sourceProject =
+      await this.projectRepository.findById(sourceProjectId);
     if (!sourceProject) {
       throw new Error('來源專案不存在');
     }
@@ -198,10 +210,13 @@ export class ProjectService {
     const newProjectId = await this.generateProjectId();
 
     // 複製專案
-    const newProject = await this.projectRepository.duplicateProject(sourceProjectId, {
-      ...newProjectData,
-      id: newProjectId
-    });
+    const newProject = await this.projectRepository.duplicateProject(
+      sourceProjectId,
+      {
+        ...newProjectData,
+        id: newProjectId,
+      }
+    );
 
     // 複製 WBS 結構
     await this.duplicateWBSStructure(sourceProjectId, newProject.id);
@@ -210,7 +225,10 @@ export class ProjectService {
   }
 
   // 創建 WBS 項目
-  async createWBSItem(wbsData: CreateWBSData, createdBy: string): Promise<WBSItem> {
+  async createWBSItem(
+    wbsData: CreateWBSData,
+    createdBy: string
+  ): Promise<WBSItem> {
     // 檢查專案存在
     const project = await this.projectRepository.findById(wbsData.projectId);
     if (!project) {
@@ -218,7 +236,12 @@ export class ProjectService {
     }
 
     // 檢查 WBS 代碼是否重複
-    if (await this.wbsRepository.isWBSCodeExists(wbsData.projectId, wbsData.wbsCode)) {
+    if (
+      await this.wbsRepository.isWBSCodeExists(
+        wbsData.projectId,
+        wbsData.wbsCode
+      )
+    ) {
       throw new Error('WBS 代碼已存在');
     }
 
@@ -263,7 +286,11 @@ export class ProjectService {
   }
 
   // 更新 WBS 項目
-  async updateWBSItem(wbsId: string, updateData: Partial<WBSItem>, updatedBy: string): Promise<WBSItem | null> {
+  async updateWBSItem(
+    wbsId: string,
+    updateData: Partial<WBSItem>,
+    updatedBy: string
+  ): Promise<WBSItem | null> {
     // 檢查 WBS 項目存在
     const existingWBS = await this.wbsRepository.findById(wbsId);
     if (!existingWBS) {
@@ -272,14 +299,22 @@ export class ProjectService {
 
     // 檢查 WBS 代碼重複 (如果有修改)
     if (updateData.wbs_code && updateData.wbs_code !== existingWBS.wbs_code) {
-      if (await this.wbsRepository.isWBSCodeExists(existingWBS.project_id, updateData.wbs_code, wbsId)) {
+      if (
+        await this.wbsRepository.isWBSCodeExists(
+          existingWBS.project_id,
+          updateData.wbs_code,
+          wbsId
+        )
+      ) {
         throw new Error('WBS 代碼已存在');
       }
     }
 
     // 檢查指派人員存在
     if (updateData.assigned_to) {
-      const assignee = await this.userRepository.findById(updateData.assigned_to);
+      const assignee = await this.userRepository.findById(
+        updateData.assigned_to
+      );
       if (!assignee) {
         throw new Error('指派的人員不存在');
       }
@@ -329,7 +364,11 @@ export class ProjectService {
   }
 
   // 移動 WBS 項目
-  async moveWBSItem(wbsId: string, newParentId?: string, movedBy?: string): Promise<void> {
+  async moveWBSItem(
+    wbsId: string,
+    newParentId?: string,
+    movedBy?: string
+  ): Promise<void> {
     // 檢查 WBS 項目存在
     const wbsItem = await this.wbsRepository.findById(wbsId);
     if (!wbsItem) {
@@ -367,7 +406,8 @@ export class ProjectService {
     overdueItems: number;
   }> {
     const wbsStats = await this.wbsRepository.getWBSStats(projectId);
-    const overallProgress = await this.wbsRepository.calculateProjectProgress(projectId);
+    const overallProgress =
+      await this.wbsRepository.calculateProjectProgress(projectId);
     const overdueItems = await this.wbsRepository.findOverdueTasks(projectId);
 
     return {
@@ -375,15 +415,17 @@ export class ProjectService {
       overallProgress,
       completedTasks: wbsStats.completedItems,
       totalTasks: wbsStats.totalItems,
-      overdueItems: overdueItems.length
+      overdueItems: overdueItems.length,
     };
   }
 
   // 私有方法：生成專案 ID
   private async generateProjectId(): Promise<string> {
     const now = new Date();
-    const yearMonth = now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0');
-    
+    const yearMonth =
+      now.getFullYear().toString() +
+      (now.getMonth() + 1).toString().padStart(2, '0');
+
     // 查找當月最新的專案編號
     const pattern = `PROJ-${yearMonth}-%`;
     const query = `
@@ -392,9 +434,11 @@ export class ProjectService {
       ORDER BY id DESC 
       LIMIT 1
     `;
-    
-    const result = await this.projectRepository.customQueryOne(query, [pattern]);
-    
+
+    const result = await this.projectRepository.customQueryOne(query, [
+      pattern,
+    ]);
+
     let nextNumber = 1;
     if (result) {
       const lastNumber = parseInt(result.id.split('-')[2]);
@@ -405,7 +449,10 @@ export class ProjectService {
   }
 
   // 私有方法：創建根節點 WBS
-  private async createRootWBS(projectId: string, projectName: string): Promise<void> {
+  private async createRootWBS(
+    projectId: string,
+    projectName: string
+  ): Promise<void> {
     await this.wbsRepository.create({
       project_id: projectId,
       parent_id: undefined,
@@ -423,8 +470,12 @@ export class ProjectService {
   }
 
   // 私有方法：複製 WBS 結構
-  private async duplicateWBSStructure(sourceProjectId: string, targetProjectId: string): Promise<void> {
-    const sourceWBSItems = await this.wbsRepository.findByProjectId(sourceProjectId);
+  private async duplicateWBSStructure(
+    sourceProjectId: string,
+    targetProjectId: string
+  ): Promise<void> {
+    const sourceWBSItems =
+      await this.wbsRepository.findByProjectId(sourceProjectId);
     const wbsMapping = new Map<string, string>(); // 舊 ID -> 新 ID 映射
 
     // 按層級排序，確保父節點先被創建
@@ -441,10 +492,13 @@ export class ProjectService {
       }
 
       // 找到新的父節點 ID
-      const newParentId = sourceWBS.parent_id ? wbsMapping.get(sourceWBS.parent_id) : undefined;
+      const newParentId = sourceWBS.parent_id
+        ? wbsMapping.get(sourceWBS.parent_id)
+        : undefined;
 
       // 創建新的 WBS 項目
-      const { id, project_id, parent_id, created_at, updated_at, ...wbsData } = sourceWBS;
+      const { id, project_id, parent_id, created_at, updated_at, ...wbsData } =
+        sourceWBS;
       const newWBS = await this.wbsRepository.create({
         ...wbsData,
         project_id: targetProjectId,
@@ -459,18 +513,21 @@ export class ProjectService {
   }
 
   // 私有方法：檢查是否會形成循環引用
-  private async wouldCreateCircularReference(itemId: string, newParentId: string): Promise<boolean> {
+  private async wouldCreateCircularReference(
+    itemId: string,
+    newParentId: string
+  ): Promise<boolean> {
     let currentParent = newParentId;
-    
+
     while (currentParent) {
       if (currentParent === itemId) {
         return true; // 發現循環
       }
-      
+
       const parent = await this.wbsRepository.findById(currentParent);
       currentParent = parent?.parent_id;
     }
-    
+
     return false;
   }
 }

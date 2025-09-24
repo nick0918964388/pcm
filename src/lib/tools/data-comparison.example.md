@@ -3,11 +3,13 @@
 ## 安裝和設定
 
 1. 確保已安裝必要的資料庫驅動程式：
+
 ```bash
 npm install pg oracledb
 ```
 
 2. 建立預設配置檔案：
+
 ```bash
 npm run data-compare:init
 ```
@@ -32,14 +34,7 @@ npm run data-compare:init
     "username": "pcm",
     "password": "password"
   },
-  "tables": [
-    "users",
-    "projects",
-    "project_members",
-    "wbs_items",
-    "vendors",
-    "duty_schedules"
-  ],
+  "tables": ["users", "projects", "project_members", "wbs_items", "vendors", "duty_schedules"],
   "excludeColumns": ["created_at", "updated_at"],
   "includeSystemTables": false,
   "maxSampleSize": 1000,
@@ -50,26 +45,31 @@ npm run data-compare:init
 ## 使用方式
 
 ### 1. 完整資料比對
+
 ```bash
 npm run data-compare compare
 ```
 
 ### 2. 只比對計數
+
 ```bash
 npm run data-compare compare --count-only
 ```
 
 ### 3. 只比對特定表格
+
 ```bash
 npm run data-compare compare --tables "users,projects"
 ```
 
 ### 4. 指定輸出格式和路徑
+
 ```bash
 npm run data-compare compare -o ./reports/comparison.txt -f txt
 ```
 
 ### 5. 使用自訂配置檔案
+
 ```bash
 npm run data-compare compare -c ./configs/production.json
 ```
@@ -77,6 +77,7 @@ npm run data-compare compare -c ./configs/production.json
 ## 輸出範例
 
 ### 文字格式報告
+
 ```
 ================================================================================
 資料比對報告
@@ -105,6 +106,7 @@ npm run data-compare compare -c ./configs/production.json
 ```
 
 ### JSON 格式報告
+
 ```json
 {
   "executionId": "comp_1705998600000",
@@ -158,7 +160,7 @@ const report = await comparisonTool.performFullComparison({
   sourceDb: sourceConfig,
   targetDb: targetConfig,
   tables: ['users', 'projects'],
-  maxSampleSize: 1000
+  maxSampleSize: 1000,
 });
 
 console.log('資料完整性:', report.summary.overallDataIntegrity);
@@ -184,6 +186,7 @@ console.log('資料完整性:', report.summary.overallDataIntegrity);
 ## 進階配置
 
 ### 自訂比對選項
+
 ```typescript
 const options: ComparisonOptions = {
   ignoreCase: true,
@@ -191,13 +194,14 @@ const options: ComparisonOptions = {
   ignoreDateFormats: false,
   numericTolerance: 0.01,
   onProgress: {
-    onTableStart: (tableName) => console.log(`開始比對 ${tableName}`),
-    onTableComplete: (tableName, result) => console.log(`完成 ${tableName}`)
-  }
+    onTableStart: tableName => console.log(`開始比對 ${tableName}`),
+    onTableComplete: (tableName, result) => console.log(`完成 ${tableName}`),
+  },
 };
 ```
 
 ### 排程執行
+
 ```bash
 # 使用 cron 排程每日執行
 0 2 * * * cd /path/to/pcm && npm run data-compare compare

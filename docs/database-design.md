@@ -3,6 +3,7 @@
 ## 1. 系統架構概述
 
 ### 1.1 技術堆疊
+
 - **資料庫**: PostgreSQL 14+
 - **後端**: Next.js API Routes
 - **ORM**: node-postgres (pg)
@@ -10,9 +11,10 @@
 - **資料驗證**: Zod
 
 ### 1.2 連線資訊
+
 ```env
 HOSTNAME=192.168.1.183
-DATABASE=app_db  
+DATABASE=app_db
 USERNAME=admin
 PASSWORD=XcW04ByX6GbVdt1gw4EJ5XRY
 PORT=5432
@@ -21,6 +23,7 @@ PORT=5432
 ## 2. 資料庫 Schema 設計
 
 ### 2.1 廠商表 (vendors)
+
 ```sql
 CREATE TABLE vendors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -46,6 +49,7 @@ CREATE INDEX idx_vendors_name ON vendors(name);
 ```
 
 ### 2.2 值班人員表 (duty_persons)
+
 ```sql
 CREATE TABLE duty_persons (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,7 +64,7 @@ CREATE TABLE duty_persons (
     supervisor VARCHAR(50),
     emergency_contact VARCHAR(20),
     special_skills TEXT[], -- 特殊技能陣列
-    safety_qualifications TEXT[], -- 安全資格陣列  
+    safety_qualifications TEXT[], -- 安全資格陣列
     language_requirements TEXT[], -- 語言能力陣列
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -74,6 +78,7 @@ CREATE UNIQUE INDEX idx_duty_persons_mobile_active ON duty_persons(mobile) WHERE
 ```
 
 ### 2.3 班別時間設定表 (shift_times)
+
 ```sql
 CREATE TABLE shift_times (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -91,6 +96,7 @@ CREATE UNIQUE INDEX idx_shift_times_type_active ON shift_times(shift_type) WHERE
 ```
 
 ### 2.4 值班排程主表 (duty_schedules)
+
 ```sql
 CREATE TABLE duty_schedules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -98,24 +104,24 @@ CREATE TABLE duty_schedules (
     duty_date DATE NOT NULL,
     shift_type VARCHAR(10) NOT NULL CHECK (shift_type IN ('日班', '夜班', '全日', '緊急', '加班')),
     status VARCHAR(10) NOT NULL DEFAULT '已排班' CHECK (status IN ('已排班', '值班中', '下班', '缺勤', '代班', '取消')),
-    
+
     -- 人員資訊
     person_id UUID NOT NULL REFERENCES duty_persons(id) ON DELETE RESTRICT,
-    
+
     -- 工作區域
     work_area VARCHAR(10) NOT NULL CHECK (work_area IN ('主工區', '辦公區', '倉儲區', '設備區', '安全區', '入口處', '其他')),
     work_location VARCHAR(100),
-    
+
     -- 值班要求
     special_skills_required TEXT[],
     safety_qualifications_required TEXT[],
     language_requirements_required TEXT[],
-    
+
     -- 備註資訊
     notes TEXT,
     special_instructions TEXT,
     urgency_level VARCHAR(10) CHECK (urgency_level IN ('低', '中', '高', '緊急')),
-    
+
     -- 系統欄位
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -132,6 +138,7 @@ CREATE UNIQUE INDEX idx_duty_schedules_unique ON duty_schedules(project_id, pers
 ```
 
 ### 2.5 代班記錄表 (duty_replacements)
+
 ```sql
 CREATE TABLE duty_replacements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -150,6 +157,7 @@ CREATE INDEX idx_duty_replacements_replacement ON duty_replacements(replacement_
 ```
 
 ### 2.6 簽到退記錄表 (duty_check_ins)
+
 ```sql
 CREATE TABLE duty_check_ins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -169,6 +177,7 @@ CREATE INDEX idx_duty_check_ins_checkin_time ON duty_check_ins(check_in_time);
 ```
 
 ### 2.7 系統日誌表 (system_logs)
+
 ```sql
 CREATE TABLE system_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -191,6 +200,7 @@ CREATE INDEX idx_system_logs_created ON system_logs(created_at);
 ## 3. 初始化數據腳本
 
 ### 3.1 預設班別時間設定
+
 ```sql
 INSERT INTO shift_times (shift_type, start_time, end_time, cross_day, total_hours, description) VALUES
 ('日班', '08:00', '17:00', FALSE, 9.0, '標準日班時間'),
@@ -201,6 +211,7 @@ INSERT INTO shift_times (shift_type, start_time, end_time, cross_day, total_hour
 ```
 
 ### 3.2 建立觸發器函數
+
 ```sql
 -- 更新時間戳觸發器函數
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -212,20 +223,21 @@ END;
 $$ language 'plpgsql';
 
 -- 為相關表格建立觸發器
-CREATE TRIGGER update_vendors_updated_at 
-    BEFORE UPDATE ON vendors 
+CREATE TRIGGER update_vendors_updated_at
+    BEFORE UPDATE ON vendors
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_duty_persons_updated_at 
-    BEFORE UPDATE ON duty_persons 
+CREATE TRIGGER update_duty_persons_updated_at
+    BEFORE UPDATE ON duty_persons
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_duty_schedules_updated_at 
-    BEFORE UPDATE ON duty_schedules 
+CREATE TRIGGER update_duty_schedules_updated_at
+    BEFORE UPDATE ON duty_schedules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
 ### 3.3 建立審計日誌觸發器
+
 ```sql
 CREATE OR REPLACE FUNCTION log_table_changes()
 RETURNS TRIGGER AS $$
@@ -260,6 +272,7 @@ CREATE TRIGGER duty_persons_audit_trigger
 ## 4. 查詢優化
 
 ### 4.1 常用查詢索引
+
 ```sql
 -- 複合索引用於常用查詢組合
 CREATE INDEX idx_duty_schedules_project_date_status ON duty_schedules(project_id, duty_date, status);
@@ -268,6 +281,7 @@ CREATE INDEX idx_duty_persons_vendor_active ON duty_persons(vendor_id, active);
 ```
 
 ### 4.2 分區策略 (可選)
+
 ```sql
 -- 按年份對值班記錄進行分區（數據量大時使用）
 -- CREATE TABLE duty_schedules_y2025 PARTITION OF duty_schedules
@@ -277,11 +291,13 @@ CREATE INDEX idx_duty_persons_vendor_active ON duty_persons(vendor_id, active);
 ## 5. 資料安全性
 
 ### 5.1 資料備份策略
+
 - 每日自動備份
 - 保留30天備份檔案
 - 關鍵操作前手動備份
 
 ### 5.2 資料存取權限
+
 ```sql
 -- 建立應用程式專用角色
 CREATE ROLE app_user WITH LOGIN PASSWORD 'app_secure_password';
@@ -294,11 +310,13 @@ GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO app_user;
 ## 6. 性能指標
 
 ### 6.1 預期查詢性能
+
 - 單日值班查詢: < 100ms
 - 月度統計查詢: < 500ms
 - 複雜篩選查詢: < 1000ms
 
 ### 6.2 容量規劃
+
 - 值班記錄：約 50,000 筆/年
 - 人員資料：約 1,000 筆
 - 廠商資料：約 200 筆

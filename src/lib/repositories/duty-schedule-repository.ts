@@ -1,5 +1,11 @@
 import { BaseRepository, FindOptions } from '../database/base-repository';
-import { DutySchedule, ShiftType, DutyStatus, UrgencyLevel, DutyScheduleQueryParams } from '../types/database';
+import {
+  DutySchedule,
+  ShiftType,
+  DutyStatus,
+  UrgencyLevel,
+  DutyScheduleQueryParams,
+} from '../types/database';
 import { QueryBuilder } from '../database/query-builder';
 import { db } from '../database/connection';
 
@@ -35,22 +41,29 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
 
   mapToDB(entity: Partial<DutySchedule>): Record<string, any> {
     const mapped: Record<string, any> = {};
-    
+
     if (entity.project_id !== undefined) mapped.project_id = entity.project_id;
     if (entity.person_id !== undefined) mapped.person_id = entity.person_id;
     if (entity.duty_date !== undefined) mapped.duty_date = entity.duty_date;
     if (entity.shift_type !== undefined) mapped.shift_type = entity.shift_type;
     if (entity.work_area !== undefined) mapped.work_area = entity.work_area;
     if (entity.status !== undefined) mapped.status = entity.status;
-    if (entity.urgency_level !== undefined) mapped.urgency_level = entity.urgency_level;
+    if (entity.urgency_level !== undefined)
+      mapped.urgency_level = entity.urgency_level;
     if (entity.notes !== undefined) mapped.notes = entity.notes;
-    if (entity.check_in_time !== undefined) mapped.check_in_time = entity.check_in_time;
-    if (entity.check_out_time !== undefined) mapped.check_out_time = entity.check_out_time;
-    if (entity.replacement_person_id !== undefined) mapped.replacement_person_id = entity.replacement_person_id;
-    if (entity.replacement_reason !== undefined) mapped.replacement_reason = entity.replacement_reason;
+    if (entity.check_in_time !== undefined)
+      mapped.check_in_time = entity.check_in_time;
+    if (entity.check_out_time !== undefined)
+      mapped.check_out_time = entity.check_out_time;
+    if (entity.replacement_person_id !== undefined)
+      mapped.replacement_person_id = entity.replacement_person_id;
+    if (entity.replacement_reason !== undefined)
+      mapped.replacement_reason = entity.replacement_reason;
     if (entity.created_by !== undefined) mapped.created_by = entity.created_by;
-    if (entity.approved_by !== undefined) mapped.approved_by = entity.approved_by;
-    if (entity.approved_at !== undefined) mapped.approved_at = entity.approved_at;
+    if (entity.approved_by !== undefined)
+      mapped.approved_by = entity.approved_by;
+    if (entity.approved_at !== undefined)
+      mapped.approved_at = entity.approved_at;
     if (entity.metadata !== undefined) {
       mapped.metadata = JSON.stringify(entity.metadata);
     }
@@ -60,31 +73,41 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
   }
 
   // 查找特定專案的排班記錄
-  async findByProjectId(projectId: string, options: FindOptions = {}): Promise<DutySchedule[]> {
+  async findByProjectId(
+    projectId: string,
+    options: FindOptions = {}
+  ): Promise<DutySchedule[]> {
     const filters = { project_id: projectId, ...(options.filters || {}) };
-    const result = await this.findAll({ 
-      ...options, 
+    const result = await this.findAll({
+      ...options,
       filters,
       sortBy: 'duty_date',
-      sortOrder: 'DESC'
+      sortOrder: 'DESC',
     });
     return result.data;
   }
 
   // 查找特定人員的排班記錄
-  async findByPersonId(personId: string, options: FindOptions = {}): Promise<DutySchedule[]> {
+  async findByPersonId(
+    personId: string,
+    options: FindOptions = {}
+  ): Promise<DutySchedule[]> {
     const filters = { person_id: personId, ...(options.filters || {}) };
-    const result = await this.findAll({ 
-      ...options, 
+    const result = await this.findAll({
+      ...options,
       filters,
       sortBy: 'duty_date',
-      sortOrder: 'DESC'
+      sortOrder: 'DESC',
     });
     return result.data;
   }
 
   // 根據日期範圍查找排班記錄
-  async findByDateRange(startDate: Date, endDate: Date, projectId?: string): Promise<DutySchedule[]> {
+  async findByDateRange(
+    startDate: Date,
+    endDate: Date,
+    projectId?: string
+  ): Promise<DutySchedule[]> {
     let query = `
       SELECT ds.*, dp.name as person_name, v.name as vendor_name
       FROM duty_schedules ds
@@ -131,8 +154,8 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
 
   // 檢查排班衝突
   async checkScheduleConflict(
-    personId: string, 
-    dutyDate: Date, 
+    personId: string,
+    dutyDate: Date,
     shiftType: ShiftType,
     excludeScheduleId?: string
   ): Promise<DutySchedule[]> {
@@ -209,7 +232,11 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
   }
 
   // 更新排班狀態
-  async updateStatus(scheduleId: string, status: DutyStatus, updatedBy?: string): Promise<void> {
+  async updateStatus(
+    scheduleId: string,
+    status: DutyStatus,
+    updatedBy?: string
+  ): Promise<void> {
     const query = `
       UPDATE duty_schedules 
       SET status = $1, updated_at = NOW()
@@ -249,26 +276,30 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
 
   // 設定代班人員
   async setReplacement(
-    scheduleId: string, 
-    replacementPersonId: string, 
+    scheduleId: string,
+    replacementPersonId: string,
     reason: string,
     updatedBy: string
   ): Promise<void> {
-    await db.transaction(async (client) => {
+    await db.transaction(async client => {
       // 更新原排班記錄
-      await client.query(`
+      await client.query(
+        `
         UPDATE duty_schedules 
         SET replacement_person_id = $1, 
             replacement_reason = $2,
             status = '代班',
             updated_at = NOW()
         WHERE id = $3
-      `, [replacementPersonId, reason, scheduleId]);
+      `,
+        [replacementPersonId, reason, scheduleId]
+      );
 
       // 創建代班記錄
       const original = await this.findById(scheduleId);
       if (original) {
-        await client.query(`
+        await client.query(
+          `
           INSERT INTO duty_schedules (
             project_id, person_id, duty_date, shift_type, work_area,
             status, urgency_level, notes, created_by, is_active,
@@ -276,11 +307,18 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
           ) VALUES (
             $1, $2, $3, $4, $5, '已排班', $6, $7, $8, true, NOW(), NOW()
           )
-        `, [
-          original.project_id, replacementPersonId, original.duty_date,
-          original.shift_type, original.work_area, original.urgency_level,
-          `代班 - ${reason}`, updatedBy
-        ]);
+        `,
+          [
+            original.project_id,
+            replacementPersonId,
+            original.duty_date,
+            original.shift_type,
+            original.work_area,
+            original.urgency_level,
+            `代班 - ${reason}`,
+            updatedBy,
+          ]
+        );
       }
     });
   }
@@ -298,7 +336,11 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
   }
 
   // 獲取排班統計
-  async getScheduleStats(projectId?: string, dateFrom?: Date, dateTo?: Date): Promise<{
+  async getScheduleStats(
+    projectId?: string,
+    dateFrom?: Date,
+    dateTo?: Date
+  ): Promise<{
     totalSchedules: number;
     completedSchedules: number;
     cancelledSchedules: number;
@@ -327,14 +369,14 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
          CASE WHEN check_in_time IS NOT NULL AND check_out_time IS NOT NULL
          THEN EXTRACT(EPOCH FROM (check_out_time - check_in_time)) / 3600
          ELSE NULL END
-       ) as avg_hours FROM duty_schedules WHERE ${whereClause}`
+       ) as avg_hours FROM duty_schedules WHERE ${whereClause}`,
     ];
 
     const results = await Promise.all(
-      queries.map(query => 
-        query.includes('GROUP BY') ?
-          db.query<{ [key: string]: any }>(query, params) :
-          db.queryOne<{ [key: string]: number }>(query, params)
+      queries.map(query =>
+        query.includes('GROUP BY')
+          ? db.query<{ [key: string]: any }>(query, params)
+          : db.queryOne<{ [key: string]: number }>(query, params)
       )
     );
 
@@ -363,21 +405,32 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
       schedulesByStatus,
       schedulesByShift,
       schedulesByUrgency,
-      averageWorkHours: (results[9] as any)?.avg_hours || 0
+      averageWorkHours: (results[9] as any)?.avg_hours || 0,
     };
   }
 
-  private buildStatsWhereClause(projectId?: string, dateFrom?: Date, dateTo?: Date): string {
+  private buildStatsWhereClause(
+    projectId?: string,
+    dateFrom?: Date,
+    dateTo?: Date
+  ): string {
     let clause = 'is_active = true';
-    
-    if (projectId) clause += ` AND project_id = $${this.getParamIndex(1, projectId, dateFrom, dateTo)}`;
-    if (dateFrom) clause += ` AND duty_date >= $${this.getParamIndex(2, projectId, dateFrom, dateTo)}`;
-    if (dateTo) clause += ` AND duty_date <= $${this.getParamIndex(3, projectId, dateFrom, dateTo)}`;
-    
+
+    if (projectId)
+      clause += ` AND project_id = $${this.getParamIndex(1, projectId, dateFrom, dateTo)}`;
+    if (dateFrom)
+      clause += ` AND duty_date >= $${this.getParamIndex(2, projectId, dateFrom, dateTo)}`;
+    if (dateTo)
+      clause += ` AND duty_date <= $${this.getParamIndex(3, projectId, dateFrom, dateTo)}`;
+
     return clause;
   }
 
-  private buildStatsParams(projectId?: string, dateFrom?: Date, dateTo?: Date): any[] {
+  private buildStatsParams(
+    projectId?: string,
+    dateFrom?: Date,
+    dateTo?: Date
+  ): any[] {
     const params: any[] = [];
     if (projectId) params.push(projectId);
     if (dateFrom) params.push(dateFrom);
@@ -385,7 +438,12 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
     return params;
   }
 
-  private getParamIndex(baseIndex: number, projectId?: string, dateFrom?: Date, dateTo?: Date): number {
+  private getParamIndex(
+    baseIndex: number,
+    projectId?: string,
+    dateFrom?: Date,
+    dateTo?: Date
+  ): number {
     let index = 0;
     if (projectId) index++;
     if (baseIndex === 1) return index;
@@ -396,13 +454,22 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
   }
 
   // 記錄狀態變更
-  private async logStatusChange(scheduleId: string, newStatus: DutyStatus, updatedBy: string): Promise<void> {
+  private async logStatusChange(
+    scheduleId: string,
+    newStatus: DutyStatus,
+    updatedBy: string
+  ): Promise<void> {
     // 這裡可以實作審計日誌功能
-    console.log(`Schedule ${scheduleId} status changed to ${newStatus} by ${updatedBy}`);
+    console.log(
+      `Schedule ${scheduleId} status changed to ${newStatus} by ${updatedBy}`
+    );
   }
 
   // 自訂篩選條件處理
-  protected applyFilters(builder: QueryBuilder, filters: Record<string, any>): void {
+  protected applyFilters(
+    builder: QueryBuilder,
+    filters: Record<string, any>
+  ): void {
     super.applyFilters(builder, filters);
 
     // 特殊篩選條件

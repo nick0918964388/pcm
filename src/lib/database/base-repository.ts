@@ -35,7 +35,11 @@ export abstract class BaseRepository<T extends BaseEntity> {
   protected primaryKey: string;
   protected searchFields: string[];
 
-  constructor(tableName: string, primaryKey = 'id', searchFields: string[] = []) {
+  constructor(
+    tableName: string,
+    primaryKey = 'id',
+    searchFields: string[] = []
+  ) {
     this.tableName = tableName;
     this.primaryKey = primaryKey;
     this.searchFields = searchFields;
@@ -60,7 +64,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
       sortOrder = 'DESC',
       filters = {},
       search,
-      includeInactive = false
+      includeInactive = false,
     } = options;
 
     const builder = new QueryBuilder()
@@ -77,8 +81,8 @@ export abstract class BaseRepository<T extends BaseEntity> {
 
     // 搜尋條件
     if (search && this.searchFields.length > 0) {
-      const searchClauses = this.searchFields.map(field => 
-        `${field} ILIKE '%${search}%'`
+      const searchClauses = this.searchFields.map(
+        field => `${field} ILIKE '%${search}%'`
       );
       builder.where(`(${searchClauses.join(' OR ')})`);
     }
@@ -86,7 +90,10 @@ export abstract class BaseRepository<T extends BaseEntity> {
     // 分頁
     const clonedBuilder = builder.clone();
     const countQuery = clonedBuilder.buildCountQuery();
-    const totalResult = await db.queryOne<{ total: number }>(countQuery.query, countQuery.params);
+    const totalResult = await db.queryOne<{ total: number }>(
+      countQuery.query,
+      countQuery.params
+    );
     const total = totalResult?.total || 0;
 
     builder.paginate({ page, pageSize });
@@ -103,8 +110,8 @@ export abstract class BaseRepository<T extends BaseEntity> {
         total,
         totalPages,
         hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     };
   }
 
@@ -152,9 +159,9 @@ export abstract class BaseRepository<T extends BaseEntity> {
     const fields = Object.keys(mappedData);
     const values = Object.values(mappedData);
 
-    const setClause = fields.map((field, index) =>
-      `${field} = $${index + 1}`
-    ).join(', ');
+    const setClause = fields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(', ');
 
     const query = `
       UPDATE ${this.tableName}
@@ -214,8 +221,8 @@ export abstract class BaseRepository<T extends BaseEntity> {
     if (dataList.length === 0) return [];
 
     const results: T[] = [];
-    
-    return db.transaction(async (client) => {
+
+    return db.transaction(async client => {
       for (const data of dataList) {
         const mappedData = this.mapToDB(data);
         const now = new Date();
@@ -229,7 +236,9 @@ export abstract class BaseRepository<T extends BaseEntity> {
 
         const fields = Object.keys(mappedData);
         const values = Object.values(mappedData);
-        const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
+        const placeholders = values
+          .map((_, index) => `$${index + 1}`)
+          .join(', ');
 
         const query = `
           INSERT INTO ${this.tableName} (${fields.join(', ')})
@@ -249,17 +258,17 @@ export abstract class BaseRepository<T extends BaseEntity> {
 
     const results: T[] = [];
 
-    return db.transaction(async (client) => {
+    return db.transaction(async client => {
       for (const { id, data } of updates) {
         const mappedData = this.mapToDB(data);
         mappedData.updated_at = new Date();
 
         const fields = Object.keys(mappedData);
         const values = Object.values(mappedData);
-        
-        const setClause = fields.map((field, index) => 
-          `${field} = $${index + 1}`
-        ).join(', ');
+
+        const setClause = fields
+          .map((field, index) => `${field} = $${index + 1}`)
+          .join(', ');
 
         const query = `
           UPDATE ${this.tableName}
@@ -278,7 +287,10 @@ export abstract class BaseRepository<T extends BaseEntity> {
   }
 
   // 輔助方法
-  protected applyFilters(builder: QueryBuilder, filters: Record<string, any>): void {
+  protected applyFilters(
+    builder: QueryBuilder,
+    filters: Record<string, any>
+  ): void {
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         if (Array.isArray(value)) {
@@ -307,11 +319,15 @@ export abstract class BaseRepository<T extends BaseEntity> {
 
     if (USE_ORACLE) {
       // Oracle 使用 sys_guid() 生成唯一 ID
-      const result = await db.queryOne<{ id: string }>('SELECT LOWER(REGEXP_REPLACE(RAWTOHEX(sys_guid()), \'([A-F0-9]{8})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{12})\', \'\\1-\\2-\\3-\\4-\\5\')) as id FROM dual');
+      const result = await db.queryOne<{ id: string }>(
+        "SELECT LOWER(REGEXP_REPLACE(RAWTOHEX(sys_guid()), '([A-F0-9]{8})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{12})', '\\1-\\2-\\3-\\4-\\5')) as id FROM dual"
+      );
       return result?.id || '';
     } else {
       // PostgreSQL 使用 gen_random_uuid()
-      const result = await db.queryOne<{ id: string }>('SELECT gen_random_uuid() as id');
+      const result = await db.queryOne<{ id: string }>(
+        'SELECT gen_random_uuid() as id'
+      );
       return result?.id || '';
     }
   }

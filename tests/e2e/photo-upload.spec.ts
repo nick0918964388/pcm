@@ -33,7 +33,9 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
     if (page.url().includes('/login')) {
       console.log('📝 填寫登入資訊...');
       // 填寫登入資訊
-      await page.getByRole('textbox', { name: '請輸入使用者名稱' }).fill('admin');
+      await page
+        .getByRole('textbox', { name: '請輸入使用者名稱' })
+        .fill('admin');
       await page.getByRole('textbox', { name: '請輸入密碼' }).fill('password');
 
       // 點擊登入按鈕
@@ -75,17 +77,14 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
     console.log('📁 尋找上傳區域...');
 
     // 尋找拖放區域或上傳按鈕
-    const dropZone = page.locator('[data-testid="dropzone"]').or(
-      page.locator('.dropzone')
-    ).or(
-      page.getByText('拖放檔案到此處').locator('..')
-    ).or(
-      page.getByText('選擇檔案').locator('..')
-    ).or(
-      page.locator('div').filter({ hasText: '上傳' }).first()
-    );
+    const dropZone = page
+      .locator('[data-testid="dropzone"]')
+      .or(page.locator('.dropzone'))
+      .or(page.getByText('拖放檔案到此處').locator('..'))
+      .or(page.getByText('選擇檔案').locator('..'))
+      .or(page.locator('div').filter({ hasText: '上傳' }).first());
 
-    if (await dropZone.count() > 0) {
+    if ((await dropZone.count()) > 0) {
       console.log('📤 找到拖放區域，嘗試點擊...');
       await dropZone.first().click();
       await page.waitForTimeout(500);
@@ -97,27 +96,79 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
     try {
       // 建立模擬的檔案內容（1x1 透明 PNG）
       const pngBuffer = Buffer.from([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-        0x00, 0x00, 0x00, 0x0D, // IHDR chunk length
-        0x49, 0x48, 0x44, 0x52, // IHDR
-        0x00, 0x00, 0x00, 0x01, // width = 1
-        0x00, 0x00, 0x00, 0x01, // height = 1
-        0x08, 0x06, 0x00, 0x00, 0x00, // bit depth, color type, compression, filter, interlace
-        0x1F, 0x15, 0xC4, 0x89, // CRC
-        0x00, 0x00, 0x00, 0x0A, // IDAT chunk length
-        0x49, 0x44, 0x41, 0x54, // IDAT
-        0x78, 0x9C, 0x62, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, // compressed data
-        0xE2, 0x21, 0xBC, 0x33, // CRC
-        0x00, 0x00, 0x00, 0x00, // IEND chunk length
-        0x49, 0x45, 0x4E, 0x44, // IEND
-        0xAE, 0x42, 0x60, 0x82  // CRC
+        0x89,
+        0x50,
+        0x4e,
+        0x47,
+        0x0d,
+        0x0a,
+        0x1a,
+        0x0a, // PNG signature
+        0x00,
+        0x00,
+        0x00,
+        0x0d, // IHDR chunk length
+        0x49,
+        0x48,
+        0x44,
+        0x52, // IHDR
+        0x00,
+        0x00,
+        0x00,
+        0x01, // width = 1
+        0x00,
+        0x00,
+        0x00,
+        0x01, // height = 1
+        0x08,
+        0x06,
+        0x00,
+        0x00,
+        0x00, // bit depth, color type, compression, filter, interlace
+        0x1f,
+        0x15,
+        0xc4,
+        0x89, // CRC
+        0x00,
+        0x00,
+        0x00,
+        0x0a, // IDAT chunk length
+        0x49,
+        0x44,
+        0x41,
+        0x54, // IDAT
+        0x78,
+        0x9c,
+        0x62,
+        0x00,
+        0x00,
+        0x00,
+        0x02,
+        0x00,
+        0x01, // compressed data
+        0xe2,
+        0x21,
+        0xbc,
+        0x33, // CRC
+        0x00,
+        0x00,
+        0x00,
+        0x00, // IEND chunk length
+        0x49,
+        0x45,
+        0x4e,
+        0x44, // IEND
+        0xae,
+        0x42,
+        0x60,
+        0x82, // CRC
       ]);
 
       // 上傳檔案
       await fileInput.setInputFiles({
         name: 'test-photo.png',
         mimeType: 'image/png',
-        buffer: pngBuffer
+        buffer: pngBuffer,
       });
 
       console.log('✅ 檔案已設定到輸入元素');
@@ -129,8 +180,10 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
       await page.waitForTimeout(2000);
 
       // 尋找上傳按鈕並點擊（如果需要）
-      const uploadButton = page.getByRole('button', { name: /上傳|開始上傳|確認上傳/ });
-      if (await uploadButton.count() > 0) {
+      const uploadButton = page.getByRole('button', {
+        name: /上傳|開始上傳|確認上傳/,
+      });
+      if ((await uploadButton.count()) > 0) {
         console.log('🔘 點擊上傳按鈕...');
         await uploadButton.click();
         await page.waitForTimeout(2000);
@@ -140,7 +193,6 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
       await page.waitForTimeout(3000);
 
       console.log('✅ 上傳流程已完成');
-
     } catch (error) {
       console.error('❌ 上傳過程中發生錯誤:', error);
     }
@@ -149,24 +201,22 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
     console.log('🔍 檢查頁面最終狀態...');
 
     // 檢查是否有成功訊息
-    const successMessage = page.locator('text=上傳成功').or(
-      page.locator('text=照片已上傳')
-    ).or(
-      page.locator('[role="alert"]').filter({ hasText: '成功' })
-    );
+    const successMessage = page
+      .locator('text=上傳成功')
+      .or(page.locator('text=照片已上傳'))
+      .or(page.locator('[role="alert"]').filter({ hasText: '成功' }));
 
-    if (await successMessage.count() > 0) {
+    if ((await successMessage.count()) > 0) {
       console.log('✅ 發現成功訊息');
     }
 
     // 檢查是否有錯誤訊息
-    const errorMessage = page.locator('text=錯誤').or(
-      page.locator('text=失敗')
-    ).or(
-      page.locator('[role="alert"]').filter({ hasText: '錯誤' })
-    );
+    const errorMessage = page
+      .locator('text=錯誤')
+      .or(page.locator('text=失敗'))
+      .or(page.locator('[role="alert"]').filter({ hasText: '錯誤' }));
 
-    if (await errorMessage.count() > 0) {
+    if ((await errorMessage.count()) > 0) {
       const errorText = await errorMessage.first().textContent();
       console.log('❌ 發現錯誤訊息:', errorText);
     }
@@ -201,7 +251,10 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
       console.log(`📊 頁面上總共有 ${buttonCount} 個按鈕`);
 
       for (let i = 0; i < Math.min(buttonCount, 10); i++) {
-        const buttonText = await allButtons.nth(i).textContent().catch(() => 'N/A');
+        const buttonText = await allButtons
+          .nth(i)
+          .textContent()
+          .catch(() => 'N/A');
         console.log(`  - 按鈕 ${i}: "${buttonText}"`);
       }
     }
@@ -212,7 +265,7 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
       '[data-testid="dropzone"]',
       '.dropzone',
       'button[type="submit"]',
-      'form'
+      'form',
     ];
 
     for (const selector of elements) {
@@ -222,8 +275,14 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
 
       if (count > 0) {
         for (let i = 0; i < Math.min(count, 3); i++) {
-          const text = await element.nth(i).textContent().catch(() => 'N/A');
-          const classes = await element.nth(i).getAttribute('class').catch(() => 'N/A');
+          const text = await element
+            .nth(i)
+            .textContent()
+            .catch(() => 'N/A');
+          const classes = await element
+            .nth(i)
+            .getAttribute('class')
+            .catch(() => 'N/A');
           console.log(`  - 元素 ${i}: 文字="${text}", 類別="${classes}"`);
         }
       }
@@ -235,20 +294,72 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
 
     // 建立測試圖片檔案
     const pngBuffer = Buffer.from([
-      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-      0x00, 0x00, 0x00, 0x0D, // IHDR chunk length
-      0x49, 0x48, 0x44, 0x52, // IHDR
-      0x00, 0x00, 0x00, 0x01, // width = 1
-      0x00, 0x00, 0x00, 0x01, // height = 1
-      0x08, 0x06, 0x00, 0x00, 0x00, // bit depth, color type, compression, filter, interlace
-      0x1F, 0x15, 0xC4, 0x89, // CRC
-      0x00, 0x00, 0x00, 0x0A, // IDAT chunk length
-      0x49, 0x44, 0x41, 0x54, // IDAT
-      0x78, 0x9C, 0x62, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, // compressed data
-      0xE2, 0x21, 0xBC, 0x33, // CRC
-      0x00, 0x00, 0x00, 0x00, // IEND chunk length
-      0x49, 0x45, 0x4E, 0x44, // IEND
-      0xAE, 0x42, 0x60, 0x82  // CRC
+      0x89,
+      0x50,
+      0x4e,
+      0x47,
+      0x0d,
+      0x0a,
+      0x1a,
+      0x0a, // PNG signature
+      0x00,
+      0x00,
+      0x00,
+      0x0d, // IHDR chunk length
+      0x49,
+      0x48,
+      0x44,
+      0x52, // IHDR
+      0x00,
+      0x00,
+      0x00,
+      0x01, // width = 1
+      0x00,
+      0x00,
+      0x00,
+      0x01, // height = 1
+      0x08,
+      0x06,
+      0x00,
+      0x00,
+      0x00, // bit depth, color type, compression, filter, interlace
+      0x1f,
+      0x15,
+      0xc4,
+      0x89, // CRC
+      0x00,
+      0x00,
+      0x00,
+      0x0a, // IDAT chunk length
+      0x49,
+      0x44,
+      0x41,
+      0x54, // IDAT
+      0x78,
+      0x9c,
+      0x62,
+      0x00,
+      0x00,
+      0x00,
+      0x02,
+      0x00,
+      0x01, // compressed data
+      0xe2,
+      0x21,
+      0xbc,
+      0x33, // CRC
+      0x00,
+      0x00,
+      0x00,
+      0x00, // IEND chunk length
+      0x49,
+      0x45,
+      0x4e,
+      0x44, // IEND
+      0xae,
+      0x42,
+      0x60,
+      0x82, // CRC
     ]);
 
     try {
@@ -256,17 +367,20 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
 
       console.log('📤 直接呼叫 API 端點...');
 
-      const response = await request.post('http://localhost:3001/api/projects/proj001/photos', {
-        multipart: {
-          files: {
-            name: 'test-photo.png',
-            mimeType: 'image/png',
-            buffer: pngBuffer
+      const response = await request.post(
+        'http://localhost:3001/api/projects/proj001/photos',
+        {
+          multipart: {
+            files: {
+              name: 'test-photo.png',
+              mimeType: 'image/png',
+              buffer: pngBuffer,
+            },
+            album: 'test-album',
+            description: 'Playwright 測試上傳',
           },
-          album: 'test-album',
-          description: 'Playwright 測試上傳'
         }
-      });
+      );
 
       console.log('📥 API 回應狀態:', response.status());
 
@@ -278,7 +392,6 @@ test.describe('照片上傳功能測試 - 檢查 API 執行', () => {
       } else {
         console.log('❌ API 呼叫失敗');
       }
-
     } catch (error) {
       console.error('❌ API 呼叫發生錯誤:', error);
     }

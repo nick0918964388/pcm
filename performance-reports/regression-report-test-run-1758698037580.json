@@ -1,0 +1,12 @@
+{
+  "testRun": "test-run-1758698037580",
+  "timestamp": "2025-09-24T07:13:57.670Z",
+  "environment": "oracle-test",
+  "totalQueries": 0,
+  "regressionsDetected": 0,
+  "improvements": [],
+  "criticalRegressions": [],
+  "majorRegressions": [],
+  "minorRegressions": [],
+  "summary": "HEALTHY: No significant performance regressions detected"
+}

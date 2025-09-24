@@ -4,32 +4,32 @@
  * 修復Oracle PCM用戶權限腳本
  */
 
-import oracledb from 'oracledb'
+import oracledb from 'oracledb';
 
 async function fixOraclePermissions() {
-  console.log('🔧 修復Oracle PCM用戶權限...')
+  console.log('🔧 修復Oracle PCM用戶權限...');
 
-  let systemConnection: oracledb.Connection | undefined
-  let pcmConnection: oracledb.Connection | undefined
+  let systemConnection: oracledb.Connection | undefined;
+  let pcmConnection: oracledb.Connection | undefined;
 
   try {
     // 使用system用戶連線
     systemConnection = await oracledb.getConnection({
       user: 'system',
       password: 'Oracle123',
-      connectString: 'localhost:1521/XE'
-    })
+      connectString: 'localhost:1521/XE',
+    });
 
-    console.log('✅ System用戶連線成功')
+    console.log('✅ System用戶連線成功');
 
     // 檢查PCM_USER是否存在
     const userCheckResult = await systemConnection.execute(
       'SELECT username, account_status FROM dba_users WHERE username = :username',
       { username: 'PCM_USER' }
-    )
+    );
 
     if (!userCheckResult.rows || userCheckResult.rows.length === 0) {
-      console.log('❌ PCM_USER不存在，正在建立...')
+      console.log('❌ PCM_USER不存在，正在建立...');
 
       // 建立PCM用戶
       await systemConnection.execute(`
@@ -37,11 +37,13 @@ async function fixOraclePermissions() {
         DEFAULT TABLESPACE USERS
         TEMPORARY TABLESPACE TEMP
         QUOTA UNLIMITED ON USERS
-      `)
+      `);
 
-      console.log('✅ PCM_USER已建立')
+      console.log('✅ PCM_USER已建立');
     } else {
-      console.log(`✅ PCM_USER已存在，狀態: ${(userCheckResult.rows[0] as any[])[1]}`)
+      console.log(
+        `✅ PCM_USER已存在，狀態: ${(userCheckResult.rows[0] as any[])[1]}`
+      );
     }
 
     // 授予所有必要權限
@@ -54,30 +56,34 @@ async function fixOraclePermissions() {
       'GRANT CREATE PROCEDURE TO pcm_user',
       'GRANT CREATE SYNONYM TO pcm_user',
       'GRANT ALTER SESSION TO pcm_user',
-      'GRANT CREATE SESSION TO pcm_user'
-    ]
+      'GRANT CREATE SESSION TO pcm_user',
+    ];
 
     for (const permission of permissions) {
       try {
-        await systemConnection.execute(permission)
-        console.log(`✅ 授予權限: ${permission.split(' ').slice(-2).join(' ')}`)
+        await systemConnection.execute(permission);
+        console.log(
+          `✅ 授予權限: ${permission.split(' ').slice(-2).join(' ')}`
+        );
       } catch (error) {
-        console.log(`⚠️  權限可能已存在: ${permission.split(' ').slice(-2).join(' ')}`)
+        console.log(
+          `⚠️  權限可能已存在: ${permission.split(' ').slice(-2).join(' ')}`
+        );
       }
     }
 
-    await systemConnection.commit()
-    console.log('✅ 權限設定完成')
+    await systemConnection.commit();
+    console.log('✅ 權限設定完成');
 
     // 測試PCM用戶連線
     try {
       pcmConnection = await oracledb.getConnection({
         user: 'pcm_user',
         password: 'pcm_pass123',
-        connectString: 'localhost:1521/XE'
-      })
+        connectString: 'localhost:1521/XE',
+      });
 
-      console.log('✅ PCM用戶連線測試成功')
+      console.log('✅ PCM用戶連線測試成功');
 
       // 建立基本表格
       try {
@@ -90,13 +96,13 @@ async function fixOraclePermissions() {
             error_message CLOB,
             CONSTRAINT uk_migration_script UNIQUE (script_name)
           )
-        `)
-        console.log('✅ migration_history表已建立')
+        `);
+        console.log('✅ migration_history表已建立');
       } catch (error) {
         if (String(error).includes('ORA-00955')) {
-          console.log('⚠️  migration_history表已存在')
+          console.log('⚠️  migration_history表已存在');
         } else {
-          throw error
+          throw error;
         }
       }
 
@@ -108,13 +114,13 @@ async function fixOraclePermissions() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
-        `)
-        console.log('✅ system_info表已建立')
+        `);
+        console.log('✅ system_info表已建立');
       } catch (error) {
         if (String(error).includes('ORA-00955')) {
-          console.log('⚠️  system_info表已存在')
+          console.log('⚠️  system_info表已存在');
         } else {
-          throw error
+          throw error;
         }
       }
 
@@ -124,46 +130,46 @@ async function fixOraclePermissions() {
           INSERT INTO system_info (key_name, key_value)
           SELECT 'schema_version', '1.0.0' FROM dual
           WHERE NOT EXISTS (SELECT 1 FROM system_info WHERE key_name = 'schema_version')
-        `)
+        `);
 
         await pcmConnection.execute(`
           INSERT INTO system_info (key_name, key_value)
           SELECT 'migration_status', 'initialized' FROM dual
           WHERE NOT EXISTS (SELECT 1 FROM system_info WHERE key_name = 'migration_status')
-        `)
+        `);
 
-        await pcmConnection.commit()
-        console.log('✅ system_info初始資料已插入')
+        await pcmConnection.commit();
+        console.log('✅ system_info初始資料已插入');
       } catch (error) {
-        console.log(`⚠️  初始資料可能已存在: ${error}`)
+        console.log(`⚠️  初始資料可能已存在: ${error}`);
       }
 
       // 檢查表狀態
-      const tableCheck = await pcmConnection.execute('SELECT table_name FROM user_tables')
-      console.log(`✅ PCM用戶擁有 ${tableCheck.rows?.length || 0} 個表`)
-
+      const tableCheck = await pcmConnection.execute(
+        'SELECT table_name FROM user_tables'
+      );
+      console.log(`✅ PCM用戶擁有 ${tableCheck.rows?.length || 0} 個表`);
     } catch (error) {
-      console.error('❌ PCM用戶連線失敗:', error)
+      console.error('❌ PCM用戶連線失敗:', error);
     }
-
   } catch (error) {
-    console.error('❌ 修復權限失敗:', error)
-    process.exit(1)
+    console.error('❌ 修復權限失敗:', error);
+    process.exit(1);
   } finally {
     if (systemConnection) {
-      await systemConnection.close()
+      await systemConnection.close();
     }
     if (pcmConnection) {
-      await pcmConnection.close()
+      await pcmConnection.close();
     }
   }
 
-  console.log('🎉 Oracle權限修復完成！')
+  console.log('🎉 Oracle權限修復完成！');
 }
 
 // 執行修復
 if (require.main === module) {
-  fixOraclePermissions().catch(console.error)
+  fixOraclePermissions().catch(console.error);
 }
 
-export { fixOraclePermissions }
+export { fixOraclePermissions };

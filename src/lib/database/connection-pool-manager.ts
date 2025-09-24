@@ -10,53 +10,54 @@ import {
   PoolStatus,
   PoolConfig,
   RetryConfig,
-  DatabaseError
-} from './types'
+  DatabaseError,
+} from './types';
 
 export class ConnectionPoolManager implements IConnectionPoolManager {
-  private oraclePool: any = null
-  private postgresPool: any = null
-  private isInitialized = false
+  private oraclePool: any = null;
+  private postgresPool: any = null;
+  private isInitialized = false;
   private readonly retryConfig: RetryConfig = {
     maxAttempts: 3,
     delayMs: 1000,
     backoffMultiplier: 2,
-    maxDelayMs: 5000
-  }
+    maxDelayMs: 5000,
+  };
 
   constructor(private config: PoolConfig) {}
 
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      return
+      return;
     }
 
     await Promise.all([
       this.initializeOraclePool(),
-      this.initializePostgreSQLPool()
-    ])
+      this.initializePostgreSQLPool(),
+    ]);
 
-    this.isInitialized = true
+    this.isInitialized = true;
   }
 
   private async initializeOraclePool(): Promise<void> {
-    let lastError: Error | null = null
+    let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.retryConfig.maxAttempts; attempt++) {
       try {
-        this.oraclePool = await this.createOraclePool()
-        return
+        this.oraclePool = await this.createOraclePool();
+        return;
       } catch (error) {
-        lastError = error as Error
+        lastError = error as Error;
 
-        this.logConnectionError('oracle', error as Error, attempt)
+        this.logConnectionError('oracle', error as Error, attempt);
 
         if (attempt < this.retryConfig.maxAttempts) {
           const delayMs = Math.min(
-            this.retryConfig.delayMs * Math.pow(this.retryConfig.backoffMultiplier, attempt - 1),
+            this.retryConfig.delayMs *
+              Math.pow(this.retryConfig.backoffMultiplier, attempt - 1),
             this.retryConfig.maxDelayMs
-          )
-          await this.delay(delayMs)
+          );
+          await this.delay(delayMs);
         }
       }
     }
@@ -66,27 +67,28 @@ export class ConnectionPoolManager implements IConnectionPoolManager {
       `Failed to initialize Oracle pool after ${this.retryConfig.maxAttempts} attempts`,
       lastError!,
       'oracle'
-    )
+    );
   }
 
   private async initializePostgreSQLPool(): Promise<void> {
-    let lastError: Error | null = null
+    let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.retryConfig.maxAttempts; attempt++) {
       try {
-        this.postgresPool = await this.createPostgreSQLPool()
-        return
+        this.postgresPool = await this.createPostgreSQLPool();
+        return;
       } catch (error) {
-        lastError = error as Error
+        lastError = error as Error;
 
-        this.logConnectionError('postgresql', error as Error, attempt)
+        this.logConnectionError('postgresql', error as Error, attempt);
 
         if (attempt < this.retryConfig.maxAttempts) {
           const delayMs = Math.min(
-            this.retryConfig.delayMs * Math.pow(this.retryConfig.backoffMultiplier, attempt - 1),
+            this.retryConfig.delayMs *
+              Math.pow(this.retryConfig.backoffMultiplier, attempt - 1),
             this.retryConfig.maxDelayMs
-          )
-          await this.delay(delayMs)
+          );
+          await this.delay(delayMs);
         }
       }
     }
@@ -96,12 +98,12 @@ export class ConnectionPoolManager implements IConnectionPoolManager {
       `Failed to initialize PostgreSQL pool after ${this.retryConfig.maxAttempts} attempts`,
       lastError!,
       'postgresql'
-    )
+    );
   }
 
   private async createOraclePool(): Promise<any> {
     // Dynamic import to avoid loading Oracle driver if not needed
-    const oracledb = await import('oracledb')
+    const oracledb = await import('oracledb');
 
     return await oracledb.createPool({
       user: this.config.oracle.user,
@@ -111,13 +113,13 @@ export class ConnectionPoolManager implements IConnectionPoolManager {
       poolMin: this.config.oracle.poolMin,
       poolIncrement: this.config.oracle.poolIncrement || 1,
       poolTimeout: this.config.oracle.poolTimeout || 60,
-      queueTimeout: this.config.oracle.queueTimeout || 60000
-    })
+      queueTimeout: this.config.oracle.queueTimeout || 60000,
+    });
   }
 
   private async createPostgreSQLPool(): Promise<any> {
     // Dynamic import to avoid loading PostgreSQL driver if not needed
-    const { Pool } = await import('pg')
+    const { Pool } = await import('pg');
 
     const pool = new Pool({
       host: this.config.postgresql.host,
@@ -128,34 +130,37 @@ export class ConnectionPoolManager implements IConnectionPoolManager {
       max: this.config.postgresql.max,
       min: this.config.postgresql.min,
       idleTimeoutMillis: this.config.postgresql.idleTimeoutMillis || 30000,
-      connectionTimeoutMillis: this.config.postgresql.connectionTimeoutMillis || 5000,
-      ssl: this.config.postgresql.ssl
-    })
+      connectionTimeoutMillis:
+        this.config.postgresql.connectionTimeoutMillis || 5000,
+      ssl: this.config.postgresql.ssl,
+    });
 
     // Set up error handling
-    pool.on('error', (err) => {
-      console.error('PostgreSQL pool error:', err)
-    })
+    pool.on('error', err => {
+      console.error('PostgreSQL pool error:', err);
+    });
 
-    return pool
+    return pool;
   }
 
-  async getConnection(database: 'oracle' | 'postgresql'): Promise<DatabaseConnection> {
+  async getConnection(
+    database: 'oracle' | 'postgresql'
+  ): Promise<DatabaseConnection> {
     if (!this.isInitialized) {
-      await this.initialize()
+      await this.initialize();
     }
 
-    let lastError: Error | null = null
+    let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.retryConfig.maxAttempts; attempt++) {
       try {
         if (database === 'oracle') {
-          return await this.getOracleConnection()
+          return await this.getOracleConnection();
         } else {
-          return await this.getPostgreSQLConnection()
+          return await this.getPostgreSQLConnection();
         }
       } catch (error) {
-        lastError = error as Error
+        lastError = error as Error;
 
         if (this.isPoolExhaustedError(error as Error)) {
           throw this.createDatabaseError(
@@ -165,15 +170,16 @@ export class ConnectionPoolManager implements IConnectionPoolManager {
             database,
             true,
             5000
-          )
+          );
         }
 
         if (attempt < this.retryConfig.maxAttempts) {
           const delayMs = Math.min(
-            this.retryConfig.delayMs * Math.pow(this.retryConfig.backoffMultiplier, attempt - 1),
+            this.retryConfig.delayMs *
+              Math.pow(this.retryConfig.backoffMultiplier, attempt - 1),
             this.retryConfig.maxDelayMs
-          )
-          await this.delay(delayMs)
+          );
+          await this.delay(delayMs);
         }
       }
     }
@@ -183,196 +189,221 @@ export class ConnectionPoolManager implements IConnectionPoolManager {
       `Failed to get database connection after ${this.retryConfig.maxAttempts} attempts`,
       lastError!,
       database
-    )
+    );
   }
 
   private async getOracleConnection(): Promise<DatabaseConnection> {
-    const rawConnection = await this.oraclePool.getConnection()
+    const rawConnection = await this.oraclePool.getConnection();
 
     return {
       id: `oracle-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'oracle',
       query: async <T = any>(sql: string, params: any[] = []): Promise<T[]> => {
-        const result = await rawConnection.execute(sql, params)
-        return result.rows || []
+        const result = await rawConnection.execute(sql, params);
+        return result.rows || [];
       },
-      queryOne: async <T = any>(sql: string, params: any[] = []): Promise<T | null> => {
-        const result = await rawConnection.execute(sql, params)
-        return result.rows?.[0] || null
+      queryOne: async <T = any>(
+        sql: string,
+        params: any[] = []
+      ): Promise<T | null> => {
+        const result = await rawConnection.execute(sql, params);
+        return result.rows?.[0] || null;
       },
       close: async (): Promise<void> => {
-        await rawConnection.close()
+        await rawConnection.close();
       },
       isHealthy: (): boolean => {
-        return rawConnection && !rawConnection.isClosed
-      }
-    }
+        return rawConnection && !rawConnection.isClosed;
+      },
+    };
   }
 
   private async getPostgreSQLConnection(): Promise<DatabaseConnection> {
-    const rawConnection = await this.postgresPool.connect()
+    const rawConnection = await this.postgresPool.connect();
 
     return {
       id: `postgresql-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'postgresql',
       query: async <T = any>(sql: string, params: any[] = []): Promise<T[]> => {
-        const result = await rawConnection.query(sql, params)
-        return result.rows || []
+        const result = await rawConnection.query(sql, params);
+        return result.rows || [];
       },
-      queryOne: async <T = any>(sql: string, params: any[] = []): Promise<T | null> => {
-        const result = await rawConnection.query(sql, params)
-        return result.rows?.[0] || null
+      queryOne: async <T = any>(
+        sql: string,
+        params: any[] = []
+      ): Promise<T | null> => {
+        const result = await rawConnection.query(sql, params);
+        return result.rows?.[0] || null;
       },
       close: async (): Promise<void> => {
-        rawConnection.release()
+        rawConnection.release();
       },
       isHealthy: (): boolean => {
-        return rawConnection && !rawConnection.destroyed
-      }
-    }
+        return rawConnection && !rawConnection.destroyed;
+      },
+    };
   }
 
   async releaseConnection(connection: DatabaseConnection): Promise<void> {
     try {
-      await connection.close()
+      await connection.close();
     } catch (error) {
-      console.error(`Failed to release connection ${connection.id}:`, error)
+      console.error(`Failed to release connection ${connection.id}:`, error);
       // Don't throw - connection release errors should not fail the operation
     }
   }
 
   async healthCheck(): Promise<HealthStatus> {
-    const startTime = Date.now()
+    const startTime = Date.now();
 
     const [oracleHealth, postgresHealth] = await Promise.allSettled([
       this.checkOracleHealth(),
-      this.checkPostgreSQLHealth()
-    ])
+      this.checkPostgreSQLHealth(),
+    ]);
 
-    const responseTime = Date.now() - startTime
+    const responseTime = Date.now() - startTime;
 
-    const oracleStatus = oracleHealth.status === 'fulfilled'
-      ? oracleHealth.value
-      : { status: 'unhealthy' as const, error: (oracleHealth.reason as Error).message }
+    const oracleStatus =
+      oracleHealth.status === 'fulfilled'
+        ? oracleHealth.value
+        : {
+            status: 'unhealthy' as const,
+            error: (oracleHealth.reason as Error).message,
+          };
 
-    const postgresStatus = postgresHealth.status === 'fulfilled'
-      ? postgresHealth.value
-      : { status: 'unhealthy' as const, error: (postgresHealth.reason as Error).message }
+    const postgresStatus =
+      postgresHealth.status === 'fulfilled'
+        ? postgresHealth.value
+        : {
+            status: 'unhealthy' as const,
+            error: (postgresHealth.reason as Error).message,
+          };
 
     return {
-      isHealthy: oracleStatus.status === 'connected' && postgresStatus.status === 'connected',
+      isHealthy:
+        oracleStatus.status === 'connected' &&
+        postgresStatus.status === 'connected',
       responseTime,
       oracle: oracleStatus,
-      postgresql: postgresStatus
-    }
+      postgresql: postgresStatus,
+    };
   }
 
   private async checkOracleHealth(): Promise<HealthStatus['oracle']> {
     if (!this.oraclePool) {
-      return { status: 'disconnected' }
+      return { status: 'disconnected' };
     }
 
     try {
-      const connection = await this.getOracleConnection()
-      await connection.query('SELECT 1 FROM DUAL')
-      await connection.close()
+      const connection = await this.getOracleConnection();
+      await connection.query('SELECT 1 FROM DUAL');
+      await connection.close();
 
       return {
         status: 'connected',
         connectionsOpen: this.oraclePool.connectionsOpen,
-        connectionsInUse: this.oraclePool.connectionsInUse
-      }
+        connectionsInUse: this.oraclePool.connectionsInUse,
+      };
     } catch (error) {
       return {
         status: 'unhealthy',
-        error: (error as Error).message
-      }
+        error: (error as Error).message,
+      };
     }
   }
 
   private async checkPostgreSQLHealth(): Promise<HealthStatus['postgresql']> {
     if (!this.postgresPool) {
-      return { status: 'disconnected' }
+      return { status: 'disconnected' };
     }
 
     try {
-      const connection = await this.getPostgreSQLConnection()
-      await connection.query('SELECT 1')
-      await connection.close()
+      const connection = await this.getPostgreSQLConnection();
+      await connection.query('SELECT 1');
+      await connection.close();
 
       return {
         status: 'connected',
         totalCount: this.postgresPool.totalCount,
         idleCount: this.postgresPool.idleCount,
-        waitingCount: this.postgresPool.waitingCount
-      }
+        waitingCount: this.postgresPool.waitingCount,
+      };
     } catch (error) {
       return {
         status: 'unhealthy',
-        error: (error as Error).message
-      }
+        error: (error as Error).message,
+      };
     }
   }
 
   getPoolStatus(): PoolStatus {
-    const oracledb = require('oracledb')
+    const oracledb = require('oracledb');
 
     return {
       oracle: {
         isInitialized: !!this.oraclePool,
         connectionsOpen: this.oraclePool?.connectionsOpen || 0,
         connectionsInUse: this.oraclePool?.connectionsInUse || 0,
-        status: this.oraclePool?.status === oracledb.POOL_STATUS_OPEN ? 'open' : 'closed'
+        status:
+          this.oraclePool?.status === oracledb.POOL_STATUS_OPEN
+            ? 'open'
+            : 'closed',
       },
       postgresql: {
         isInitialized: !!this.postgresPool,
         totalCount: this.postgresPool?.totalCount || 0,
         idleCount: this.postgresPool?.idleCount || 0,
-        waitingCount: this.postgresPool?.waitingCount || 0
-      }
-    }
+        waitingCount: this.postgresPool?.waitingCount || 0,
+      },
+    };
   }
 
   async close(): Promise<void> {
-    const closePromises: Promise<void>[] = []
+    const closePromises: Promise<void>[] = [];
 
     if (this.oraclePool) {
       closePromises.push(
         this.oraclePool.close().catch((error: Error) => {
-          console.error('Error closing Oracle pool:', error)
+          console.error('Error closing Oracle pool:', error);
         })
-      )
+      );
     }
 
     if (this.postgresPool) {
       closePromises.push(
         this.postgresPool.end().catch((error: Error) => {
-          console.error('Error closing PostgreSQL pool:', error)
+          console.error('Error closing PostgreSQL pool:', error);
         })
-      )
+      );
     }
 
-    await Promise.all(closePromises)
+    await Promise.all(closePromises);
 
-    this.oraclePool = null
-    this.postgresPool = null
-    this.isInitialized = false
+    this.oraclePool = null;
+    this.postgresPool = null;
+    this.isInitialized = false;
   }
 
-  private logConnectionError(database: string, error: Error, attempt: number): void {
+  private logConnectionError(
+    database: string,
+    error: Error,
+    attempt: number
+  ): void {
     console.error('Database connection failed:', {
       database,
       error,
       attempt,
       maxAttempts: this.retryConfig.maxAttempts,
-      timestamp: new Date().toISOString()
-    })
+      timestamp: new Date().toISOString(),
+    });
   }
 
   private isPoolExhaustedError(error: Error): boolean {
-    return error.name === 'PoolExhaustedError' ||
-           error.message.includes('pool exhausted') ||
-           error.message.includes('timeout acquiring connection')
+    return (
+      error.name === 'PoolExhaustedError' ||
+      error.message.includes('pool exhausted') ||
+      error.message.includes('timeout acquiring connection')
+    );
   }
 
   private createDatabaseError(
@@ -383,17 +414,17 @@ export class ConnectionPoolManager implements IConnectionPoolManager {
     retryable = false,
     retryAfter?: number
   ): DatabaseError {
-    const error = new Error(message) as DatabaseError
-    error.name = 'DatabaseError'
-    error.code = code
-    error.originalError = originalError
-    error.database = database
-    error.retryable = retryable
-    error.retryAfter = retryAfter
-    return error
+    const error = new Error(message) as DatabaseError;
+    error.name = 'DatabaseError';
+    error.code = code;
+    error.originalError = originalError;
+    error.database = database;
+    error.retryable = retryable;
+    error.retryAfter = retryAfter;
+    return error;
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

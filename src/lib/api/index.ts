@@ -3,7 +3,8 @@
  */
 
 // API 基礎設定
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 // 通用 API 配置
 const API_CONFIG = {
@@ -12,7 +13,7 @@ const API_CONFIG = {
   headers: {
     'Content-Type': 'application/json',
   },
-}
+};
 
 /**
  * 通用 API 請求函數
@@ -20,51 +21,51 @@ const API_CONFIG = {
 export const api = {
   get: async <T>(url: string): Promise<T> => {
     // 模擬 API 請求
-    console.log(`API GET: ${API_CONFIG.baseURL}${url}`)
-    
+    console.log(`API GET: ${API_CONFIG.baseURL}${url}`);
+
     // 返回模擬響應
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       setTimeout(() => {
-        resolve({} as T)
-      }, 300)
-    })
+        resolve({} as T);
+      }, 300);
+    });
   },
 
   post: async <T>(url: string, data?: any): Promise<T> => {
     // 模擬 API 請求
-    console.log(`API POST: ${API_CONFIG.baseURL}${url}`, data)
-    
+    console.log(`API POST: ${API_CONFIG.baseURL}${url}`, data);
+
     // 返回模擬響應
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       setTimeout(() => {
-        resolve({} as T)
-      }, 300)
-    })
+        resolve({} as T);
+      }, 300);
+    });
   },
 
   put: async <T>(url: string, data?: any): Promise<T> => {
     // 模擬 API 請求
-    console.log(`API PUT: ${API_CONFIG.baseURL}${url}`, data)
-    
+    console.log(`API PUT: ${API_CONFIG.baseURL}${url}`, data);
+
     // 返回模擬響應
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       setTimeout(() => {
-        resolve({} as T)
-      }, 300)
-    })
+        resolve({} as T);
+      }, 300);
+    });
   },
 
   delete: async <T>(url: string): Promise<T> => {
     // 模擬 API 請求
-    console.log(`API DELETE: ${API_CONFIG.baseURL}${url}`)
-    
-    // 返回模擬響應
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({} as T)
-      }, 300)
-    })
-  },
-}
+    console.log(`API DELETE: ${API_CONFIG.baseURL}${url}`);
 
-export default api
+    // 返回模擬響應
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve({} as T);
+      }, 300);
+    });
+  },
+};
+
+export default api;

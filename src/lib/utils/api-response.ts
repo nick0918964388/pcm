@@ -43,7 +43,7 @@ export function successResponse<T>(
     data,
     message,
     timestamp: new Date().toISOString(),
-    meta
+    meta,
   };
 
   return NextResponse.json(response, { status });
@@ -61,7 +61,7 @@ export function errorResponse(
     message,
     errorCode,
     timestamp: new Date().toISOString(),
-    ...(details && { details })
+    ...(details && { details }),
   };
 
   return NextResponse.json(response, { status });
@@ -76,7 +76,7 @@ export function paginatedResponse<T>(
 ): NextResponse {
   return successResponse(data, message, {
     pagination,
-    filters
+    filters,
   });
 }
 
@@ -85,19 +85,18 @@ export function validationErrorResponse(error: ZodError): NextResponse {
   const details = error.errors.map(err => ({
     field: err.path.join('.'),
     message: err.message,
-    code: err.code
+    code: err.code,
   }));
 
-  return errorResponse(
-    '資料驗證失敗',
-    'VALIDATION_ERROR',
-    400,
-    { errors: details }
-  );
+  return errorResponse('資料驗證失敗', 'VALIDATION_ERROR', 400, {
+    errors: details,
+  });
 }
 
 // 未授權錯誤回應
-export function unauthorizedResponse(message: string = '未授權訪問'): NextResponse {
+export function unauthorizedResponse(
+  message: string = '未授權訪問'
+): NextResponse {
   return errorResponse(message, 'UNAUTHORIZED', 401);
 }
 
@@ -117,7 +116,9 @@ export function conflictResponse(message: string = '資源衝突'): NextResponse
 }
 
 // 內部服務器錯誤回應
-export function internalErrorResponse(message: string = '內部服務器錯誤'): NextResponse {
+export function internalErrorResponse(
+  message: string = '內部服務器錯誤'
+): NextResponse {
   return errorResponse(message, 'INTERNAL_ERROR', 500);
 }
 
@@ -127,11 +128,11 @@ export function rateLimitResponse(
   resetTime?: number
 ): NextResponse {
   const response = errorResponse(message, 'RATE_LIMIT', 429);
-  
+
   if (resetTime) {
     response.headers.set('X-RateLimit-Reset', resetTime.toString());
   }
-  
+
   return response;
 }
 
@@ -145,15 +146,18 @@ export function handleKnownError(error: any): NextResponse {
   }
 
   // 資料庫錯誤
-  if (error.code === '23505') { // PostgreSQL unique violation
+  if (error.code === '23505') {
+    // PostgreSQL unique violation
     return conflictResponse('資料重複');
   }
 
-  if (error.code === '23503') { // PostgreSQL foreign key violation
+  if (error.code === '23503') {
+    // PostgreSQL foreign key violation
     return errorResponse('參考的資料不存在', 'FOREIGN_KEY_ERROR', 400);
   }
 
-  if (error.code === '23502') { // PostgreSQL not null violation
+  if (error.code === '23502') {
+    // PostgreSQL not null violation
     return errorResponse('必填欄位不能為空', 'NOT_NULL_ERROR', 400);
   }
 
@@ -169,11 +173,17 @@ export function handleKnownError(error: any): NextResponse {
   // 自訂業務邏輯錯誤
   if (error.message && typeof error.message === 'string') {
     // 根據錯誤訊息判斷錯誤類型
-    if (error.message.includes('不存在') || error.message.includes('not found')) {
+    if (
+      error.message.includes('不存在') ||
+      error.message.includes('not found')
+    ) {
       return notFoundResponse(error.message);
     }
 
-    if (error.message.includes('權限') || error.message.includes('permission')) {
+    if (
+      error.message.includes('權限') ||
+      error.message.includes('permission')
+    ) {
       return forbiddenResponse(error.message);
     }
 
@@ -207,7 +217,9 @@ export function withErrorHandling(
 export async function validateRequestBody<T>(
   request: Request,
   schema: any
-): Promise<{ success: true; data: T } | { success: false; response: NextResponse }> {
+): Promise<
+  { success: true; data: T } | { success: false; response: NextResponse }
+> {
   try {
     const body = await request.json();
     const validatedData = schema.parse(body);
@@ -216,9 +228,9 @@ export async function validateRequestBody<T>(
     if (error instanceof ZodError) {
       return { success: false, response: validationErrorResponse(error) };
     }
-    return { 
-      success: false, 
-      response: errorResponse('請求體格式錯誤', 'INVALID_JSON', 400) 
+    return {
+      success: false,
+      response: errorResponse('請求體格式錯誤', 'INVALID_JSON', 400),
     };
   }
 }
@@ -236,16 +248,16 @@ export function validateSearchParams<T>(
     if (error instanceof ZodError) {
       return { success: false, response: validationErrorResponse(error) };
     }
-    return { 
-      success: false, 
-      response: errorResponse('查詢參數格式錯誤', 'INVALID_PARAMS', 400) 
+    return {
+      success: false,
+      response: errorResponse('查詢參數格式錯誤', 'INVALID_PARAMS', 400),
     };
   }
 }
 
 // HTTP 方法檢查
 export function checkHttpMethod(
-  request: Request, 
+  request: Request,
   allowedMethods: string[]
 ): NextResponse | null {
   if (!allowedMethods.includes(request.method)) {
@@ -261,8 +273,14 @@ export function checkHttpMethod(
 // CORS 標頭設置
 export function setCorsHeaders(response: NextResponse): NextResponse {
   response.headers.set('Access-Control-Allow-Origin', '*');
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS'
+  );
+  response.headers.set(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization'
+  );
   return response;
 }
 
@@ -307,4 +325,8 @@ export function setSecurityHeaders(response: NextResponse): NextResponse {
 }
 
 // 重新導出 rate limiting 功能
-export { checkRateLimit, rateLimitResponse as rateLimitErrorResponse, clearRateLimit } from './rate-limit';
+export {
+  checkRateLimit,
+  rateLimitResponse as rateLimitErrorResponse,
+  clearRateLimit,
+} from './rate-limit';

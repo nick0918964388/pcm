@@ -3,101 +3,105 @@
  * 增強照片服務 - 實施任務 2.1、2.2 和 2.3
  */
 
-import { IDatabaseAbstraction, IUnitOfWork } from '@/lib/database/types'
-import { FileProcessingService, FileProcessingOptions, ProcessingResult } from './file-processing-service'
-import { EventBus } from './event-bus'
+import { IDatabaseAbstraction, IUnitOfWork } from '@/lib/database/types';
+import {
+  FileProcessingService,
+  FileProcessingOptions,
+  ProcessingResult,
+} from './file-processing-service';
+import { EventBus } from './event-bus';
 
 export interface PhotoUploadResult {
-  success: boolean
-  photoId?: string
-  errors?: string[]
-  duplicate?: boolean
-  existingPhotoId?: string
+  success: boolean;
+  photoId?: string;
+  errors?: string[];
+  duplicate?: boolean;
+  existingPhotoId?: string;
 }
 
 export interface PhotoFilters {
-  page?: number
-  limit?: number
-  albumId?: string
-  startDate?: Date
-  endDate?: Date
-  tags?: string[]
+  page?: number;
+  limit?: number;
+  albumId?: string;
+  startDate?: Date;
+  endDate?: Date;
+  tags?: string[];
 }
 
 export interface PhotoQueryResult {
-  success: boolean
-  data?: any[]
-  total?: number
-  page?: number
-  limit?: number
-  errors?: string[]
+  success: boolean;
+  data?: any[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  errors?: string[];
 }
 
 export interface BatchUploadOptions {
-  concurrency?: number
-  onProgress?: (progress: number) => void
+  concurrency?: number;
+  onProgress?: (progress: number) => void;
 }
 
 export interface BatchUploadResult {
-  success: boolean
-  results: PhotoUploadResult[]
-  totalProcessed: number
-  errors?: string[]
+  success: boolean;
+  results: PhotoUploadResult[];
+  totalProcessed: number;
+  errors?: string[];
 }
 
 export interface ServiceHealthStatus {
-  status: 'healthy' | 'degraded' | 'unhealthy'
+  status: 'healthy' | 'degraded' | 'unhealthy';
   dependencies: {
     database: {
-      status: string
-      responseTime: number
-    }
+      status: string;
+      responseTime: number;
+    };
     fileProcessing: {
-      status: string
-      circuitBreakerOpen: boolean
-    }
+      status: string;
+      circuitBreakerOpen: boolean;
+    };
     eventBus: {
-      status: string
-    }
-  }
-  timestamp: Date
+      status: string;
+    };
+  };
+  timestamp: Date;
 }
 
 export interface CircuitBreakerState {
-  isOpen: boolean
-  failureCount: number
-  lastFailureTime?: Date
-  nextAttemptTime?: Date
+  isOpen: boolean;
+  failureCount: number;
+  lastFailureTime?: Date;
+  nextAttemptTime?: Date;
 }
 
 export interface ResponsiveImageOptions {
-  sizes: string[]
-  formats: string[]
+  sizes: string[];
+  formats: string[];
 }
 
 export interface ResponsiveImageResult {
-  success: boolean
-  thumbnails?: Record<string, string>
-  errors?: string[]
+  success: boolean;
+  thumbnails?: Record<string, string>;
+  errors?: string[];
 }
 
 export interface StorageCleanupResult {
-  cleanupRequired: boolean
-  deletedCount: number
-  freedSpace: number
+  cleanupRequired: boolean;
+  deletedCount: number;
+  freedSpace: number;
 }
 
 export class EnhancedPhotoService {
-  private circuitBreakers: Map<string, CircuitBreakerState> = new Map()
-  private readonly CIRCUIT_BREAKER_THRESHOLD = 5
-  private readonly CIRCUIT_BREAKER_TIMEOUT = 60000 // 1 minute
+  private circuitBreakers: Map<string, CircuitBreakerState> = new Map();
+  private readonly CIRCUIT_BREAKER_THRESHOLD = 5;
+  private readonly CIRCUIT_BREAKER_TIMEOUT = 60000; // 1 minute
 
   constructor(
     private database: IDatabaseAbstraction,
     private fileProcessingService: FileProcessingService,
     private eventBus: EventBus
   ) {
-    this.initializeEventHandlers()
+    this.initializeEventHandlers();
   }
 
   /**
@@ -112,49 +116,53 @@ export class EnhancedPhotoService {
     if (this.isCircuitBreakerOpen('fileProcessing')) {
       return {
         success: false,
-        errors: ['Circuit breaker is open - service temporarily unavailable']
-      }
+        errors: ['Circuit breaker is open - service temporarily unavailable'],
+      };
     }
 
-    const unitOfWork = this.database.createUnitOfWork()
+    const unitOfWork = this.database.createUnitOfWork();
 
     try {
-      await unitOfWork.begin()
+      await unitOfWork.begin();
 
       // Step 1: File validation (separated from processing)
-      const validation = await this.fileProcessingService.validateFile(file)
+      const validation = await this.fileProcessingService.validateFile(file);
       if (!validation.isValid) {
         return {
           success: false,
-          errors: validation.errors
-        }
+          errors: validation.errors,
+        };
       }
 
       // Step 2: Extract and manage metadata separately
-      const metadata = await this.fileProcessingService.extractMetadata(file)
+      const metadata = await this.fileProcessingService.extractMetadata(file);
 
       // Step 3: Check for duplicates using content hash
-      const photoRepository = unitOfWork.getRepository('Photo')
-      const existingPhotos = await photoRepository.findByField('checksum', metadata.checksum)
+      const photoRepository = unitOfWork.getRepository('Photo');
+      const existingPhotos = await photoRepository.findByField(
+        'checksum',
+        metadata.checksum
+      );
 
       if (existingPhotos.length > 0) {
-        await unitOfWork.commit()
+        await unitOfWork.commit();
         return {
           success: true,
           duplicate: true,
-          existingPhotoId: existingPhotos[0].id
-        }
+          existingPhotoId: existingPhotos[0].id,
+        };
       }
 
       // Step 4: Process file asynchronously (separated from storage)
-      const processingResult = await this.fileProcessingService.processFileAsync(file, {
-        compress: true,
-        generateThumbnails: true,
-        async: true
-      })
+      const processingResult =
+        await this.fileProcessingService.processFileAsync(file, {
+          compress: true,
+          generateThumbnails: true,
+          async: true,
+        });
 
       if (!processingResult.success) {
-        throw new Error(processingResult.error || 'File processing failed')
+        throw new Error(processingResult.error || 'File processing failed');
       }
 
       // Step 5: Store metadata in database (separated from file processing)
@@ -172,31 +180,30 @@ export class EnhancedPhotoService {
         metadata: {
           width: metadata.width,
           height: metadata.height,
-          capturedAt: metadata.capturedAt
-        }
-      }
+          capturedAt: metadata.capturedAt,
+        },
+      };
 
-      const photo = await photoRepository.create(photoData)
-      await unitOfWork.commit()
+      const photo = await photoRepository.create(photoData);
+      await unitOfWork.commit();
 
       // Reset circuit breaker on success
-      this.resetCircuitBreaker('fileProcessing')
+      this.resetCircuitBreaker('fileProcessing');
 
       return {
         success: true,
-        photoId: photo.id
-      }
-
+        photoId: photo.id,
+      };
     } catch (error) {
-      await unitOfWork.rollback()
+      await unitOfWork.rollback();
 
       // Update circuit breaker on failure
-      this.recordFailure('fileProcessing')
+      this.recordFailure('fileProcessing');
 
       return {
         success: false,
-        errors: [(error as Error).message]
-      }
+        errors: [(error as Error).message],
+      };
     }
   }
 
@@ -211,38 +218,37 @@ export class EnhancedPhotoService {
     try {
       // TODO: Add user permission validation for projectId
 
-      const unitOfWork = this.database.createUnitOfWork()
-      await unitOfWork.begin()
+      const unitOfWork = this.database.createUnitOfWork();
+      await unitOfWork.begin();
 
-      const photoRepository = unitOfWork.getRepository('Photo')
+      const photoRepository = unitOfWork.getRepository('Photo');
 
       const searchCriteria = {
         filters: {
           projectId,
-          ...filters.albumId && { albumId: filters.albumId }
+          ...(filters.albumId && { albumId: filters.albumId }),
         },
         pagination: {
           page: filters.page || 1,
-          limit: filters.limit || 20
-        }
-      }
+          limit: filters.limit || 20,
+        },
+      };
 
-      const result = await photoRepository.findMany(searchCriteria)
-      await unitOfWork.commit()
+      const result = await photoRepository.findMany(searchCriteria);
+      await unitOfWork.commit();
 
       return {
         success: true,
         data: result.data,
         total: result.total,
         page: result.page,
-        limit: result.limit
-      }
-
+        limit: result.limit,
+      };
     } catch (error) {
       return {
         success: false,
-        errors: [(error as Error).message]
-      }
+        errors: [(error as Error).message],
+      };
     }
   }
 
@@ -254,7 +260,7 @@ export class EnhancedPhotoService {
     options: FileProcessingOptions
   ): Promise<ProcessingResult> {
     if (this.isCircuitBreakerOpen('fileProcessing')) {
-      throw new Error('Circuit breaker is open')
+      throw new Error('Circuit breaker is open');
     }
 
     try {
@@ -262,15 +268,14 @@ export class EnhancedPhotoService {
         ...options,
         async: true,
         retryAttempts: options.retryAttempts || 3,
-        retryDelay: options.retryDelay || 1000
-      })
+        retryDelay: options.retryDelay || 1000,
+      });
 
-      this.resetCircuitBreaker('fileProcessing')
-      return result
-
+      this.resetCircuitBreaker('fileProcessing');
+      return result;
     } catch (error) {
-      this.recordFailure('fileProcessing')
-      throw error
+      this.recordFailure('fileProcessing');
+      throw error;
     }
   }
 
@@ -283,25 +288,30 @@ export class EnhancedPhotoService {
   ): Promise<ResponsiveImageResult> {
     try {
       const thumbnailOptions = {
-        sizes: options.sizes.reduce((acc, size) => {
-          acc[size] = this.getSizeConfig(size)
-          return acc
-        }, {} as Record<string, { width: number; height: number }>),
-        formats: options.formats
-      }
+        sizes: options.sizes.reduce(
+          (acc, size) => {
+            acc[size] = this.getSizeConfig(size);
+            return acc;
+          },
+          {} as Record<string, { width: number; height: number }>
+        ),
+        formats: options.formats,
+      };
 
-      const result = await this.fileProcessingService.generateThumbnails(file, thumbnailOptions)
+      const result = await this.fileProcessingService.generateThumbnails(
+        file,
+        thumbnailOptions
+      );
 
       return {
         success: true,
-        thumbnails: result.thumbnails
-      }
-
+        thumbnails: result.thumbnails,
+      };
     } catch (error) {
       return {
         success: false,
-        errors: [(error as Error).message]
-      }
+        errors: [(error as Error).message],
+      };
     }
   }
 
@@ -314,53 +324,53 @@ export class EnhancedPhotoService {
     userId: string,
     options: BatchUploadOptions = {}
   ): Promise<BatchUploadResult> {
-    const { concurrency = 3, onProgress } = options
-    const results: PhotoUploadResult[] = []
+    const { concurrency = 3, onProgress } = options;
+    const results: PhotoUploadResult[] = [];
 
     for (let i = 0; i < files.length; i += concurrency) {
-      const batch = files.slice(i, i + concurrency)
+      const batch = files.slice(i, i + concurrency);
 
       const batchPromises = batch.map(file =>
         this.uploadPhoto(file, projectId, userId)
-      )
+      );
 
-      const batchResults = await Promise.all(batchPromises)
-      results.push(...batchResults)
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
 
-      onProgress?.(Math.round(((i + batch.length) / files.length) * 100))
+      onProgress?.(Math.round(((i + batch.length) / files.length) * 100));
     }
 
-    const successCount = results.filter(r => r.success).length
+    const successCount = results.filter(r => r.success).length;
 
     return {
       success: successCount > 0,
       results,
       totalProcessed: results.length,
-      errors: successCount === 0 ? ['All uploads failed'] : undefined
-    }
+      errors: successCount === 0 ? ['All uploads failed'] : undefined,
+    };
   }
 
   /**
    * Check and cleanup storage (Task 2.2 - Requirement 6.6)
    */
   async checkAndCleanupStorage(): Promise<StorageCleanupResult> {
-    const storageInfo = await this.getStorageInfo()
-    const usagePercent = (storageInfo.used / storageInfo.total) * 100
+    const storageInfo = await this.getStorageInfo();
+    const usagePercent = (storageInfo.used / storageInfo.total) * 100;
 
     if (usagePercent > 90) {
-      const cleanupResult = await this.cleanupOldFiles()
+      const cleanupResult = await this.cleanupOldFiles();
       return {
         cleanupRequired: true,
         deletedCount: cleanupResult.deletedCount,
-        freedSpace: cleanupResult.freedSpace
-      }
+        freedSpace: cleanupResult.freedSpace,
+      };
     }
 
     return {
       cleanupRequired: false,
       deletedCount: 0,
-      freedSpace: 0
-    }
+      freedSpace: 0,
+    };
   }
 
   /**
@@ -369,16 +379,18 @@ export class EnhancedPhotoService {
   async handlePhotoUploadCompleted(eventData: any): Promise<void> {
     // Event should include eventId for idempotency
     if (!eventData.eventId) {
-      console.warn('Event received without eventId - cannot ensure idempotency')
-      return
+      console.warn(
+        'Event received without eventId - cannot ensure idempotency'
+      );
+      return;
     }
 
     await this.eventBus.emit('photo.metadata.updated', {
       eventId: eventData.eventId,
       photoId: eventData.photoId,
       fileId: eventData.fileId,
-      timestamp: new Date()
-    })
+      timestamp: new Date(),
+    });
   }
 
   /**
@@ -388,88 +400,96 @@ export class EnhancedPhotoService {
     const dependencies = {
       database: { status: 'unknown', responseTime: 0 },
       fileProcessing: { status: 'unknown', circuitBreakerOpen: false },
-      eventBus: { status: 'healthy' }
-    }
+      eventBus: { status: 'healthy' },
+    };
 
     try {
-      const dbStartTime = Date.now()
-      const dbHealth = await this.database.healthCheck()
+      const dbStartTime = Date.now();
+      const dbHealth = await this.database.healthCheck();
       dependencies.database = {
         status: dbHealth.isHealthy ? 'healthy' : 'unhealthy',
-        responseTime: Date.now() - dbStartTime
-      }
+        responseTime: Date.now() - dbStartTime,
+      };
     } catch (error) {
-      dependencies.database.status = 'unhealthy'
+      dependencies.database.status = 'unhealthy';
     }
 
     dependencies.fileProcessing = {
-      status: this.isCircuitBreakerOpen('fileProcessing') ? 'degraded' : 'healthy',
-      circuitBreakerOpen: this.isCircuitBreakerOpen('fileProcessing')
-    }
+      status: this.isCircuitBreakerOpen('fileProcessing')
+        ? 'degraded'
+        : 'healthy',
+      circuitBreakerOpen: this.isCircuitBreakerOpen('fileProcessing'),
+    };
 
-    const overallStatus = this.determineOverallStatus(dependencies)
+    const overallStatus = this.determineOverallStatus(dependencies);
 
     return {
       status: overallStatus,
       dependencies,
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    };
   }
 
   /**
    * Check if circuit breaker is open
    */
   async isCircuitBreakerOpen(service: string): Promise<boolean> {
-    return this.isCircuitBreakerOpen(service)
+    return this.isCircuitBreakerOpen(service);
   }
 
   // Private methods
 
   private initializeEventHandlers(): void {
-    this.eventBus.on('file.processing.failed', (data) => {
-      this.recordFailure('fileProcessing')
-    })
+    this.eventBus.on('file.processing.failed', data => {
+      this.recordFailure('fileProcessing');
+    });
 
-    this.eventBus.on('file.processing.completed', (data) => {
-      this.resetCircuitBreaker('fileProcessing')
-    })
+    this.eventBus.on('file.processing.completed', data => {
+      this.resetCircuitBreaker('fileProcessing');
+    });
   }
 
   private isCircuitBreakerOpen(service: string): boolean {
-    const breaker = this.circuitBreakers.get(service)
-    if (!breaker) return false
+    const breaker = this.circuitBreakers.get(service);
+    if (!breaker) return false;
 
-    if (breaker.isOpen && breaker.nextAttemptTime && Date.now() > breaker.nextAttemptTime.getTime()) {
+    if (
+      breaker.isOpen &&
+      breaker.nextAttemptTime &&
+      Date.now() > breaker.nextAttemptTime.getTime()
+    ) {
       // Half-open state - allow one attempt
-      breaker.isOpen = false
-      return false
+      breaker.isOpen = false;
+      return false;
     }
 
-    return breaker.isOpen
+    return breaker.isOpen;
   }
 
   private recordFailure(service: string): void {
     const breaker = this.circuitBreakers.get(service) || {
       isOpen: false,
-      failureCount: 0
-    }
+      failureCount: 0,
+    };
 
-    breaker.failureCount++
-    breaker.lastFailureTime = new Date()
+    breaker.failureCount++;
+    breaker.lastFailureTime = new Date();
 
     if (breaker.failureCount >= this.CIRCUIT_BREAKER_THRESHOLD) {
-      breaker.isOpen = true
-      breaker.nextAttemptTime = new Date(Date.now() + this.CIRCUIT_BREAKER_TIMEOUT)
+      breaker.isOpen = true;
+      breaker.nextAttemptTime = new Date(
+        Date.now() + this.CIRCUIT_BREAKER_TIMEOUT
+      );
     }
 
-    this.circuitBreakers.set(service, breaker)
+    this.circuitBreakers.set(service, breaker);
   }
 
   private resetCircuitBreaker(service: string): void {
     this.circuitBreakers.set(service, {
       isOpen: false,
-      failureCount: 0
-    })
+      failureCount: 0,
+    });
   }
 
   private getSizeConfig(size: string): { width: number; height: number } {
@@ -477,38 +497,47 @@ export class EnhancedPhotoService {
       thumbnail: { width: 150, height: 150 },
       small: { width: 300, height: 200 },
       medium: { width: 600, height: 400 },
-      large: { width: 1200, height: 800 }
-    }
+      large: { width: 1200, height: 800 },
+    };
 
-    return sizeConfigs[size] || { width: 600, height: 400 }
+    return sizeConfigs[size] || { width: 600, height: 400 };
   }
 
-  private async getStorageInfo(): Promise<{ used: number; total: number; remaining: number }> {
+  private async getStorageInfo(): Promise<{
+    used: number;
+    total: number;
+    remaining: number;
+  }> {
     // Mock storage info - in real implementation would check actual filesystem
     return {
       used: 90 * 1024 * 1024 * 1024, // 90GB
       total: 100 * 1024 * 1024 * 1024, // 100GB
-      remaining: 10 * 1024 * 1024 * 1024 // 10GB
-    }
+      remaining: 10 * 1024 * 1024 * 1024, // 10GB
+    };
   }
 
-  private async cleanupOldFiles(): Promise<{ deletedCount: number; freedSpace: number }> {
+  private async cleanupOldFiles(): Promise<{
+    deletedCount: number;
+    freedSpace: number;
+  }> {
     // Mock cleanup - in real implementation would delete old files
     return {
       deletedCount: 5,
-      freedSpace: 1024 * 1024 * 1024 // 1GB
-    }
+      freedSpace: 1024 * 1024 * 1024, // 1GB
+    };
   }
 
-  private determineOverallStatus(dependencies: any): 'healthy' | 'degraded' | 'unhealthy' {
+  private determineOverallStatus(
+    dependencies: any
+  ): 'healthy' | 'degraded' | 'unhealthy' {
     if (dependencies.database.status === 'unhealthy') {
-      return 'unhealthy'
+      return 'unhealthy';
     }
 
     if (dependencies.fileProcessing.status === 'degraded') {
-      return 'degraded'
+      return 'degraded';
     }
 
-    return 'healthy'
+    return 'healthy';
   }
 }

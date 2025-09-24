@@ -14,7 +14,7 @@ const AddMemberSchema = z.object({
   canManageSchedules: z.boolean().default(false),
   canViewReports: z.boolean().default(true),
   canExportData: z.boolean().default(false),
-  notes: z.string().optional()
+  notes: z.string().optional(),
 });
 
 // 查詢參數驗證 schema
@@ -26,9 +26,10 @@ const QueryMembersSchema = z.object({
   department: z.string().optional(),
   position: z.string().optional(),
   includeLeft: z.coerce.boolean().default(false),
-  permissions: z.string().optional().transform(val => 
-    val ? val.split(',').map(p => p.trim()) : undefined
-  )
+  permissions: z
+    .string()
+    .optional()
+    .transform(val => (val ? val.split(',').map(p => p.trim()) : undefined)),
 });
 
 /**
@@ -41,21 +42,23 @@ export async function GET(
 ) {
   try {
     const { projectId } = params;
-    
+
     // 驗證專案ID格式
-    if (!projectId || !projectId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-      return NextResponse.json(
-        { error: '專案ID格式無效' },
-        { status: 400 }
-      );
+    if (
+      !projectId ||
+      !projectId.match(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      )
+    ) {
+      return NextResponse.json({ error: '專案ID格式無效' }, { status: 400 });
     }
 
     const searchParams = request.nextUrl.searchParams;
     const queryParams = Object.fromEntries(searchParams.entries());
-    
+
     // 驗證查詢參數
     const validatedQuery = QueryMembersSchema.parse(queryParams);
-    
+
     // 查詢專案成員
     const result = await projectMemberRepository.findProjectMembers(projectId, {
       page: validatedQuery.page,
@@ -65,22 +68,24 @@ export async function GET(
       department: validatedQuery.department,
       position: validatedQuery.position,
       includeLeft: validatedQuery.includeLeft,
-      permissions: validatedQuery.permissions
+      permissions: validatedQuery.permissions,
     });
-    
+
     return NextResponse.json(result);
   } catch (error) {
     console.error('取得專案人員列表失敗:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: '查詢參數驗證失敗', details: error.errors },
         { status: 400 }
       );
     }
-    
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '取得專案人員列表失敗' },
+      {
+        error: error instanceof Error ? error.message : '取得專案人員列表失敗',
+      },
       { status: 500 }
     );
   }
@@ -96,68 +101,70 @@ export async function POST(
 ) {
   try {
     const { projectId } = params;
-    
+
     // 驗證專案ID格式
-    if (!projectId || !projectId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-      return NextResponse.json(
-        { error: '專案ID格式無效' },
-        { status: 400 }
-      );
+    if (
+      !projectId ||
+      !projectId.match(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      )
+    ) {
+      return NextResponse.json({ error: '專案ID格式無效' }, { status: 400 });
     }
 
     const body = await request.json();
-    
+
     // 驗證輸入資料
     const validatedData = AddMemberSchema.parse(body);
-    
+
     // 檢查用戶是否已經是專案成員
-    const isAlreadyMember = await projectMemberRepository.isProjectMember(projectId, validatedData.userId);
+    const isAlreadyMember = await projectMemberRepository.isProjectMember(
+      projectId,
+      validatedData.userId
+    );
     if (isAlreadyMember) {
       return NextResponse.json(
         { error: '用戶已經是專案成員' },
         { status: 409 }
       );
     }
-    
+
     // 建立成員資料
     const memberData = {
       ...validatedData,
       projectId,
       joinedAt: new Date(),
-      isActive: true
+      isActive: true,
     };
-    
+
     // 新增專案成員
     const member = await projectMemberRepository.create(memberData);
-    
+
     return NextResponse.json(member, { status: 201 });
   } catch (error) {
     console.error('新增專案成員失敗:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: '輸入資料驗證失敗', details: error.errors },
         { status: 400 }
       );
     }
-    
+
     if (error instanceof Error) {
       // 處理業務邏輯錯誤
-      if (error.message.includes('不存在') || error.message.includes('找不到')) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 404 }
-        );
+      if (
+        error.message.includes('不存在') ||
+        error.message.includes('找不到')
+      ) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
       }
-      
+
       if (error.message.includes('已存在') || error.message.includes('重複')) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: error.message }, { status: 409 });
       }
     }
-    
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : '新增專案成員失敗' },
       { status: 500 }

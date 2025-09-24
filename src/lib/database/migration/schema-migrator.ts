@@ -24,7 +24,7 @@ import {
   type TriggerDefinition,
   type DDLValidationResult,
   type SchemaAnalysisOptions,
-  SchemaMigrationError
+  SchemaMigrationError,
 } from './schema-types';
 import crypto from 'crypto';
 
@@ -49,7 +49,7 @@ export class SchemaMigrator {
       constraints: [],
       triggers: [],
       sequences: [],
-      warnings: []
+      warnings: [],
     };
 
     try {
@@ -61,17 +61,23 @@ export class SchemaMigrator {
       this.validateSchema(schema);
 
       return schema;
-
     } catch (error) {
       throw new SchemaMigrationError(
         `Failed to analyze PostgreSQL schema: ${error}`,
         error,
-        ['Check SQL syntax', 'Verify file encoding', 'Review unsupported features']
+        [
+          'Check SQL syntax',
+          'Verify file encoding',
+          'Review unsupported features',
+        ]
       );
     }
   }
 
-  private async parseSQLContent(sqlContent: string, schema: PostgreSQLSchema): Promise<void> {
+  private async parseSQLContent(
+    sqlContent: string,
+    schema: PostgreSQLSchema
+  ): Promise<void> {
     // 移除註釋和清理SQL
     const cleanSQL = this.cleanSQL(sqlContent);
 
@@ -86,7 +92,10 @@ export class SchemaMigrator {
         if (table) {
           schema.tables.push(table);
         }
-      } else if (trimmed.startsWith('CREATE INDEX') || trimmed.startsWith('CREATE UNIQUE INDEX')) {
+      } else if (
+        trimmed.startsWith('CREATE INDEX') ||
+        trimmed.startsWith('CREATE UNIQUE INDEX')
+      ) {
         const index = this.parseCreateIndex(statement);
         if (index) {
           schema.indexes.push(index);
@@ -99,11 +108,17 @@ export class SchemaMigrator {
       }
 
       // 檢查不支援的資料類型
-      if (statement.includes('UNKNOWN_TYPE') || statement.includes('CUSTOM_TYPE') || statement.includes('GEOMETRY')) {
+      if (
+        statement.includes('UNKNOWN_TYPE') ||
+        statement.includes('CUSTOM_TYPE') ||
+        statement.includes('GEOMETRY')
+      ) {
         if (!schema.warnings) {
           schema.warnings = [];
         }
-        schema.warnings.push(`Unsupported data type found in: ${statement.substring(0, 50)}...`);
+        schema.warnings.push(
+          `Unsupported data type found in: ${statement.substring(0, 50)}...`
+        );
       }
     }
   }
@@ -147,7 +162,9 @@ export class SchemaMigrator {
         if (line.trim() === '') continue;
 
         // 更精確的欄位解析
-        const columnMatch = line.match(/^\s*(\w+)\s+([A-Z0-9\(\),\s]+?)(\s+.*)?$/i);
+        const columnMatch = line.match(
+          /^\s*(\w+)\s+([A-Z0-9\(\),\s]+?)(\s+.*)?$/i
+        );
         if (columnMatch) {
           const columnName = columnMatch[1].toLowerCase();
           let dataType = columnMatch[2].trim();
@@ -163,8 +180,10 @@ export class SchemaMigrator {
             name: columnName,
             dataType: dataType,
             isPrimary: modifiers.toUpperCase().includes('PRIMARY KEY'),
-            isNullable: !modifiers.toUpperCase().includes('NOT NULL') && !modifiers.toUpperCase().includes('PRIMARY KEY'),
-            defaultValue: this.extractDefaultValue(modifiers)
+            isNullable:
+              !modifiers.toUpperCase().includes('NOT NULL') &&
+              !modifiers.toUpperCase().includes('PRIMARY KEY'),
+            defaultValue: this.extractDefaultValue(modifiers),
           };
 
           if (column.isPrimary) {
@@ -172,7 +191,9 @@ export class SchemaMigrator {
           }
 
           // 檢查外鍵（更精確的匹配）
-          const fkMatch = line.match(/REFERENCES\s+(\w+)\s*\(\s*(\w+)\s*\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|RESTRICT|SET\s+NULL|NO\s+ACTION))?/i);
+          const fkMatch = line.match(
+            /REFERENCES\s+(\w+)\s*\(\s*(\w+)\s*\)(\s+ON\s+(DELETE|UPDATE)\s+(CASCADE|RESTRICT|SET\s+NULL|NO\s+ACTION))?/i
+          );
           if (fkMatch) {
             const onAction = fkMatch[4]?.toUpperCase();
             const actionType = fkMatch[5]?.toUpperCase().replace(/\s+/g, ' ');
@@ -182,8 +203,8 @@ export class SchemaMigrator {
               columnName: columnName,
               referencedTable: fkMatch[1].toLowerCase(),
               referencedColumn: fkMatch[2].toLowerCase(),
-              onDelete: onAction === 'DELETE' ? actionType as any : undefined,
-              onUpdate: onAction === 'UPDATE' ? actionType as any : undefined
+              onDelete: onAction === 'DELETE' ? (actionType as any) : undefined,
+              onUpdate: onAction === 'UPDATE' ? (actionType as any) : undefined,
             });
           }
 
@@ -196,9 +217,8 @@ export class SchemaMigrator {
         columns,
         primaryKey,
         foreignKeys,
-        indexes: []
+        indexes: [],
       };
-
     } catch (error) {
       return null;
     }
@@ -213,7 +233,7 @@ export class SchemaMigrator {
     for (let i = 0; i < columnsSQL.length; i++) {
       const char = columnsSQL[i];
 
-      if (char === '\'' && columnsSQL[i-1] !== '\\') {
+      if (char === "'" && columnsSQL[i - 1] !== '\\') {
         inQuotes = !inQuotes;
       }
 
@@ -250,7 +270,9 @@ export class SchemaMigrator {
       const isUnique = statement.toUpperCase().includes('UNIQUE');
 
       // 提取索引名稱和表名
-      const indexMatch = statement.match(/CREATE\s+(?:UNIQUE\s+)?INDEX\s+(\w+)\s+ON\s+(\w+)/i);
+      const indexMatch = statement.match(
+        /CREATE\s+(?:UNIQUE\s+)?INDEX\s+(\w+)\s+ON\s+(\w+)/i
+      );
       if (!indexMatch) return null;
 
       const indexName = indexMatch[1];
@@ -275,9 +297,8 @@ export class SchemaMigrator {
         tableName: tableName.toLowerCase(),
         columns,
         isUnique,
-        indexType
+        indexType,
       };
-
     } catch (error) {
       return null;
     }
@@ -286,17 +307,22 @@ export class SchemaMigrator {
   private parseCreateTrigger(statement: string): TriggerDefinition | null {
     try {
       // 解析觸發器定義（簡化版本）
-      const triggerMatch = statement.match(/CREATE\s+TRIGGER\s+(\w+)\s+(BEFORE|AFTER|INSTEAD\s+OF)\s+(INSERT|UPDATE|DELETE|TRUNCATE)\s+ON\s+(\w+)/i);
+      const triggerMatch = statement.match(
+        /CREATE\s+TRIGGER\s+(\w+)\s+(BEFORE|AFTER|INSTEAD\s+OF)\s+(INSERT|UPDATE|DELETE|TRUNCATE)\s+ON\s+(\w+)/i
+      );
       if (!triggerMatch) return null;
 
       const name = triggerMatch[1];
-      const timing = triggerMatch[2].toUpperCase() as TriggerDefinition['timing'];
+      const timing =
+        triggerMatch[2].toUpperCase() as TriggerDefinition['timing'];
       const event = triggerMatch[3].toUpperCase() as TriggerDefinition['event'];
       const tableName = triggerMatch[4].toLowerCase();
 
       // 提取函數名稱
       const functionMatch = statement.match(/EXECUTE\s+(?:FUNCTION\s+)?(\w+)/i);
-      const functionName = functionMatch ? functionMatch[1] : 'unknown_function';
+      const functionName = functionMatch
+        ? functionMatch[1]
+        : 'unknown_function';
 
       return {
         name,
@@ -304,9 +330,8 @@ export class SchemaMigrator {
         timing,
         event,
         functionName,
-        functionBody: 'NEW.updated_at = NOW(); RETURN NEW;' // 簡化版本
+        functionBody: 'NEW.updated_at = NOW(); RETURN NEW;', // 簡化版本
       };
-
     } catch (error) {
       return null;
     }
@@ -321,9 +346,13 @@ export class SchemaMigrator {
 
       // 檢查外鍵參考的表是否存在
       for (const fk of table.foreignKeys) {
-        const referencedTable = schema.tables.find(t => t.name === fk.referencedTable);
+        const referencedTable = schema.tables.find(
+          t => t.name === fk.referencedTable
+        );
         if (!referencedTable) {
-          schema.warnings?.push(`Foreign key ${fk.constraintName} references non-existent table ${fk.referencedTable}`);
+          schema.warnings?.push(
+            `Foreign key ${fk.constraintName} references non-existent table ${fk.referencedTable}`
+          );
         }
       }
     }
@@ -355,7 +384,8 @@ export class SchemaMigrator {
       // 添加預設值
       if (column.defaultValue) {
         if (column.dataType.toUpperCase() === 'BOOLEAN') {
-          const defaultValue = column.defaultValue.toLowerCase() === 'true' ? '1' : '0';
+          const defaultValue =
+            column.defaultValue.toLowerCase() === 'true' ? '1' : '0';
           columnDDL += ` DEFAULT ${defaultValue}`;
         } else if (column.defaultValue.toUpperCase() === 'NOW()') {
           columnDDL += ` DEFAULT SYSTIMESTAMP`;
@@ -384,7 +414,9 @@ export class SchemaMigrator {
     return ddl;
   }
 
-  async generateOracleConstraintsDDL(constraints: ConstraintDefinition[]): Promise<string> {
+  async generateOracleConstraintsDDL(
+    constraints: ConstraintDefinition[]
+  ): Promise<string> {
     const ddlStatements: string[] = [];
 
     for (const constraint of constraints) {
@@ -474,7 +506,7 @@ export class SchemaMigrator {
         ddl: tableDDL,
         dependsOn: this.getTableDependencies(table, schema.tables),
         estimatedDuration: 30,
-        rollbackDDL: `DROP TABLE ${table.name} CASCADE`
+        rollbackDDL: `DROP TABLE ${table.name} CASCADE`,
       });
 
       // 如果有SERIAL欄位，創建序列和觸發器
@@ -494,7 +526,7 @@ export class SchemaMigrator {
               ddl: conversionResult.additionalObjects.sequence,
               dependsOn: [`create_table_${table.name}`],
               estimatedDuration: 10,
-              rollbackDDL: `DROP SEQUENCE ${table.name}_${column.name}_seq`
+              rollbackDDL: `DROP SEQUENCE ${table.name}_${column.name}_seq`,
             });
           }
 
@@ -506,7 +538,7 @@ export class SchemaMigrator {
               ddl: conversionResult.additionalObjects.trigger,
               dependsOn: [`create_sequence_${table.name}_${column.name}`],
               estimatedDuration: 10,
-              rollbackDDL: `DROP TRIGGER ${table.name}_${column.name}_trg`
+              rollbackDDL: `DROP TRIGGER ${table.name}_${column.name}_trg`,
             });
           }
         }
@@ -523,7 +555,7 @@ export class SchemaMigrator {
           description: 'Create indexes',
           ddl: indexesDDL,
           dependsOn: orderedTables.map(t => `create_table_${t.name}`),
-          estimatedDuration: 60
+          estimatedDuration: 60,
         });
       }
     }
@@ -538,12 +570,15 @@ export class SchemaMigrator {
         ddl: triggerDDL,
         dependsOn: [`create_table_${trigger.tableName}`],
         estimatedDuration: 20,
-        rollbackDDL: `DROP TRIGGER ${trigger.name}`
+        rollbackDDL: `DROP TRIGGER ${trigger.name}`,
       });
     }
 
     // 計算總時間
-    const totalDuration = steps.reduce((sum, step) => sum + step.estimatedDuration, 0);
+    const totalDuration = steps.reduce(
+      (sum, step) => sum + step.estimatedDuration,
+      0
+    );
 
     // 創建回滾計畫
     const rollbackSteps = steps
@@ -555,7 +590,7 @@ export class SchemaMigrator {
         order: index + 1,
         description: `Rollback: ${step.description}`,
         ddl: step.rollbackDDL!,
-        dependsOn: []
+        dependsOn: [],
       }));
 
     return {
@@ -567,7 +602,7 @@ export class SchemaMigrator {
       estimatedDuration: totalDuration,
       rollbackPlan: {
         steps: rollbackSteps,
-        description: 'Rollback entire migration'
+        description: 'Rollback entire migration',
       },
       createdAt: new Date(),
       metadata: {
@@ -575,12 +610,14 @@ export class SchemaMigrator {
         oracleVersion: '21c',
         totalTables: schema.tables.length,
         totalIndexes: schema.indexes.length,
-        totalConstraints: schema.constraints.length
-      }
+        totalConstraints: schema.constraints.length,
+      },
     };
   }
 
-  private orderTablesByDependencies(tables: TableDefinition[]): TableDefinition[] {
+  private orderTablesByDependencies(
+    tables: TableDefinition[]
+  ): TableDefinition[] {
     const ordered: TableDefinition[] = [];
     const remaining = [...tables];
 
@@ -592,8 +629,8 @@ export class SchemaMigrator {
         const dependencies = table.foreignKeys.map(fk => fk.referencedTable);
 
         // 檢查所有依賴是否已經處理
-        const allDepsResolved = dependencies.every(dep =>
-          ordered.some(t => t.name === dep) || dep === table.name
+        const allDepsResolved = dependencies.every(
+          dep => ordered.some(t => t.name === dep) || dep === table.name
         );
 
         if (allDepsResolved) {
@@ -612,7 +649,10 @@ export class SchemaMigrator {
     return ordered;
   }
 
-  private getTableDependencies(table: TableDefinition, allTables: TableDefinition[]): string[] {
+  private getTableDependencies(
+    table: TableDefinition,
+    allTables: TableDefinition[]
+  ): string[] {
     return table.foreignKeys
       .map(fk => `create_table_${fk.referencedTable}`)
       .filter(dep => allTables.some(t => `create_table_${t.name}` === dep));
@@ -647,7 +687,7 @@ export class SchemaMigrator {
       checksum,
       executionTime: 0,
       appliedBy: 'system',
-      success: true
+      success: true,
     };
 
     this.migrationHistory.push(record);
@@ -690,23 +730,26 @@ export class SchemaMigrator {
 
       // 檢查Oracle特有的問題
       if (ddl.includes('SERIAL')) {
-        warnings.push('SERIAL type detected - should be converted to NUMBER with SEQUENCE');
-        suggestions.push('Use NUMBER type with SEQUENCE and TRIGGER for auto-increment');
+        warnings.push(
+          'SERIAL type detected - should be converted to NUMBER with SEQUENCE'
+        );
+        suggestions.push(
+          'Use NUMBER type with SEQUENCE and TRIGGER for auto-increment'
+        );
       }
 
       return {
         isValid: errors.length === 0,
         errors,
         warnings,
-        suggestions
+        suggestions,
       };
-
     } catch (error) {
       return {
         isValid: false,
         errors: [`Validation error: ${error}`],
         warnings,
-        suggestions
+        suggestions,
       };
     }
   }

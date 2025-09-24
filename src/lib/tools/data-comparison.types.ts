@@ -145,7 +145,10 @@ export interface ValidationIssue {
 export interface DataComparisonTool {
   // 比對方法
   compareTableCounts(tables: string[]): Promise<CountComparisonResult[]>;
-  compareTableContent(tables: string[], sampleSize?: number): Promise<ContentComparisonResult[]>;
+  compareTableContent(
+    tables: string[],
+    sampleSize?: number
+  ): Promise<ContentComparisonResult[]>;
   compareTableStructure(tables: string[]): Promise<StructureComparisonResult[]>;
 
   // 完整比對
@@ -153,15 +156,25 @@ export interface DataComparisonTool {
 
   // 元資料方法
   getTableList(database: DatabaseConfig): Promise<string[]>;
-  getTableMetadata(database: DatabaseConfig, tableName: string): Promise<TableMetadata>;
+  getTableMetadata(
+    database: DatabaseConfig,
+    tableName: string
+  ): Promise<TableMetadata>;
 
   // 資料提取
-  extractSampleData(database: DatabaseConfig, tableName: string, sampleSize: number): Promise<any[]>;
+  extractSampleData(
+    database: DatabaseConfig,
+    tableName: string,
+    sampleSize: number
+  ): Promise<any[]>;
   getRowCount(database: DatabaseConfig, tableName: string): Promise<number>;
 
   // 報告生成
   generateReport(results: ComparisonReport): Promise<string>;
-  exportResults(results: ComparisonReport, format: 'json' | 'csv' | 'html'): Promise<Buffer>;
+  exportResults(
+    results: ComparisonReport,
+    format: 'json' | 'csv' | 'html'
+  ): Promise<Buffer>;
 }
 
 // 查詢建構器介面

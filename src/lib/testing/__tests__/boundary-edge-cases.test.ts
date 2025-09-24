@@ -17,21 +17,25 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
     console.log('Cleaning up boundary value testing environment...');
   });
 
-  async function makeRequest(endpoint: string, method: string = 'GET', body?: any) {
+  async function makeRequest(
+    endpoint: string,
+    method: string = 'GET',
+    body?: any
+  ) {
     const response = await fetch(`${baseUrl}${endpoint}`, {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
+        Authorization: `Bearer ${authToken}`,
       },
-      body: body ? JSON.stringify(body) : undefined
+      body: body ? JSON.stringify(body) : undefined,
     });
 
     return {
       status: response.status,
       data: response.headers.get('content-type')?.includes('application/json')
         ? await response.json()
-        : await response.text()
+        : await response.text(),
     };
   }
 
@@ -46,20 +50,28 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       const validProject = {
         name: 'Test Project',
         description: longString,
-        type: 'internal'
+        type: 'internal',
       };
 
-      const validResponse = await makeRequest('/api/projects', 'POST', validProject);
+      const validResponse = await makeRequest(
+        '/api/projects',
+        'POST',
+        validProject
+      );
       expect([200, 201, 400]).toContain(validResponse.status); // May fail due to auth, but not due to length
 
       // Test exceeding maximum length - should fail gracefully
       const invalidProject = {
         name: 'Test Project',
         description: tooLongString,
-        type: 'internal'
+        type: 'internal',
       };
 
-      const invalidResponse = await makeRequest('/api/projects', 'POST', invalidProject);
+      const invalidResponse = await makeRequest(
+        '/api/projects',
+        'POST',
+        invalidProject
+      );
       expect(invalidResponse.status).toBeGreaterThanOrEqual(400);
       if (invalidResponse.data && typeof invalidResponse.data === 'object') {
         expect(invalidResponse.data.success).toBe(false);
@@ -75,20 +87,28 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       const validBudget = {
         name: 'Budget Test Project',
         type: 'internal',
-        budget: parseFloat(maxNumber.substring(0, 15)) // Reasonable number
+        budget: parseFloat(maxNumber.substring(0, 15)), // Reasonable number
       };
 
-      const validResponse = await makeRequest('/api/projects', 'POST', validBudget);
+      const validResponse = await makeRequest(
+        '/api/projects',
+        'POST',
+        validBudget
+      );
       expect([200, 201, 400]).toContain(validResponse.status);
 
       // Test with extremely large number
       const invalidBudget = {
         name: 'Invalid Budget Project',
         type: 'internal',
-        budget: parseFloat(invalidNumber.substring(0, 20))
+        budget: parseFloat(invalidNumber.substring(0, 20)),
       };
 
-      const invalidResponse = await makeRequest('/api/projects', 'POST', invalidBudget);
+      const invalidResponse = await makeRequest(
+        '/api/projects',
+        'POST',
+        invalidBudget
+      );
       // Should handle gracefully, either accept or reject with proper error
       expect([200, 201, 400, 422]).toContain(invalidResponse.status);
     });
@@ -99,23 +119,23 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         {
           name: 'Min Date Test',
           dutyDate: '1900-01-01T00:00:00.000Z',
-          expected: [200, 201, 400]
+          expected: [200, 201, 400],
         },
         {
           name: 'Max Date Test',
           dutyDate: '2999-12-31T23:59:59.999Z',
-          expected: [200, 201, 400]
+          expected: [200, 201, 400],
         },
         {
           name: 'Leap Year Test',
           dutyDate: '2024-02-29T12:00:00.000Z',
-          expected: [200, 201, 400]
+          expected: [200, 201, 400],
         },
         {
           name: 'Invalid Date Test',
           dutyDate: '2023-02-29T12:00:00.000Z', // Invalid leap year date
-          expected: [400, 422]
-        }
+          expected: [400, 422],
+        },
       ];
 
       for (const testCase of testCases) {
@@ -125,10 +145,14 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
           shiftType: '日班',
           workArea: 'A區',
           status: '已排班',
-          urgencyLevel: '一般'
+          urgencyLevel: '一般',
         };
 
-        const response = await makeRequest('/api/projects/test-project/duty-schedules', 'POST', scheduleData);
+        const response = await makeRequest(
+          '/api/projects/test-project/duty-schedules',
+          'POST',
+          scheduleData
+        );
         expect(testCase.expected).toContain(response.status);
         console.log(`${testCase.name}: Status ${response.status}`);
       }
@@ -140,7 +164,7 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         { name: 'Small CLOB', size: 1000, shouldPass: true },
         { name: 'Medium CLOB', size: 10000, shouldPass: true },
         { name: 'Large CLOB', size: 100000, shouldPass: true },
-        { name: 'Very Large CLOB', size: 1000000, shouldPass: true } // 1MB
+        { name: 'Very Large CLOB', size: 1000000, shouldPass: true }, // 1MB
       ];
 
       for (const testSize of sizes) {
@@ -148,10 +172,14 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         const projectData = {
           name: `CLOB Test ${testSize.name}`,
           description: largeContent,
-          type: 'internal'
+          type: 'internal',
         };
 
-        const response = await makeRequest('/api/projects', 'POST', projectData);
+        const response = await makeRequest(
+          '/api/projects',
+          'POST',
+          projectData
+        );
 
         if (testSize.shouldPass) {
           expect([200, 201, 400]).toContain(response.status);
@@ -159,7 +187,9 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
           expect(response.status).toBeGreaterThanOrEqual(400);
         }
 
-        console.log(`${testSize.name} (${testSize.size} chars): Status ${response.status}`);
+        console.log(
+          `${testSize.name} (${testSize.size} chars): Status ${response.status}`
+        );
       }
     });
   });
@@ -172,7 +202,7 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       const projectData = {
         name: 'Sequence Test Project',
         type: 'internal',
-        description: 'Testing Oracle sequence behavior'
+        description: 'Testing Oracle sequence behavior',
       };
 
       // Create multiple projects to test sequence generation
@@ -180,7 +210,7 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       for (let i = 0; i < 5; i++) {
         const response = await makeRequest('/api/projects', 'POST', {
           ...projectData,
-          name: `${projectData.name} ${i + 1}`
+          name: `${projectData.name} ${i + 1}`,
         });
         responses.push(response);
       }
@@ -188,7 +218,9 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       // Verify that sequence generates unique IDs
       const successfulResponses = responses.filter(r => r.status === 201);
       if (successfulResponses.length > 1) {
-        const ids = successfulResponses.map(r => r.data.data?.project?.id).filter(id => id);
+        const ids = successfulResponses
+          .map(r => r.data.data?.project?.id)
+          .filter(id => id);
         const uniqueIds = new Set(ids);
         expect(uniqueIds.size).toBe(ids.length); // All IDs should be unique
       }
@@ -196,11 +228,7 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
 
     it('should handle very large ID values', async () => {
       // Test retrieval with large ID values
-      const largeIds = [
-        '999999999',
-        '9999999999',
-        '99999999999999999'
-      ];
+      const largeIds = ['999999999', '9999999999', '99999999999999999'];
 
       for (const id of largeIds) {
         const response = await makeRequest(`/api/projects/${id}`, 'GET');
@@ -214,13 +242,13 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
   describe('Pagination Boundary Testing', () => {
     it('should handle pagination edge cases', async () => {
       const paginationTests = [
-        { page: 0, pageSize: 10, expectError: true },     // Invalid page
-        { page: -1, pageSize: 10, expectError: true },    // Negative page
-        { page: 1, pageSize: 0, expectError: true },      // Invalid page size
-        { page: 1, pageSize: -5, expectError: true },     // Negative page size
-        { page: 1, pageSize: 1, expectError: false },     // Minimum valid
-        { page: 1, pageSize: 100, expectError: false },   // Large page size
-        { page: 1, pageSize: 1000, expectError: true },   // Too large page size
+        { page: 0, pageSize: 10, expectError: true }, // Invalid page
+        { page: -1, pageSize: 10, expectError: true }, // Negative page
+        { page: 1, pageSize: 0, expectError: true }, // Invalid page size
+        { page: 1, pageSize: -5, expectError: true }, // Negative page size
+        { page: 1, pageSize: 1, expectError: false }, // Minimum valid
+        { page: 1, pageSize: 100, expectError: false }, // Large page size
+        { page: 1, pageSize: 1000, expectError: true }, // Too large page size
         { page: 999999, pageSize: 10, expectError: false }, // Very large page number
       ];
 
@@ -236,7 +264,9 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
           expect([200, 404]).toContain(response.status);
         }
 
-        console.log(`Pagination test (page=${test.page}, pageSize=${test.pageSize}): Status ${response.status}`);
+        console.log(
+          `Pagination test (page=${test.page}, pageSize=${test.pageSize}): Status ${response.status}`
+        );
       }
     });
 
@@ -261,7 +291,9 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
           expect(response.data.data.meta).toBeDefined();
           expect(response.data.data.meta.pagination).toBeDefined();
           expect(response.data.data.meta.pagination.page).toBe(test.page);
-          expect(response.data.data.meta.pagination.pageSize).toBe(test.pageSize);
+          expect(response.data.data.meta.pagination.pageSize).toBe(
+            test.pageSize
+          );
         }
       }
     });
@@ -273,7 +305,10 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         { name: 'Emoji Test 🚀', type: 'internal' },
         { name: 'Chinese 中文測試', type: 'internal' },
         { name: 'Special Chars !@#$%^&*()', type: 'internal' },
-        { name: 'SQL Injection Test \'; DROP TABLE users; --', type: 'internal' },
+        {
+          name: "SQL Injection Test '; DROP TABLE users; --",
+          type: 'internal',
+        },
         { name: 'XSS Test <script>alert("test")</script>', type: 'internal' },
         { name: '', type: 'internal' }, // Empty name
         { name: 'Valid Name', type: '' }, // Empty type
@@ -285,12 +320,18 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         // System should handle all input gracefully
         expect([200, 201, 400, 422]).toContain(response.status);
 
-        if (response.status >= 400 && response.data && typeof response.data === 'object') {
+        if (
+          response.status >= 400 &&
+          response.data &&
+          typeof response.data === 'object'
+        ) {
           expect(response.data.success).toBe(false);
           expect(response.data.message).toBeDefined();
         }
 
-        console.log(`Special char test "${test.name}": Status ${response.status}`);
+        console.log(
+          `Special char test "${test.name}": Status ${response.status}`
+        );
       }
     });
 
@@ -299,28 +340,28 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         {
           name: 'Invalid JSON',
           body: '{ invalid json }',
-          contentType: 'application/json'
+          contentType: 'application/json',
         },
         {
           name: 'Missing quotes',
           body: '{ name: test, type: internal }',
-          contentType: 'application/json'
+          contentType: 'application/json',
         },
         {
           name: 'Wrong content type',
           body: JSON.stringify({ name: 'Test', type: 'internal' }),
-          contentType: 'text/plain'
+          contentType: 'text/plain',
         },
         {
           name: 'Empty body',
           body: '',
-          contentType: 'application/json'
+          contentType: 'application/json',
         },
         {
           name: 'Null body',
           body: 'null',
-          contentType: 'application/json'
-        }
+          contentType: 'application/json',
+        },
       ];
 
       for (const test of malformedTests) {
@@ -329,14 +370,13 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
             method: 'POST',
             headers: {
               'Content-Type': test.contentType,
-              'Authorization': `Bearer ${authToken}`
+              Authorization: `Bearer ${authToken}`,
             },
-            body: test.body
+            body: test.body,
           });
 
           expect(response.status).toBeGreaterThanOrEqual(400);
           console.log(`${test.name}: Status ${response.status}`);
-
         } catch (error) {
           // Network errors are also acceptable for malformed requests
           console.log(`${test.name}: Network error (expected)`);
@@ -351,20 +391,32 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       const duplicateData = {
         name: 'Duplicate Test Project',
         type: 'internal',
-        description: 'Testing duplicate handling'
+        description: 'Testing duplicate handling',
       };
 
       // First insertion
-      const firstResponse = await makeRequest('/api/projects', 'POST', duplicateData);
+      const firstResponse = await makeRequest(
+        '/api/projects',
+        'POST',
+        duplicateData
+      );
       expect([200, 201, 400]).toContain(firstResponse.status);
 
       // Second insertion with same data
-      const secondResponse = await makeRequest('/api/projects', 'POST', duplicateData);
+      const secondResponse = await makeRequest(
+        '/api/projects',
+        'POST',
+        duplicateData
+      );
 
       // Should either succeed (if duplicates allowed) or fail gracefully
       expect([200, 201, 400, 409, 422]).toContain(secondResponse.status);
 
-      if (secondResponse.status >= 400 && secondResponse.data && typeof secondResponse.data === 'object') {
+      if (
+        secondResponse.status >= 400 &&
+        secondResponse.data &&
+        typeof secondResponse.data === 'object'
+      ) {
         expect(secondResponse.data.success).toBe(false);
         expect(secondResponse.data.message).toBeDefined();
       }
@@ -375,7 +427,7 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       const invalidReferences = [
         {
           endpoint: '/api/projects/invalid-project-id/members',
-          data: { userId: 'test-user', role: 'member' }
+          data: { userId: 'test-user', role: 'member' },
         },
         {
           endpoint: '/api/projects/test-project/duty-schedules',
@@ -383,9 +435,9 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
             personId: 'invalid-person-id',
             dutyDate: new Date().toISOString(),
             shiftType: '日班',
-            status: '已排班'
-          }
-        }
+            status: '已排班',
+          },
+        },
       ];
 
       for (const test of invalidReferences) {
@@ -398,7 +450,9 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
           expect(response.data.success).toBe(false);
         }
 
-        console.log(`Foreign key test ${test.endpoint}: Status ${response.status}`);
+        console.log(
+          `Foreign key test ${test.endpoint}: Status ${response.status}`
+        );
       }
     });
   });
@@ -409,7 +463,7 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       const timeoutTests = [
         '/api/projects?search=complex-query',
         '/api/vendors/stats',
-        '/api/projects/test-project/duty-schedules/stats'
+        '/api/projects/test-project/duty-schedules/stats',
       ];
 
       for (const endpoint of timeoutTests) {
@@ -423,11 +477,14 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
           expect(duration).toBeLessThan(30000); // 30 seconds max
           expect([200, 404, 500]).toContain(response.status);
 
-          console.log(`Timeout test ${endpoint}: ${duration}ms, Status ${response.status}`);
-
+          console.log(
+            `Timeout test ${endpoint}: ${duration}ms, Status ${response.status}`
+          );
         } catch (error) {
           const duration = Date.now() - startTime;
-          console.log(`Timeout test ${endpoint}: Failed after ${duration}ms (acceptable)`);
+          console.log(
+            `Timeout test ${endpoint}: Failed after ${duration}ms (acceptable)`
+          );
         }
       }
     });
@@ -438,7 +495,7 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         makeRequest('/api/projects', 'POST', {
           name: `Concurrent Test Project ${i}`,
           type: 'internal',
-          description: `Testing concurrent operations ${i}`
+          description: `Testing concurrent operations ${i}`,
         })
       );
 
@@ -448,7 +505,9 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       const fulfilled = results.filter(r => r.status === 'fulfilled');
       const rejected = results.filter(r => r.status === 'rejected');
 
-      console.log(`Concurrent operations: ${fulfilled.length} fulfilled, ${rejected.length} rejected`);
+      console.log(
+        `Concurrent operations: ${fulfilled.length} fulfilled, ${rejected.length} rejected`
+      );
 
       // At least some operations should succeed
       expect(fulfilled.length).toBeGreaterThan(0);
@@ -468,7 +527,7 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
       const largeQueryTests = [
         '/api/projects?pageSize=50',
         '/api/vendors?pageSize=100',
-        '/api/projects/test-project/duty-schedules?dateFrom=2020-01-01&dateTo=2030-12-31'
+        '/api/projects/test-project/duty-schedules?dateFrom=2020-01-01&dateTo=2030-12-31',
       ];
 
       for (const endpoint of largeQueryTests) {
@@ -481,7 +540,9 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         const finalMemory = process.memoryUsage().heapUsed;
         const memoryIncrease = finalMemory - initialMemory;
 
-        console.log(`Large query ${endpoint}: ${duration}ms, Memory: +${Math.round(memoryIncrease / 1024)}KB`);
+        console.log(
+          `Large query ${endpoint}: ${duration}ms, Memory: +${Math.round(memoryIncrease / 1024)}KB`
+        );
 
         expect([200, 404, 400, 500]).toContain(response.status);
         expect(duration).toBeLessThan(10000); // 10 seconds max
@@ -503,7 +564,7 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         {
           name: 'Aggregation Test',
           endpoint: '/api/vendors/stats',
-        }
+        },
       ];
 
       for (const test of memoryTests) {
@@ -514,7 +575,9 @@ describe('Boundary Value and Edge Case Tests - Oracle Environment', () => {
         const endMemory = process.memoryUsage();
         const memoryDiff = endMemory.heapUsed - startMemory.heapUsed;
 
-        console.log(`${test.name}: Memory delta ${Math.round(memoryDiff / 1024)}KB, Status ${response.status}`);
+        console.log(
+          `${test.name}: Memory delta ${Math.round(memoryDiff / 1024)}KB, Status ${response.status}`
+        );
 
         expect([200, 404, 400, 500]).toContain(response.status);
         expect(memoryDiff).toBeLessThan(100 * 1024 * 1024); // 100MB max

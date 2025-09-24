@@ -25,7 +25,7 @@
     --ring: 172 71% 20%;
     --radius: 0.5rem;
   }
- 
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -52,41 +52,41 @@
 /* Design System Colors based on design.json */
 :root {
   /* Brand Colors */
-  --color-brand-primary: #00645A;
+  --color-brand-primary: #00645a;
   --color-brand-primary-dark: #005048;
-  --color-brand-accent: #2DC2AE;
-  
+  --color-brand-accent: #2dc2ae;
+
   /* Background Colors */
-  --color-bg-level0: #FFFFFF;
-  --color-bg-level1: #F5F5F5;
-  --color-bg-level2: #E0E0E0;
-  
+  --color-bg-level0: #ffffff;
+  --color-bg-level1: #f5f5f5;
+  --color-bg-level2: #e0e0e0;
+
   /* Text Colors */
-  --color-text-primary: #1A1A1A;
+  --color-text-primary: #1a1a1a;
   --color-text-secondary: #595959;
-  --color-text-tertiary: #8C8C8C;
-  --color-text-interactive: #00645A;
-  --color-text-on-color: #FFFFFF;
-  --color-text-error: #D93025;
-  
+  --color-text-tertiary: #8c8c8c;
+  --color-text-interactive: #00645a;
+  --color-text-on-color: #ffffff;
+  --color-text-error: #d93025;
+
   /* UI Colors */
-  --color-ui-border: #D9D9D9;
-  --color-ui-divider: #F0F0F0;
-  --color-ui-focus: #00645A;
-  
+  --color-ui-border: #d9d9d9;
+  --color-ui-divider: #f0f0f0;
+  --color-ui-focus: #00645a;
+
   /* Support Colors */
-  --color-support-error: #D93025;
-  --color-support-warning: #FAA91A;
-  --color-support-success: #1E8E3E;
-  
+  --color-support-error: #d93025;
+  --color-support-warning: #faa91a;
+  --color-support-success: #1e8e3e;
+
   /* Layout */
   --border-radius: 4px;
-  --shadow-subtle: 0 2px 8px rgba(0,0,0,0.06);
-  --shadow-medium: 0 4px 12px rgba(0,0,0,0.1);
-  
+  --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.1);
+
   /* Legacy support */
-  --brand-primary: #00645A;
-  --brand-primary-light: #00736B;
+  --brand-primary: #00645a;
+  --brand-primary-light: #00736b;
   --brand-primary-dark: #005048;
 }
 
@@ -96,16 +96,21 @@
     @apply bg-white;
     color: var(--color-text-primary);
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: var(--color-text-primary);
     @apply font-bold;
   }
-  
+
   p {
     color: var(--color-text-secondary);
   }
-  
+
   a {
     color: var(--color-text-interactive);
     @apply no-underline font-medium hover:underline;
@@ -118,19 +123,19 @@
   .bg-brand-primary {
     background-color: var(--color-brand-primary);
   }
-  
+
   .bg-brand-primary-dark {
     background-color: var(--color-brand-primary-dark);
   }
-  
+
   .text-brand-primary {
     color: var(--color-brand-primary);
   }
-  
+
   .border-brand-primary {
     border-color: var(--color-brand-primary);
   }
-  
+
   .hover\:bg-brand-primary-light:hover {
     background-color: var(--brand-primary-light);
   }

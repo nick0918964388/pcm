@@ -1,4 +1,9 @@
-import { BaseRepository, BaseEntity, PaginationResult, FindOptions } from '@/lib/database/base-repository';
+import {
+  BaseRepository,
+  BaseEntity,
+  PaginationResult,
+  FindOptions,
+} from '@/lib/database/base-repository';
 import { QueryBuilder } from '@/lib/database/query-builder';
 
 // 專案成員實體介面
@@ -71,7 +76,12 @@ export interface MemberStats {
 
 export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
   constructor() {
-    super('project_members', 'id', ['user_name', 'user_email', 'role_name', 'notes']);
+    super('project_members', 'id', [
+      'user_name',
+      'user_email',
+      'role_name',
+      'notes',
+    ]);
   }
 
   // 映射資料庫記錄到實體
@@ -96,24 +106,30 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
       created_at: row.created_at ? new Date(row.created_at) : undefined,
       updated_at: row.updated_at ? new Date(row.updated_at) : undefined,
       // 關聯資料
-      user: row.user_name ? {
-        id: row.user_id,
-        name: row.user_name,
-        email: row.user_email,
-        department: row.user_department,
-        position: row.user_position
-      } : undefined,
-      role: row.role_name ? {
-        id: row.role_id,
-        name: row.role_name,
-        description: row.role_description,
-        level: row.role_level
-      } : undefined,
-      project: row.project_name ? {
-        id: row.project_id,
-        name: row.project_name,
-        description: row.project_description
-      } : undefined
+      user: row.user_name
+        ? {
+            id: row.user_id,
+            name: row.user_name,
+            email: row.user_email,
+            department: row.user_department,
+            position: row.user_position,
+          }
+        : undefined,
+      role: row.role_name
+        ? {
+            id: row.role_id,
+            name: row.role_name,
+            description: row.role_description,
+            level: row.role_level,
+          }
+        : undefined,
+      project: row.project_name
+        ? {
+            id: row.project_id,
+            name: row.project_name,
+            description: row.project_description,
+          }
+        : undefined,
     };
   }
 
@@ -134,17 +150,17 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
       can_manage_schedules: entity.canManageSchedules,
       can_view_reports: entity.canViewReports,
       can_export_data: entity.canExportData,
-      notes: entity.notes
+      notes: entity.notes,
     };
   }
 
   // 取得專案成員列表（含關聯資料）
   async findProjectMembers(
-    projectId: string, 
+    projectId: string,
     options: ProjectMemberQueryOptions = {}
   ): Promise<PaginationResult<ProjectMember>> {
     const queryBuilder = new QueryBuilder();
-    
+
     // 基本查詢 - 包含用戶和角色資訊
     queryBuilder
       .select([
@@ -155,7 +171,7 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
         'u.position as user_position',
         'r.name as role_name',
         'r.description as role_description',
-        'r.level as role_level'
+        'r.level as role_level',
       ])
       .from(`${this.tableName} pm`)
       .leftJoin('users u', 'pm.user_id = u.id')
@@ -189,20 +205,31 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
 
     // 權限篩選
     if (options.permissions && options.permissions.length > 0) {
-      const permissionConditions = options.permissions.map(permission => {
-        switch (permission) {
-          case 'view': return 'pm.can_view_project = true';
-          case 'edit': return 'pm.can_edit_project = true';
-          case 'delete': return 'pm.can_delete_project = true';
-          case 'manage_members': return 'pm.can_manage_members = true';
-          case 'manage_wbs': return 'pm.can_manage_wbs = true';
-          case 'manage_schedules': return 'pm.can_manage_schedules = true';
-          case 'view_reports': return 'pm.can_view_reports = true';
-          case 'export_data': return 'pm.can_export_data = true';
-          default: return null;
-        }
-      }).filter(condition => condition);
-      
+      const permissionConditions = options.permissions
+        .map(permission => {
+          switch (permission) {
+            case 'view':
+              return 'pm.can_view_project = true';
+            case 'edit':
+              return 'pm.can_edit_project = true';
+            case 'delete':
+              return 'pm.can_delete_project = true';
+            case 'manage_members':
+              return 'pm.can_manage_members = true';
+            case 'manage_wbs':
+              return 'pm.can_manage_wbs = true';
+            case 'manage_schedules':
+              return 'pm.can_manage_schedules = true';
+            case 'view_reports':
+              return 'pm.can_view_reports = true';
+            case 'export_data':
+              return 'pm.can_export_data = true';
+            default:
+              return null;
+          }
+        })
+        .filter(condition => condition);
+
       if (permissionConditions.length > 0) {
         queryBuilder.where(`(${permissionConditions.join(' OR ')})`);
       }
@@ -219,7 +246,10 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
     // 排序
     const sortBy = options.sortBy || 'joined_at';
     const sortOrder = options.sortOrder || 'DESC';
-    queryBuilder.orderBy(`${sortBy === 'userName' ? 'u.name' : sortBy === 'roleName' ? 'r.name' : 'pm.' + sortBy}`, sortOrder);
+    queryBuilder.orderBy(
+      `${sortBy === 'userName' ? 'u.name' : sortBy === 'roleName' ? 'r.name' : 'pm.' + sortBy}`,
+      sortOrder
+    );
 
     // 分頁
     const page = options.page || 1;
@@ -227,7 +257,7 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
     queryBuilder.limit(pageSize).offset((page - 1) * pageSize);
 
     const { query, params } = queryBuilder.build();
-    
+
     try {
       // 取得資料
       const rows = await this.db.query(query, params);
@@ -235,7 +265,10 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
 
       // 計算總數
       const countQuery = queryBuilder.buildCountQuery();
-      const countResult = await this.db.queryOne<{ count: number }>(countQuery.query, countQuery.params);
+      const countResult = await this.db.queryOne<{ count: number }>(
+        countQuery.query,
+        countQuery.params
+      );
       const total = parseInt(countResult?.count?.toString() || '0');
 
       return {
@@ -246,8 +279,8 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
           total,
           totalPages: Math.ceil(total / pageSize),
           hasNext: page < Math.ceil(total / pageSize),
-          hasPrev: page > 1
-        }
+          hasPrev: page > 1,
+        },
       };
     } catch (error) {
       console.error('查詢專案成員失敗:', error);
@@ -257,11 +290,11 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
 
   // 取得用戶的專案列表
   async findUserProjects(
-    userId: string, 
+    userId: string,
     options: FindOptions = {}
   ): Promise<PaginationResult<ProjectMember>> {
     const queryBuilder = new QueryBuilder();
-    
+
     queryBuilder
       .select([
         'pm.*',
@@ -272,7 +305,7 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
         'p.status as project_status',
         'r.name as role_name',
         'r.description as role_description',
-        'r.level as role_level'
+        'r.level as role_level',
       ])
       .from(`${this.tableName} pm`)
       .leftJoin('projects p', 'pm.project_id = p.id')
@@ -295,13 +328,16 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
       .offset((page - 1) * pageSize);
 
     const { query, params } = queryBuilder.build();
-    
+
     try {
       const rows = await this.db.query(query, params);
       const members = rows.map(row => this.mapFromDB(row));
 
       const countQuery = queryBuilder.buildCountQuery();
-      const countResult = await this.db.queryOne<{ count: number }>(countQuery.query, countQuery.params);
+      const countResult = await this.db.queryOne<{ count: number }>(
+        countQuery.query,
+        countQuery.params
+      );
       const total = parseInt(countResult?.count?.toString() || '0');
 
       return {
@@ -312,8 +348,8 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
           total,
           totalPages: Math.ceil(total / pageSize),
           hasNext: page < Math.ceil(total / pageSize),
-          hasPrev: page > 1
-        }
+          hasPrev: page > 1,
+        },
       };
     } catch (error) {
       console.error('查詢用戶專案失敗:', error);
@@ -323,9 +359,13 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
 
   // 檢查用戶是否為專案成員
   async isProjectMember(projectId: string, userId: string): Promise<boolean> {
-    const query = 'SELECT COUNT(*) as count FROM project_members WHERE project_id = $1 AND user_id = $2 AND is_active = true';
+    const query =
+      'SELECT COUNT(*) as count FROM project_members WHERE project_id = $1 AND user_id = $2 AND is_active = true';
     try {
-      const result = await this.db.queryOne<{ count: number }>(query, [projectId, userId]);
+      const result = await this.db.queryOne<{ count: number }>(query, [
+        projectId,
+        userId,
+      ]);
       return (result?.count || 0) > 0;
     } catch (error) {
       console.error('檢查專案成員失敗:', error);
@@ -334,13 +374,20 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
   }
 
   // 檢查用戶權限
-  async checkPermission(projectId: string, userId: string, permission: string): Promise<boolean> {
+  async checkPermission(
+    projectId: string,
+    userId: string,
+    permission: string
+  ): Promise<boolean> {
     const permissionColumn = this.getPermissionColumn(permission);
     if (!permissionColumn) return false;
 
     const query = `SELECT ${permissionColumn} FROM project_members WHERE project_id = $1 AND user_id = $2 AND is_active = true`;
     try {
-      const result = await this.db.queryOne<Record<string, boolean>>(query, [projectId, userId]);
+      const result = await this.db.queryOne<Record<string, boolean>>(query, [
+        projectId,
+        userId,
+      ]);
       return result?.[permissionColumn] || false;
     } catch (error) {
       console.error('檢查用戶權限失敗:', error);
@@ -350,22 +397,31 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
 
   // 批量更新成員權限
   async updateMemberPermissions(
-    memberId: string, 
-    permissions: Partial<Pick<ProjectMember, 
-      'canViewProject' | 'canEditProject' | 'canDeleteProject' | 
-      'canManageMembers' | 'canManageWbs' | 'canManageSchedules' |
-      'canViewReports' | 'canExportData'>>
+    memberId: string,
+    permissions: Partial<
+      Pick<
+        ProjectMember,
+        | 'canViewProject'
+        | 'canEditProject'
+        | 'canDeleteProject'
+        | 'canManageMembers'
+        | 'canManageWbs'
+        | 'canManageSchedules'
+        | 'canViewReports'
+        | 'canExportData'
+      >
+    >
   ): Promise<void> {
     const updateData = this.mapToDB(permissions);
     updateData.updated_at = new Date();
-    
+
     const setClause = Object.keys(updateData)
       .map((key, index) => `${key} = $${index + 2}`)
       .join(', ');
-    
+
     const query = `UPDATE project_members SET ${setClause} WHERE id = $1`;
     const params = [memberId, ...Object.values(updateData)];
-    
+
     try {
       await this.db.query(query, params);
     } catch (error) {
@@ -381,7 +437,7 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
       SET is_active = false, left_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
       WHERE id = $1
     `;
-    
+
     try {
       await this.db.query(query, [memberId]);
     } catch (error) {
@@ -440,14 +496,14 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
         roleDistribution: roleStats.map(row => ({
           roleId: row.role_id,
           roleName: row.role_name,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
         departmentDistribution: deptStats.map(row => ({
           department: row.department,
-          count: parseInt(row.count)
+          count: parseInt(row.count),
         })),
         joinedThisMonth: parseInt(basicStats?.joined_this_month || '0'),
-        leftThisMonth: parseInt(basicStats?.left_this_month || '0')
+        leftThisMonth: parseInt(basicStats?.left_this_month || '0'),
       };
     } catch (error) {
       console.error('取得專案成員統計失敗:', error);
@@ -458,22 +514,24 @@ export class ProjectMemberRepository extends BaseRepository<ProjectMember> {
   // 輔助方法：權限名稱轉換為欄位名
   private getPermissionColumn(permission: string): string | null {
     const permissionMap: Record<string, string> = {
-      'view': 'can_view_project',
-      'edit': 'can_edit_project',
-      'delete': 'can_delete_project',
-      'manage_members': 'can_manage_members',
-      'manage_wbs': 'can_manage_wbs',
-      'manage_schedules': 'can_manage_schedules',
-      'view_reports': 'can_view_reports',
-      'export_data': 'can_export_data'
+      view: 'can_view_project',
+      edit: 'can_edit_project',
+      delete: 'can_delete_project',
+      manage_members: 'can_manage_members',
+      manage_wbs: 'can_manage_wbs',
+      manage_schedules: 'can_manage_schedules',
+      view_reports: 'can_view_reports',
+      export_data: 'can_export_data',
     };
     return permissionMap[permission] || null;
   }
 
   // 取得資料庫連接（用於查詢）
   private get db() {
-    return (this as any).constructor.prototype.db || 
-           require('@/lib/database/connection').db;
+    return (
+      (this as any).constructor.prototype.db ||
+      require('@/lib/database/connection').db
+    );
   }
 }
 

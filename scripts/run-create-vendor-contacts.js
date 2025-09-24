@@ -10,12 +10,12 @@ const dbConfig = {
   database: 'app_db',
   user: 'admin',
   password: 'XcW04ByX6GbVdt1gw4EJ5XRY',
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 };
 
 async function createVendorContactsTable() {
   const client = new Client(dbConfig);
-  
+
   try {
     console.log('🔌 連接資料庫...');
     await client.connect();
@@ -24,14 +24,14 @@ async function createVendorContactsTable() {
     // 讀取 SQL 腳本
     const sqlPath = path.join(__dirname, 'create-vendor-contacts-table.sql');
     const sqlScript = fs.readFileSync(sqlPath, 'utf8');
-    
+
     console.log('📄 執行廠商聯絡人表創建腳本...');
-    
+
     // 執行 SQL 腳本
     await client.query(sqlScript);
-    
+
     console.log('🎉 廠商聯絡人表創建完成！');
-    
+
     // 檢查表結構
     const tableInfo = await client.query(`
       SELECT column_name, data_type, is_nullable, column_default
@@ -39,10 +39,12 @@ async function createVendorContactsTable() {
       WHERE table_name = 'vendor_contacts' 
       ORDER BY ordinal_position
     `);
-    
+
     console.log(`\n📋 vendor_contacts 表結構:`);
     tableInfo.rows.forEach(row => {
-      console.log(`   - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`);
+      console.log(
+        `   - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`
+      );
     });
 
     // 檢查枚舉類型
@@ -56,12 +58,11 @@ async function createVendorContactsTable() {
       GROUP BY t.typname
       ORDER BY t.typname
     `);
-    
+
     console.log(`\n🏷️ 相關枚舉類型:`);
     enumTypes.rows.forEach(row => {
       console.log(`   - ${row.enum_name}: ${row.enum_values}`);
     });
-
   } catch (error) {
     console.error('❌ 錯誤:', error.message);
     process.exit(1);

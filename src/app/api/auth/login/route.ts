@@ -9,7 +9,7 @@ import {
   handleOptionsRequest,
   logApiRequest,
   checkRateLimit,
-  rateLimitErrorResponse
+  rateLimitErrorResponse,
 } from '@/lib/utils/api-response';
 
 // POST /api/auth/login - 用戶登入
@@ -22,11 +22,12 @@ export async function POST(request: NextRequest) {
     if (methodError) return methodError;
 
     // 速率限制檢查 (每分鐘最多 5 次登入嘗試)
-    const clientIP = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown';
+    const clientIP =
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
     const rateLimit = checkRateLimit(`login:${clientIP}`, 5, 60 * 1000);
-    
+
     if (!rateLimit.allowed) {
       return rateLimitErrorResponse('登入嘗試次數過多，請稍後再試');
     }
@@ -49,11 +50,10 @@ export async function POST(request: NextRequest) {
     return successResponse(
       {
         user: result.user,
-        tokens: result.tokens
+        tokens: result.tokens,
       },
       '登入成功'
     );
-
   } catch (error: any) {
     logApiRequest(request, null, null, startTime);
     return handleKnownError(error);

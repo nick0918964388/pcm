@@ -4,12 +4,12 @@
  * REFACTOR階段：優化Oracle監控系統的代碼品質和效能
  */
 
-import { getOracleConnection } from '../database/oracle-connection'
-import { EnvironmentConfig } from '../config/environment-config'
+import { getOracleConnection } from '../database/oracle-connection';
+import { EnvironmentConfig } from '../config/environment-config';
 
 // 緩存配置
-const CACHE_TTL = 60000 // 1分鐘
-const metricCache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL = 60000; // 1分鐘
+const metricCache = new Map<string, { data: any; timestamp: number }>();
 
 // 查詢常數
 const QUERIES = {
@@ -117,236 +117,236 @@ const QUERIES = {
     ) fs ON df.tablespace_name = fs.tablespace_name
     JOIN dba_tablespaces ts ON df.tablespace_name = ts.tablespace_name
     ORDER BY usage_pct DESC
-  `
-} as const
+  `,
+} as const;
 
 export interface AWRStatistics {
-  dbTime: number
-  cpuTime: number
-  waitTime: number
-  logicalReads: number
-  physicalReads: number
-  userCommits: number
-  userRollbacks: number
+  dbTime: number;
+  cpuTime: number;
+  waitTime: number;
+  logicalReads: number;
+  physicalReads: number;
+  userCommits: number;
+  userRollbacks: number;
 }
 
 export interface AWRReport {
-  snapshotId: number
-  instanceId: number
-  startTime: Date
-  endTime: Date
-  statistics: AWRStatistics
+  snapshotId: number;
+  instanceId: number;
+  startTime: Date;
+  endTime: Date;
+  statistics: AWRStatistics;
   topWaitEvents: Array<{
-    eventName: string
-    totalWaits: number
-    totalTimeouts: number
-    averageWaitTime: number
-  }>
+    eventName: string;
+    totalWaits: number;
+    totalTimeouts: number;
+    averageWaitTime: number;
+  }>;
 }
 
 export interface SQLExecutionStats {
   topQueries: Array<{
-    sqlId: string
-    sqlText: string
-    executionCount: number
-    averageElapsedTime: number
-    averageCpuTime: number
-    bufferGets: number
-    diskReads: number
-    parseCount: number
-  }>
-  totalExecutions: number
-  averageExecutionTime: number
-  totalCpuTime: number
+    sqlId: string;
+    sqlText: string;
+    executionCount: number;
+    averageElapsedTime: number;
+    averageCpuTime: number;
+    bufferGets: number;
+    diskReads: number;
+    parseCount: number;
+  }>;
+  totalExecutions: number;
+  averageExecutionTime: number;
+  totalCpuTime: number;
 }
 
 export interface SessionInfo {
-  totalSessions: number
-  activeSessions: number
-  inactiveSessions: number
+  totalSessions: number;
+  activeSessions: number;
+  inactiveSessions: number;
   sessionDetails: Array<{
-    sid: number
-    serial: number
-    username: string
-    status: string
-    connectTime: Date
-    lastCallTime: Date
-    program: string
-    machine: string
-    osUser: string
-  }>
+    sid: number;
+    serial: number;
+    username: string;
+    status: string;
+    connectTime: Date;
+    lastCallTime: Date;
+    program: string;
+    machine: string;
+    osUser: string;
+  }>;
 }
 
 export interface PerformanceMetrics {
-  timestamp: Date
+  timestamp: Date;
   cpu: {
-    usage: number
-    hostCpuUsage: number
-    dbCpuRatio: number
-  }
+    usage: number;
+    hostCpuUsage: number;
+    dbCpuRatio: number;
+  };
   memory: {
-    pgaUsed: number
-    pgaTarget: number
-    sgaUsed: number
-    sgaTarget: number
-    bufferCacheHitRatio: number
-    libraryHitRatio: number
-  }
+    pgaUsed: number;
+    pgaTarget: number;
+    sgaUsed: number;
+    sgaTarget: number;
+    bufferCacheHitRatio: number;
+    libraryHitRatio: number;
+  };
   io: {
-    readIOPS: number
-    writeIOPS: number
-    averageReadTime: number
-    averageWriteTime: number
-    redoLogSize: number
-  }
+    readIOPS: number;
+    writeIOPS: number;
+    averageReadTime: number;
+    averageWriteTime: number;
+    redoLogSize: number;
+  };
 }
 
 export interface TablespaceUsage {
-  tablespaceName: string
-  totalSizeMB: number
-  usedSizeMB: number
-  freeSizeMB: number
-  usagePercentage: number
-  status: string
-  autoExtensible: boolean
-  maxSizeMB?: number
+  tablespaceName: string;
+  totalSizeMB: number;
+  usedSizeMB: number;
+  freeSizeMB: number;
+  usagePercentage: number;
+  status: string;
+  autoExtensible: boolean;
+  maxSizeMB?: number;
 }
 
 export interface LongRunningQuery {
-  sid: number
-  serial: number
-  sqlId: string
-  sqlText: string
-  elapsedSeconds: number
-  username: string
-  status: string
-  startTime: Date
-  module: string
+  sid: number;
+  serial: number;
+  sqlId: string;
+  sqlText: string;
+  elapsedSeconds: number;
+  username: string;
+  status: string;
+  startTime: Date;
+  module: string;
 }
 
 export interface HealthCheck {
-  timestamp: Date
-  overallStatus: 'HEALTHY' | 'WARNING' | 'CRITICAL'
+  timestamp: Date;
+  overallStatus: 'HEALTHY' | 'WARNING' | 'CRITICAL';
   checks: Array<{
-    name: string
-    category: string
-    status: 'PASS' | 'WARNING' | 'FAIL'
-    message: string
-    criticalLevel: number
-    details?: any
-  }>
+    name: string;
+    category: string;
+    status: 'PASS' | 'WARNING' | 'FAIL';
+    message: string;
+    criticalLevel: number;
+    details?: any;
+  }>;
 }
 
 export interface LockInformation {
   currentLocks: Array<{
-    sid: number
-    lockType: string
-    lockMode: string
-    objectName: string
-    objectType: string
-    blockingSession?: number
-    waitingTime?: number
-  }>
+    sid: number;
+    lockType: string;
+    lockMode: string;
+    objectName: string;
+    objectType: string;
+    blockingSession?: number;
+    waitingTime?: number;
+  }>;
   blockingSessions: Array<{
-    blockingSid: number
-    blockedSid: number
-    lockType: string
-    objectName: string
-    waitTime: number
-  }>
-  totalLockCount: number
+    blockingSid: number;
+    blockedSid: number;
+    lockType: string;
+    objectName: string;
+    waitTime: number;
+  }>;
+  totalLockCount: number;
 }
 
 export interface ArchiveLogStatus {
-  archiveMode: 'ARCHIVELOG' | 'NOARCHIVELOG'
-  currentLogSequence: number
+  archiveMode: 'ARCHIVELOG' | 'NOARCHIVELOG';
+  currentLogSequence: number;
   archiveDestinations: Array<{
-    destination: string
-    status: string
-    error?: string
-    freeSpaceMB: number
-  }>
-  oldestOnlineLog: number
-  switchLogFrequency: number
+    destination: string;
+    status: string;
+    error?: string;
+    freeSpaceMB: number;
+  }>;
+  oldestOnlineLog: number;
+  switchLogFrequency: number;
 }
 
 export interface NLSSettings {
-  characterSet: string
-  nationalCharacterSet: string
-  language: string
-  territory: string
-  dateFormat: string
-  timeZone: string
-  calendar: string
-  numericCharacters: string
+  characterSet: string;
+  nationalCharacterSet: string;
+  language: string;
+  territory: string;
+  dateFormat: string;
+  timeZone: string;
+  calendar: string;
+  numericCharacters: string;
 }
 
 export interface CharacterSetCompatibility {
-  isCompatible: boolean
-  currentCharset: string
-  expectedCharset: string
-  issues: string[]
-  recommendations: string[]
+  isCompatible: boolean;
+  currentCharset: string;
+  expectedCharset: string;
+  issues: string[];
+  recommendations: string[];
 }
 
 export interface MonitoringThresholds {
-  cpuUsage: number
-  memoryUsage: number
-  tablespaceUsage: number
-  sessionCount: number
-  longRunningQueryTime: number
-  lockWaitTime: number
+  cpuUsage: number;
+  memoryUsage: number;
+  tablespaceUsage: number;
+  sessionCount: number;
+  longRunningQueryTime: number;
+  lockWaitTime: number;
 }
 
 export interface ThresholdAlert {
-  metric: string
-  currentValue: number
-  threshold: number
-  severity: 'WARNING' | 'CRITICAL'
-  timestamp: Date
-  message: string
+  metric: string;
+  currentValue: number;
+  threshold: number;
+  severity: 'WARNING' | 'CRITICAL';
+  timestamp: Date;
+  message: string;
 }
 
 export interface MonitoringReport {
-  generatedAt: Date
+  generatedAt: Date;
   summary: {
-    overallHealth: 'HEALTHY' | 'WARNING' | 'CRITICAL'
-    totalIssues: number
-    criticalIssues: number
-    warningIssues: number
-  }
+    overallHealth: 'HEALTHY' | 'WARNING' | 'CRITICAL';
+    totalIssues: number;
+    criticalIssues: number;
+    warningIssues: number;
+  };
   sections: {
-    performance: PerformanceMetrics
-    health: HealthCheck
+    performance: PerformanceMetrics;
+    health: HealthCheck;
     resources: {
-      tablespaces: TablespaceUsage[]
-      sessions: SessionInfo
-      locks: LockInformation
-    }
+      tablespaces: TablespaceUsage[];
+      sessions: SessionInfo;
+      locks: LockInformation;
+    };
     security: {
-      nlsSettings: NLSSettings
-      archiveStatus: ArchiveLogStatus
-    }
-  }
-  recommendations: string[]
+      nlsSettings: NLSSettings;
+      archiveStatus: ArchiveLogStatus;
+    };
+  };
+  recommendations: string[];
 }
 
 // 輔助函數
 class CacheManager {
   static get<T>(key: string): T | null {
-    const cached = metricCache.get(key)
+    const cached = metricCache.get(key);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return cached.data as T
+      return cached.data as T;
     }
-    return null
+    return null;
   }
 
   static set<T>(key: string, data: T): void {
-    metricCache.set(key, { data, timestamp: Date.now() })
+    metricCache.set(key, { data, timestamp: Date.now() });
   }
 
   static clear(): void {
-    metricCache.clear()
+    metricCache.clear();
   }
 }
 
@@ -357,16 +357,16 @@ class QueryExecutor {
     fallbackValue: any = { rows: [] }
   ): Promise<any> {
     try {
-      const connection = getOracleConnection()
-      return await connection.execute(query, params)
+      const connection = getOracleConnection();
+      return await connection.execute(query, params);
     } catch (error) {
-      console.warn(`Oracle查詢執行失敗: ${error}`)
-      return fallbackValue
+      console.warn(`Oracle查詢執行失敗: ${error}`);
+      return fallbackValue;
     }
   }
 
   static async execute(query: string, params: any[] = []): Promise<any> {
-    return this.executeWithErrorHandling(query, params)
+    return this.executeWithErrorHandling(query, params);
   }
 
   static async executeCached<T>(
@@ -375,15 +375,15 @@ class QueryExecutor {
     transformer: (result: any) => T,
     params: any[] = []
   ): Promise<T> {
-    const cached = CacheManager.get<T>(cacheKey)
+    const cached = CacheManager.get<T>(cacheKey);
     if (cached) {
-      return cached
+      return cached;
     }
 
-    const result = await this.executeWithErrorHandling(query, params)
-    const transformed = transformer(result)
-    CacheManager.set(cacheKey, transformed)
-    return transformed
+    const result = await this.executeWithErrorHandling(query, params);
+    const transformed = transformer(result);
+    CacheManager.set(cacheKey, transformed);
+    return transformed;
   }
 }
 
@@ -394,8 +394,8 @@ export class OracleMonitor {
     tablespaceUsage: 90,
     sessionCount: 100,
     longRunningQueryTime: 300,
-    lockWaitTime: 60
-  }
+    lockWaitTime: 60,
+  };
 
   /**
    * 生成AWR報表
@@ -404,17 +404,17 @@ export class OracleMonitor {
     return QueryExecutor.executeCached(
       'awr_report',
       QUERIES.AWR_SNAPSHOT,
-      async (snapshotResult) => {
-        const snapshot = snapshotResult.rows?.[0] as any[]
+      async snapshotResult => {
+        const snapshot = snapshotResult.rows?.[0] as any[];
 
         // 並行執行統計查詢和等待事件查詢
         const [statsResult, waitEventsResult] = await Promise.all([
           QueryExecutor.execute(QUERIES.SYSTEM_STATS),
-          QueryExecutor.execute(QUERIES.WAIT_EVENTS)
-        ])
+          QueryExecutor.execute(QUERIES.WAIT_EVENTS),
+        ]);
 
-        const stats = this.parseSystemStats(statsResult)
-        const topWaitEvents = this.parseWaitEvents(waitEventsResult)
+        const stats = this.parseSystemStats(statsResult);
+        const topWaitEvents = this.parseWaitEvents(waitEventsResult);
 
         return {
           snapshotId: snapshot?.[0] || 1,
@@ -422,10 +422,10 @@ export class OracleMonitor {
           startTime: snapshot?.[2] || new Date(),
           endTime: snapshot?.[3] || new Date(),
           statistics: stats,
-          topWaitEvents
-        }
+          topWaitEvents,
+        };
       }
-    )
+    );
   }
 
   private parseSystemStats(statsResult: any): AWRStatistics {
@@ -436,8 +436,8 @@ export class OracleMonitor {
       logicalReads: 0,
       physicalReads: 0,
       userCommits: 0,
-      userRollbacks: 0
-    }
+      userRollbacks: 0,
+    };
 
     const statMap: Record<string, keyof AWRStatistics> = {
       'DB time': 'dbTime',
@@ -445,28 +445,30 @@ export class OracleMonitor {
       'session logical reads': 'logicalReads',
       'physical reads': 'physicalReads',
       'user commits': 'userCommits',
-      'user rollbacks': 'userRollbacks'
-    }
+      'user rollbacks': 'userRollbacks',
+    };
 
     statsResult.rows?.forEach((row: any[]) => {
-      const [statName, value] = row
-      const key = statMap[statName]
+      const [statName, value] = row;
+      const key = statMap[statName];
       if (key) {
-        stats[key] = Number(value) || 0
+        stats[key] = Number(value) || 0;
       }
-    })
+    });
 
-    stats.waitTime = Math.max(0, stats.dbTime - stats.cpuTime)
-    return stats
+    stats.waitTime = Math.max(0, stats.dbTime - stats.cpuTime);
+    return stats;
   }
 
   private parseWaitEvents(waitEventsResult: any) {
-    return waitEventsResult.rows?.map((row: any[]) => ({
-      eventName: row[0],
-      totalWaits: Number(row[1]) || 0,
-      totalTimeouts: Number(row[2]) || 0,
-      averageWaitTime: Number(row[3]) || 0
-    })) || []
+    return (
+      waitEventsResult.rows?.map((row: any[]) => ({
+        eventName: row[0],
+        totalWaits: Number(row[1]) || 0,
+        totalTimeouts: Number(row[2]) || 0,
+        averageWaitTime: Number(row[3]) || 0,
+      })) || []
+    );
   }
 
   /**
@@ -476,42 +478,44 @@ export class OracleMonitor {
     return QueryExecutor.executeCached(
       'sql_stats',
       QUERIES.TOP_SQL,
-      async (topSqlResult) => {
+      async topSqlResult => {
         const [totalResult] = await Promise.all([
-          QueryExecutor.execute(QUERIES.SQL_TOTALS)
-        ])
+          QueryExecutor.execute(QUERIES.SQL_TOTALS),
+        ]);
 
-        const topQueries = this.parseTopQueries(topSqlResult)
-        const totals = totalResult.rows?.[0] as any[]
+        const topQueries = this.parseTopQueries(topSqlResult);
+        const totals = totalResult.rows?.[0] as any[];
 
         return {
           topQueries,
           totalExecutions: Number(totals?.[0] || 0),
           averageExecutionTime: Number(totals?.[1] || 0),
-          totalCpuTime: Number(totals?.[2] || 0)
-        }
+          totalCpuTime: Number(totals?.[2] || 0),
+        };
       }
-    )
+    );
   }
 
   private parseTopQueries(result: any) {
-    return result.rows?.map((row: any[]) => ({
-      sqlId: row[0],
-      sqlText: row[1],
-      executionCount: Number(row[2]) || 0,
-      averageElapsedTime: Number(row[3]) || 0,
-      averageCpuTime: Number(row[4]) || 0,
-      bufferGets: Number(row[5]) || 0,
-      diskReads: Number(row[6]) || 0,
-      parseCount: Number(row[7]) || 0
-    })) || []
+    return (
+      result.rows?.map((row: any[]) => ({
+        sqlId: row[0],
+        sqlText: row[1],
+        executionCount: Number(row[2]) || 0,
+        averageElapsedTime: Number(row[3]) || 0,
+        averageCpuTime: Number(row[4]) || 0,
+        bufferGets: Number(row[5]) || 0,
+        diskReads: Number(row[6]) || 0,
+        parseCount: Number(row[7]) || 0,
+      })) || []
+    );
   }
 
   /**
    * 獲取會話資訊
    */
   async getSessionInfo(): Promise<SessionInfo> {
-    const connection = getOracleConnection()
+    const connection = getOracleConnection();
 
     // 獲取會話摘要
     const summaryResult = await connection.execute(`
@@ -521,9 +525,9 @@ export class OracleMonitor {
         sum(case when status = 'INACTIVE' then 1 else 0 end) as inactive_sessions
       FROM v$session
       WHERE type = 'USER'
-    `)
+    `);
 
-    const summary = summaryResult.rows?.[0] as any[]
+    const summary = summaryResult.rows?.[0] as any[];
 
     // 獲取詳細會話資訊
     const detailResult = await connection.execute(`
@@ -535,26 +539,27 @@ export class OracleMonitor {
       WHERE type = 'USER'
       ORDER BY logon_time DESC
       FETCH FIRST 50 ROWS ONLY
-    `)
+    `);
 
-    const sessionDetails = detailResult.rows?.map((row: any[]) => ({
-      sid: Number(row[0]),
-      serial: Number(row[1]),
-      username: row[2] || 'UNKNOWN',
-      status: row[3],
-      connectTime: new Date(row[4]),
-      lastCallTime: new Date(Date.now() - (Number(row[5]) * 1000)),
-      program: row[6] || 'UNKNOWN',
-      machine: row[7] || 'UNKNOWN',
-      osUser: row[8] || 'UNKNOWN'
-    })) || []
+    const sessionDetails =
+      detailResult.rows?.map((row: any[]) => ({
+        sid: Number(row[0]),
+        serial: Number(row[1]),
+        username: row[2] || 'UNKNOWN',
+        status: row[3],
+        connectTime: new Date(row[4]),
+        lastCallTime: new Date(Date.now() - Number(row[5]) * 1000),
+        program: row[6] || 'UNKNOWN',
+        machine: row[7] || 'UNKNOWN',
+        osUser: row[8] || 'UNKNOWN',
+      })) || [];
 
     return {
       totalSessions: Number(summary?.[0] || 0),
       activeSessions: Number(summary?.[1] || 0),
       inactiveSessions: Number(summary?.[2] || 0),
-      sessionDetails
-    }
+      sessionDetails,
+    };
   }
 
   /**
@@ -564,95 +569,117 @@ export class OracleMonitor {
     return QueryExecutor.executeCached(
       'performance_metrics',
       QUERIES.CPU_METRICS,
-      async (cpuResult) => {
+      async cpuResult => {
         // 並行執行所有指標查詢
         const [memoryResult, ioResult] = await Promise.all([
           QueryExecutor.execute(QUERIES.MEMORY_METRICS),
-          QueryExecutor.execute(QUERIES.IO_METRICS)
-        ])
+          QueryExecutor.execute(QUERIES.IO_METRICS),
+        ]);
 
-        const cpuUsage = Number(cpuResult.rows?.[0]?.[0] || 0)
-        const memoryMetrics = this.parseMemoryMetrics(memoryResult)
-        const ioMetrics = this.parseIOMetrics(ioResult)
+        const cpuUsage = Number(cpuResult.rows?.[0]?.[0] || 0);
+        const memoryMetrics = this.parseMemoryMetrics(memoryResult);
+        const ioMetrics = this.parseIOMetrics(ioResult);
 
         return {
           timestamp: new Date(),
           cpu: {
             usage: cpuUsage,
             hostCpuUsage: cpuUsage,
-            dbCpuRatio: Math.min(cpuUsage / 100, 1)
+            dbCpuRatio: Math.min(cpuUsage / 100, 1),
           },
           memory: {
             ...memoryMetrics,
             sgaTarget: memoryMetrics.sgaUsed * 1.2,
-            libraryHitRatio: 95
+            libraryHitRatio: 95,
           },
           io: {
             ...ioMetrics,
-            averageWriteTime: ioMetrics.averageReadTime * 1.1
-          }
-        }
+            averageWriteTime: ioMetrics.averageReadTime * 1.1,
+          },
+        };
       }
-    )
+    );
   }
 
   private parseMemoryMetrics(memoryResult: any) {
-    let pgaUsed = 512, pgaTarget = 1024, sgaUsed = 2048, bufferHitRatio = 95
+    let pgaUsed = 512,
+      pgaTarget = 1024,
+      sgaUsed = 2048,
+      bufferHitRatio = 95;
 
     const memoryMap: Record<string, string> = {
       'total PGA allocated': 'pgaUsed',
       'aggregate PGA target parameter': 'pgaTarget',
       'SGA Used': 'sgaUsed',
-      'Buffer Cache Hit Ratio': 'bufferHitRatio'
-    }
+      'Buffer Cache Hit Ratio': 'bufferHitRatio',
+    };
 
     memoryResult.rows?.forEach((row: any[]) => {
-      const [statName, value] = row
-      const key = memoryMap[statName]
+      const [statName, value] = row;
+      const key = memoryMap[statName];
       if (key && value) {
         switch (key) {
-          case 'pgaUsed': pgaUsed = Number(value); break
-          case 'pgaTarget': pgaTarget = Number(value); break
-          case 'sgaUsed': sgaUsed = Number(value); break
-          case 'bufferHitRatio': bufferHitRatio = Number(value); break
+          case 'pgaUsed':
+            pgaUsed = Number(value);
+            break;
+          case 'pgaTarget':
+            pgaTarget = Number(value);
+            break;
+          case 'sgaUsed':
+            sgaUsed = Number(value);
+            break;
+          case 'bufferHitRatio':
+            bufferHitRatio = Number(value);
+            break;
         }
       }
-    })
+    });
 
-    return { pgaUsed, pgaTarget, sgaUsed, bufferCacheHitRatio: bufferHitRatio }
+    return { pgaUsed, pgaTarget, sgaUsed, bufferCacheHitRatio: bufferHitRatio };
   }
 
   private parseIOMetrics(ioResult: any) {
-    let readIOPS = 0, writeIOPS = 0, averageReadTime = 0, redoLogSize = 0
+    let readIOPS = 0,
+      writeIOPS = 0,
+      averageReadTime = 0,
+      redoLogSize = 0;
 
     const ioMap: Record<string, string> = {
       'Physical Reads Per Sec': 'readIOPS',
       'Physical Writes Per Sec': 'writeIOPS',
       'Average Synchronous Single-Block Read Latency': 'averageReadTime',
-      'Redo Generated Per Sec': 'redoLogSize'
-    }
+      'Redo Generated Per Sec': 'redoLogSize',
+    };
 
     ioResult.rows?.forEach((row: any[]) => {
-      const [metricName, value] = row
-      const key = ioMap[metricName]
+      const [metricName, value] = row;
+      const key = ioMap[metricName];
       if (key && value) {
         switch (key) {
-          case 'readIOPS': readIOPS = Number(value); break
-          case 'writeIOPS': writeIOPS = Number(value); break
-          case 'averageReadTime': averageReadTime = Number(value); break
-          case 'redoLogSize': redoLogSize = Number(value); break
+          case 'readIOPS':
+            readIOPS = Number(value);
+            break;
+          case 'writeIOPS':
+            writeIOPS = Number(value);
+            break;
+          case 'averageReadTime':
+            averageReadTime = Number(value);
+            break;
+          case 'redoLogSize':
+            redoLogSize = Number(value);
+            break;
         }
       }
-    })
+    });
 
-    return { readIOPS, writeIOPS, averageReadTime, redoLogSize }
+    return { readIOPS, writeIOPS, averageReadTime, redoLogSize };
   }
 
   /**
    * 獲取表空間使用率
    */
   async getTablespaceUsage(): Promise<TablespaceUsage[]> {
-    const connection = getOracleConnection()
+    const connection = getOracleConnection();
 
     const result = await connection.execute(`
       SELECT
@@ -682,27 +709,32 @@ export class OracleMonitor {
       ) fs ON df.tablespace_name = fs.tablespace_name
       JOIN dba_tablespaces ts ON df.tablespace_name = ts.tablespace_name
       ORDER BY usage_pct DESC
-    `)
+    `);
 
-    return result.rows?.map((row: any[]) => ({
-      tablespaceName: row[0],
-      totalSizeMB: Number(row[1]),
-      usedSizeMB: Number(row[2]),
-      freeSizeMB: Number(row[3]),
-      usagePercentage: Number(row[4]),
-      status: row[5],
-      autoExtensible: Boolean(row[6]),
-      maxSizeMB: row[7] ? Number(row[7]) : undefined
-    })) || []
+    return (
+      result.rows?.map((row: any[]) => ({
+        tablespaceName: row[0],
+        totalSizeMB: Number(row[1]),
+        usedSizeMB: Number(row[2]),
+        freeSizeMB: Number(row[3]),
+        usagePercentage: Number(row[4]),
+        status: row[5],
+        autoExtensible: Boolean(row[6]),
+        maxSizeMB: row[7] ? Number(row[7]) : undefined,
+      })) || []
+    );
   }
 
   /**
    * 獲取長時間執行的查詢
    */
-  async getLongRunningQueries(minSeconds: number = 300): Promise<LongRunningQuery[]> {
-    const connection = getOracleConnection()
+  async getLongRunningQueries(
+    minSeconds: number = 300
+  ): Promise<LongRunningQuery[]> {
+    const connection = getOracleConnection();
 
-    const result = await connection.execute(`
+    const result = await connection.execute(
+      `
       SELECT
         s.sid, s.serial#, sq.sql_id,
         substr(sq.sql_text, 1, 200) as sql_text,
@@ -715,112 +747,125 @@ export class OracleMonitor {
       WHERE s.sql_exec_start IS NOT NULL
       AND (sysdate - s.sql_exec_start) * 24 * 60 * 60 > :minSeconds
       ORDER BY elapsed_seconds DESC
-    `, [minSeconds])
+    `,
+      [minSeconds]
+    );
 
-    return result.rows?.map((row: any[]) => ({
-      sid: Number(row[0]),
-      serial: Number(row[1]),
-      sqlId: row[2],
-      sqlText: row[3],
-      elapsedSeconds: Number(row[4]),
-      username: row[5] || 'UNKNOWN',
-      status: row[6],
-      startTime: new Date(row[7]),
-      module: row[8] || 'UNKNOWN'
-    })) || []
+    return (
+      result.rows?.map((row: any[]) => ({
+        sid: Number(row[0]),
+        serial: Number(row[1]),
+        sqlId: row[2],
+        sqlText: row[3],
+        elapsedSeconds: Number(row[4]),
+        username: row[5] || 'UNKNOWN',
+        status: row[6],
+        startTime: new Date(row[7]),
+        module: row[8] || 'UNKNOWN',
+      })) || []
+    );
   }
 
   /**
    * 執行健康檢查
    */
   async performHealthCheck(): Promise<HealthCheck> {
-    const checks = []
-    let overallStatus: 'HEALTHY' | 'WARNING' | 'CRITICAL' = 'HEALTHY'
+    const checks = [];
+    let overallStatus: 'HEALTHY' | 'WARNING' | 'CRITICAL' = 'HEALTHY';
 
     try {
       // 檢查資料庫狀態
-      const connection = getOracleConnection()
+      const connection = getOracleConnection();
       const dbStatusResult = await connection.execute(`
         SELECT database_status FROM v$instance
-      `)
+      `);
 
-      const dbStatus = dbStatusResult.rows?.[0]?.[0]
+      const dbStatus = dbStatusResult.rows?.[0]?.[0];
       checks.push({
         name: 'Database Status',
         category: 'DATABASE_STATUS',
-        status: dbStatus === 'ACTIVE' ? 'PASS' : 'FAIL' as any,
+        status: dbStatus === 'ACTIVE' ? 'PASS' : ('FAIL' as any),
         message: `Database status: ${dbStatus}`,
-        criticalLevel: dbStatus === 'ACTIVE' ? 1 : 10
-      })
+        criticalLevel: dbStatus === 'ACTIVE' ? 1 : 10,
+      });
 
       // 檢查表空間使用率
-      const tablespaces = await this.getTablespaceUsage()
-      const highUsageTablespaces = tablespaces.filter(ts => ts.usagePercentage > this.thresholds.tablespaceUsage)
+      const tablespaces = await this.getTablespaceUsage();
+      const highUsageTablespaces = tablespaces.filter(
+        ts => ts.usagePercentage > this.thresholds.tablespaceUsage
+      );
 
       checks.push({
         name: 'Tablespace Usage',
         category: 'TABLESPACE_USAGE',
-        status: highUsageTablespaces.length === 0 ? 'PASS' : 'WARNING' as any,
+        status: highUsageTablespaces.length === 0 ? 'PASS' : ('WARNING' as any),
         message: `${highUsageTablespaces.length} tablespaces exceed ${this.thresholds.tablespaceUsage}% usage`,
         criticalLevel: highUsageTablespaces.length === 0 ? 1 : 7,
-        details: highUsageTablespaces
-      })
+        details: highUsageTablespaces,
+      });
 
       // 檢查記憶體使用率
-      const metrics = await this.getPerformanceMetrics()
-      const memoryUsage = (metrics.memory.pgaUsed / metrics.memory.pgaTarget) * 100
+      const metrics = await this.getPerformanceMetrics();
+      const memoryUsage =
+        (metrics.memory.pgaUsed / metrics.memory.pgaTarget) * 100;
 
       checks.push({
         name: 'Memory Usage',
         category: 'MEMORY_USAGE',
-        status: memoryUsage < this.thresholds.memoryUsage ? 'PASS' : 'WARNING' as any,
+        status:
+          memoryUsage < this.thresholds.memoryUsage
+            ? 'PASS'
+            : ('WARNING' as any),
         message: `Memory usage: ${memoryUsage.toFixed(2)}%`,
-        criticalLevel: memoryUsage < this.thresholds.memoryUsage ? 1 : 6
-      })
+        criticalLevel: memoryUsage < this.thresholds.memoryUsage ? 1 : 6,
+      });
 
       // 檢查會話數
-      const sessionInfo = await this.getSessionInfo()
+      const sessionInfo = await this.getSessionInfo();
       checks.push({
         name: 'Session Count',
         category: 'SESSION_COUNT',
-        status: sessionInfo.totalSessions < this.thresholds.sessionCount ? 'PASS' : 'WARNING' as any,
+        status:
+          sessionInfo.totalSessions < this.thresholds.sessionCount
+            ? 'PASS'
+            : ('WARNING' as any),
         message: `Active sessions: ${sessionInfo.totalSessions}`,
-        criticalLevel: sessionInfo.totalSessions < this.thresholds.sessionCount ? 1 : 5
-      })
+        criticalLevel:
+          sessionInfo.totalSessions < this.thresholds.sessionCount ? 1 : 5,
+      });
 
       // 決定整體狀態
-      const failCount = checks.filter(c => c.status === 'FAIL').length
-      const warningCount = checks.filter(c => c.status === 'WARNING').length
+      const failCount = checks.filter(c => c.status === 'FAIL').length;
+      const warningCount = checks.filter(c => c.status === 'WARNING').length;
 
       if (failCount > 0) {
-        overallStatus = 'CRITICAL'
+        overallStatus = 'CRITICAL';
       } else if (warningCount > 0) {
-        overallStatus = 'WARNING'
+        overallStatus = 'WARNING';
       }
-
     } catch (error) {
       checks.push({
         name: 'Health Check Error',
         category: 'SYSTEM_ERROR',
         status: 'FAIL',
         message: `Health check failed: ${error}`,
-        criticalLevel: 10
-      })
-      overallStatus = 'CRITICAL'
+        criticalLevel: 10,
+      });
+      overallStatus = 'CRITICAL';
     }
 
     return {
       timestamp: new Date(),
       overallStatus,
-      checks
-    }
+      checks,
+    };
   }
 
   /**
    * 獲取鎖定資訊
    */
   async getLockInformation(): Promise<LockInformation> {
-    const connection = getOracleConnection()
+    const connection = getOracleConnection();
 
     // 獲取當前鎖定
     const locksResult = await connection.execute(`
@@ -835,16 +880,17 @@ export class OracleMonitor {
       LEFT JOIN dba_objects o ON l.id1 = o.object_id
       WHERE l.type IN ('TM', 'TX', 'UL')
       ORDER BY l.sid
-    `)
+    `);
 
-    const currentLocks = locksResult.rows?.map((row: any[]) => ({
-      sid: Number(row[0]),
-      lockType: row[1],
-      lockMode: String(row[2]),
-      objectName: row[3] || 'UNKNOWN',
-      objectType: row[4] || 'UNKNOWN',
-      blockingSession: row[5] !== null ? Number(row[5]) : 0
-    })) || []
+    const currentLocks =
+      locksResult.rows?.map((row: any[]) => ({
+        sid: Number(row[0]),
+        lockType: row[1],
+        lockMode: String(row[2]),
+        objectName: row[3] || 'UNKNOWN',
+        objectType: row[4] || 'UNKNOWN',
+        blockingSession: row[5] !== null ? Number(row[5]) : 0,
+      })) || [];
 
     // 獲取阻塞會話
     const blockingResult = await connection.execute(`
@@ -858,38 +904,39 @@ export class OracleMonitor {
       JOIN v$lock h ON w.id1 = h.id1 AND w.id2 = h.id2
       LEFT JOIN dba_objects o ON w.id1 = o.object_id
       WHERE w.block = 0 AND h.block = 1
-    `)
+    `);
 
-    const blockingSessions = blockingResult.rows?.map((row: any[]) => ({
-      blockedSid: Number(row[0]),
-      blockingSid: Number(row[1]),
-      lockType: row[2],
-      objectName: row[3] || 'UNKNOWN',
-      waitTime: Number(row[4])
-    })) || []
+    const blockingSessions =
+      blockingResult.rows?.map((row: any[]) => ({
+        blockedSid: Number(row[0]),
+        blockingSid: Number(row[1]),
+        lockType: row[2],
+        objectName: row[3] || 'UNKNOWN',
+        waitTime: Number(row[4]),
+      })) || [];
 
     return {
       currentLocks,
       blockingSessions,
-      totalLockCount: currentLocks.length
-    }
+      totalLockCount: currentLocks.length,
+    };
   }
 
   /**
    * 獲取歸檔日誌狀態
    */
   async getArchiveLogStatus(): Promise<ArchiveLogStatus> {
-    const connection = getOracleConnection()
+    const connection = getOracleConnection();
 
     // 獲取歸檔模式
     const archiveModeResult = await connection.execute(`
       SELECT log_mode FROM v$database
-    `)
+    `);
 
     // 獲取當前日誌序號
     const logSeqResult = await connection.execute(`
       SELECT sequence# FROM v$log WHERE status = 'CURRENT'
-    `)
+    `);
 
     // 獲取歸檔目標
     const destResult = await connection.execute(`
@@ -900,29 +947,33 @@ export class OracleMonitor {
         nvl(free_space_mb, 0) as free_space
       FROM v$archive_dest_status
       WHERE status != 'INACTIVE'
-    `)
+    `);
 
-    const archiveDestinations = destResult.rows?.map((row: any[]) => ({
-      destination: row[0],
-      status: row[1],
-      error: row[2],
-      freeSpaceMB: Number(row[3])
-    })) || []
+    const archiveDestinations =
+      destResult.rows?.map((row: any[]) => ({
+        destination: row[0],
+        status: row[1],
+        error: row[2],
+        freeSpaceMB: Number(row[3]),
+      })) || [];
 
     return {
-      archiveMode: archiveModeResult.rows?.[0]?.[0] === 'ARCHIVELOG' ? 'ARCHIVELOG' : 'NOARCHIVELOG',
+      archiveMode:
+        archiveModeResult.rows?.[0]?.[0] === 'ARCHIVELOG'
+          ? 'ARCHIVELOG'
+          : 'NOARCHIVELOG',
       currentLogSequence: Number(logSeqResult.rows?.[0]?.[0] || 1),
       archiveDestinations,
       oldestOnlineLog: 1, // 簡化值
-      switchLogFrequency: 30 // 簡化值（分鐘）
-    }
+      switchLogFrequency: 30, // 簡化值（分鐘）
+    };
   }
 
   /**
    * 獲取NLS設定
    */
   async getNLSSettings(): Promise<NLSSettings> {
-    const connection = getOracleConnection()
+    const connection = getOracleConnection();
 
     const result = await connection.execute(`
       SELECT
@@ -938,17 +989,17 @@ export class OracleMonitor {
         'NLS_CALENDAR',
         'NLS_NUMERIC_CHARACTERS'
       )
-    `)
+    `);
 
-    const settings: any = {}
+    const settings: any = {};
     result.rows?.forEach((row: any[]) => {
-      settings[row[0]] = row[1]
-    })
+      settings[row[0]] = row[1];
+    });
 
     // 獲取時區
     const tzResult = await connection.execute(`
       SELECT dbtimezone FROM dual
-    `)
+    `);
 
     return {
       characterSet: settings['NLS_CHARACTERSET'] || 'AL32UTF8',
@@ -958,30 +1009,36 @@ export class OracleMonitor {
       dateFormat: settings['NLS_DATE_FORMAT'] || 'DD-MON-RR',
       timeZone: tzResult.rows?.[0]?.[0] || 'UTC',
       calendar: settings['NLS_CALENDAR'] || 'GREGORIAN',
-      numericCharacters: settings['NLS_NUMERIC_CHARACTERS'] || '.,'
-    }
+      numericCharacters: settings['NLS_NUMERIC_CHARACTERS'] || '.,',
+    };
   }
 
   /**
    * 驗證字符集兼容性
    */
-  async validateCharacterSetCompatibility(expectedCharset: string): Promise<CharacterSetCompatibility> {
-    const nlsSettings = await this.getNLSSettings()
-    const currentCharset = nlsSettings.characterSet
+  async validateCharacterSetCompatibility(
+    expectedCharset: string
+  ): Promise<CharacterSetCompatibility> {
+    const nlsSettings = await this.getNLSSettings();
+    const currentCharset = nlsSettings.characterSet;
 
-    const isCompatible = currentCharset === expectedCharset
-    const issues: string[] = []
-    const recommendations: string[] = []
+    const isCompatible = currentCharset === expectedCharset;
+    const issues: string[] = [];
+    const recommendations: string[] = [];
 
     if (!isCompatible) {
-      issues.push(`Current charset ${currentCharset} does not match expected ${expectedCharset}`)
-      recommendations.push(`Consider migrating to ${expectedCharset} for better compatibility`)
+      issues.push(
+        `Current charset ${currentCharset} does not match expected ${expectedCharset}`
+      );
+      recommendations.push(
+        `Consider migrating to ${expectedCharset} for better compatibility`
+      );
     }
 
     // 檢查UTF-8支援
     if (!['AL32UTF8', 'UTF8'].includes(currentCharset)) {
-      issues.push('Character set does not support full Unicode')
-      recommendations.push('Use AL32UTF8 for full Unicode support')
+      issues.push('Character set does not support full Unicode');
+      recommendations.push('Use AL32UTF8 for full Unicode support');
     }
 
     return {
@@ -989,32 +1046,34 @@ export class OracleMonitor {
       currentCharset,
       expectedCharset,
       issues,
-      recommendations
-    }
+      recommendations,
+    };
   }
 
   /**
    * 設定監控閾值
    */
-  async setMonitoringThresholds(thresholds: Partial<MonitoringThresholds>): Promise<void> {
-    this.thresholds = { ...this.thresholds, ...thresholds }
+  async setMonitoringThresholds(
+    thresholds: Partial<MonitoringThresholds>
+  ): Promise<void> {
+    this.thresholds = { ...this.thresholds, ...thresholds };
   }
 
   /**
    * 獲取監控閾值
    */
   getMonitoringThresholds(): MonitoringThresholds {
-    return { ...this.thresholds }
+    return { ...this.thresholds };
   }
 
   /**
    * 檢查閾值警報
    */
   async checkThresholdAlerts(): Promise<ThresholdAlert[]> {
-    const alerts: ThresholdAlert[] = []
-    const metrics = await this.getPerformanceMetrics()
-    const sessionInfo = await this.getSessionInfo()
-    const tablespaces = await this.getTablespaceUsage()
+    const alerts: ThresholdAlert[] = [];
+    const metrics = await this.getPerformanceMetrics();
+    const sessionInfo = await this.getSessionInfo();
+    const tablespaces = await this.getTablespaceUsage();
 
     // CPU使用率檢查
     if (metrics.cpu.usage > this.thresholds.cpuUsage) {
@@ -1022,23 +1081,30 @@ export class OracleMonitor {
         metric: 'CPU Usage',
         currentValue: metrics.cpu.usage,
         threshold: this.thresholds.cpuUsage,
-        severity: metrics.cpu.usage > this.thresholds.cpuUsage * 1.2 ? 'CRITICAL' : 'WARNING',
+        severity:
+          metrics.cpu.usage > this.thresholds.cpuUsage * 1.2
+            ? 'CRITICAL'
+            : 'WARNING',
         timestamp: new Date(),
-        message: `CPU usage ${metrics.cpu.usage}% exceeds threshold ${this.thresholds.cpuUsage}%`
-      })
+        message: `CPU usage ${metrics.cpu.usage}% exceeds threshold ${this.thresholds.cpuUsage}%`,
+      });
     }
 
     // 記憶體使用率檢查
-    const memoryUsage = (metrics.memory.pgaUsed / metrics.memory.pgaTarget) * 100
+    const memoryUsage =
+      (metrics.memory.pgaUsed / metrics.memory.pgaTarget) * 100;
     if (memoryUsage > this.thresholds.memoryUsage) {
       alerts.push({
         metric: 'Memory Usage',
         currentValue: memoryUsage,
         threshold: this.thresholds.memoryUsage,
-        severity: memoryUsage > this.thresholds.memoryUsage * 1.1 ? 'CRITICAL' : 'WARNING',
+        severity:
+          memoryUsage > this.thresholds.memoryUsage * 1.1
+            ? 'CRITICAL'
+            : 'WARNING',
         timestamp: new Date(),
-        message: `Memory usage ${memoryUsage.toFixed(2)}% exceeds threshold ${this.thresholds.memoryUsage}%`
-      })
+        message: `Memory usage ${memoryUsage.toFixed(2)}% exceeds threshold ${this.thresholds.memoryUsage}%`,
+      });
     }
 
     // 會話數檢查
@@ -1047,10 +1113,13 @@ export class OracleMonitor {
         metric: 'Session Count',
         currentValue: sessionInfo.totalSessions,
         threshold: this.thresholds.sessionCount,
-        severity: sessionInfo.totalSessions > this.thresholds.sessionCount * 1.2 ? 'CRITICAL' : 'WARNING',
+        severity:
+          sessionInfo.totalSessions > this.thresholds.sessionCount * 1.2
+            ? 'CRITICAL'
+            : 'WARNING',
         timestamp: new Date(),
-        message: `Session count ${sessionInfo.totalSessions} exceeds threshold ${this.thresholds.sessionCount}`
-      })
+        message: `Session count ${sessionInfo.totalSessions} exceeds threshold ${this.thresholds.sessionCount}`,
+      });
     }
 
     // 表空間使用率檢查
@@ -1062,12 +1131,12 @@ export class OracleMonitor {
           threshold: this.thresholds.tablespaceUsage,
           severity: ts.usagePercentage > 95 ? 'CRITICAL' : 'WARNING',
           timestamp: new Date(),
-          message: `Tablespace ${ts.tablespaceName} usage ${ts.usagePercentage}% exceeds threshold ${this.thresholds.tablespaceUsage}%`
-        })
+          message: `Tablespace ${ts.tablespaceName} usage ${ts.usagePercentage}% exceeds threshold ${this.thresholds.tablespaceUsage}%`,
+        });
       }
-    })
+    });
 
-    return alerts
+    return alerts;
   }
 
   /**
@@ -1083,7 +1152,7 @@ export class OracleMonitor {
       locks,
       nlsSettings,
       archiveStatus,
-      alerts
+      alerts,
     ] = await Promise.all([
       this.getPerformanceMetrics(),
       this.performHealthCheck(),
@@ -1092,32 +1161,44 @@ export class OracleMonitor {
       this.getLockInformation(),
       this.getNLSSettings(),
       this.getArchiveLogStatus(),
-      this.checkThresholdAlerts()
-    ])
+      this.checkThresholdAlerts(),
+    ]);
 
-    const criticalIssues = health.checks.filter(c => c.status === 'FAIL').length +
-                          alerts.filter(a => a.severity === 'CRITICAL').length
-    const warningIssues = health.checks.filter(c => c.status === 'WARNING').length +
-                         alerts.filter(a => a.severity === 'WARNING').length
+    const criticalIssues =
+      health.checks.filter(c => c.status === 'FAIL').length +
+      alerts.filter(a => a.severity === 'CRITICAL').length;
+    const warningIssues =
+      health.checks.filter(c => c.status === 'WARNING').length +
+      alerts.filter(a => a.severity === 'WARNING').length;
 
-    const recommendations = this.generateRecommendations(performance, tablespaces, locks, archiveStatus)
+    const recommendations = this.generateRecommendations(
+      performance,
+      tablespaces,
+      locks,
+      archiveStatus
+    );
 
     return {
       generatedAt: new Date(),
       summary: {
-        overallHealth: criticalIssues > 0 ? 'CRITICAL' : (warningIssues > 0 ? 'WARNING' : 'HEALTHY'),
+        overallHealth:
+          criticalIssues > 0
+            ? 'CRITICAL'
+            : warningIssues > 0
+              ? 'WARNING'
+              : 'HEALTHY',
         totalIssues: criticalIssues + warningIssues,
         criticalIssues,
-        warningIssues
+        warningIssues,
       },
       sections: {
         performance,
         health,
         resources: { tablespaces, sessions, locks },
-        security: { nlsSettings, archiveStatus }
+        security: { nlsSettings, archiveStatus },
       },
-      recommendations
-    }
+      recommendations,
+    };
   }
 
   private generateRecommendations(
@@ -1126,35 +1207,39 @@ export class OracleMonitor {
     locks: LockInformation,
     archiveStatus: ArchiveLogStatus
   ): string[] {
-    const recommendations: string[] = []
+    const recommendations: string[] = [];
 
     if (performance.cpu.usage > 80) {
-      recommendations.push('Consider CPU optimization or scaling')
+      recommendations.push('Consider CPU optimization or scaling');
     }
     if (tablespaces.some(ts => ts.usagePercentage > 90)) {
-      recommendations.push('Review tablespace usage and consider expansion')
+      recommendations.push('Review tablespace usage and consider expansion');
     }
     if (locks.blockingSessions.length > 0) {
-      recommendations.push('Investigate blocking sessions and optimize queries')
+      recommendations.push(
+        'Investigate blocking sessions and optimize queries'
+      );
     }
     if (archiveStatus.archiveMode === 'NOARCHIVELOG') {
-      recommendations.push('Enable ARCHIVELOG mode for production environments')
+      recommendations.push(
+        'Enable ARCHIVELOG mode for production environments'
+      );
     }
     if (performance.memory.bufferCacheHitRatio < 90) {
-      recommendations.push('Consider increasing buffer cache size')
+      recommendations.push('Consider increasing buffer cache size');
     }
     if (performance.io.averageReadTime > 10) {
-      recommendations.push('Review storage performance and I/O optimization')
+      recommendations.push('Review storage performance and I/O optimization');
     }
 
-    return recommendations
+    return recommendations;
   }
 
   /**
    * 清除快取 - 用於強制重新載入資料
    */
   clearCache(): void {
-    CacheManager.clear()
+    CacheManager.clear();
   }
 
   /**
@@ -1163,7 +1248,7 @@ export class OracleMonitor {
   getCacheStats(): { size: number; keys: string[] } {
     return {
       size: metricCache.size,
-      keys: Array.from(metricCache.keys())
-    }
+      keys: Array.from(metricCache.keys()),
+    };
   }
 }

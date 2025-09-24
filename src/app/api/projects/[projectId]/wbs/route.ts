@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 
 // Mock WBS 資料
 const mockWBSItems = [
@@ -21,7 +21,7 @@ const mockWBSItems = [
     actualCost: 275000000,
     assignedTo: ['user001', 'user002'],
     tags: ['主體工程', '建設專案'],
-    children: ['wbs-002', 'wbs-003', 'wbs-004']
+    children: ['wbs-002', 'wbs-003', 'wbs-004'],
   },
   {
     id: 'wbs-002',
@@ -42,7 +42,7 @@ const mockWBSItems = [
     actualCost: 148000000,
     assignedTo: ['user005', 'user007'],
     tags: ['基礎工程', '土木'],
-    children: ['wbs-005', 'wbs-006']
+    children: ['wbs-005', 'wbs-006'],
   },
   {
     id: 'wbs-003',
@@ -63,7 +63,7 @@ const mockWBSItems = [
     actualCost: 125000000,
     assignedTo: ['user002', 'user005'],
     tags: ['結構工程', '鋼結構'],
-    children: ['wbs-007', 'wbs-008']
+    children: ['wbs-007', 'wbs-008'],
   },
   {
     id: 'wbs-004',
@@ -84,7 +84,7 @@ const mockWBSItems = [
     actualCost: 2000000,
     assignedTo: ['user003', 'user008'],
     tags: ['機電工程', '設備安裝'],
-    children: ['wbs-009', 'wbs-010']
+    children: ['wbs-009', 'wbs-010'],
   },
   {
     id: 'wbs-005',
@@ -105,7 +105,7 @@ const mockWBSItems = [
     actualCost: 78000000,
     assignedTo: ['user005'],
     tags: ['開挖', '土方工程'],
-    children: []
+    children: [],
   },
   {
     id: 'wbs-006',
@@ -126,7 +126,7 @@ const mockWBSItems = [
     actualCost: 70000000,
     assignedTo: ['user005', 'user007'],
     tags: ['混凝土', '澆置'],
-    children: []
+    children: [],
   },
   {
     id: 'wbs-007',
@@ -147,7 +147,7 @@ const mockWBSItems = [
     actualCost: 75000000,
     assignedTo: ['user002'],
     tags: ['鋼結構', '組裝'],
-    children: []
+    children: [],
   },
   {
     id: 'wbs-008',
@@ -168,7 +168,7 @@ const mockWBSItems = [
     actualCost: 50000000,
     assignedTo: ['user005'],
     tags: ['外牆', '裝修'],
-    children: []
+    children: [],
   },
   {
     id: 'wbs-009',
@@ -189,7 +189,7 @@ const mockWBSItems = [
     actualCost: 1000000,
     assignedTo: ['user008'],
     tags: ['電力', '配電'],
-    children: []
+    children: [],
   },
   {
     id: 'wbs-010',
@@ -210,53 +210,55 @@ const mockWBSItems = [
     actualCost: 1000000,
     assignedTo: ['user003'],
     tags: ['空調', 'HVAC'],
-    children: []
-  }
-]
+    children: [],
+  },
+];
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { projectId: string } }
 ) {
-  const { searchParams } = new URL(request.url)
-  const includeCompleted = searchParams.get('includeCompleted') !== 'false'
-  const maxDepth = searchParams.get('maxDepth') ? parseInt(searchParams.get('maxDepth')!) : undefined
-  const sortBy = searchParams.get('sortBy') || 'code'
-  const sortOrder = searchParams.get('sortOrder') || 'asc'
+  const { searchParams } = new URL(request.url);
+  const includeCompleted = searchParams.get('includeCompleted') !== 'false';
+  const maxDepth = searchParams.get('maxDepth')
+    ? parseInt(searchParams.get('maxDepth')!)
+    : undefined;
+  const sortBy = searchParams.get('sortBy') || 'code';
+  const sortOrder = searchParams.get('sortOrder') || 'asc';
 
-  let filteredItems = [...mockWBSItems]
+  let filteredItems = [...mockWBSItems];
 
   // 過濾已完成項目
   if (!includeCompleted) {
-    filteredItems = filteredItems.filter(item => item.status !== 'COMPLETED')
+    filteredItems = filteredItems.filter(item => item.status !== 'COMPLETED');
   }
 
   // 層級限制
   if (maxDepth !== undefined) {
-    filteredItems = filteredItems.filter(item => item.level <= maxDepth)
+    filteredItems = filteredItems.filter(item => item.level <= maxDepth);
   }
 
   // 排序
   filteredItems.sort((a, b) => {
-    let aValue: any = a[sortBy as keyof typeof a]
-    let bValue: any = b[sortBy as keyof typeof b]
+    let aValue: any = a[sortBy as keyof typeof a];
+    let bValue: any = b[sortBy as keyof typeof b];
 
     if (typeof aValue === 'string') {
-      aValue = aValue.toLowerCase()
-      bValue = bValue.toLowerCase()
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
     }
 
     if (sortOrder === 'asc') {
-      return aValue > bValue ? 1 : -1
+      return aValue > bValue ? 1 : -1;
     } else {
-      return aValue < bValue ? 1 : -1
+      return aValue < bValue ? 1 : -1;
     }
-  })
+  });
 
   const response = {
     success: true,
-    data: filteredItems
-  }
+    data: filteredItems,
+  };
 
-  return NextResponse.json(response)
+  return NextResponse.json(response);
 }

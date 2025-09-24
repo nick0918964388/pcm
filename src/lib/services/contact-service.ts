@@ -2,39 +2,39 @@
 // 後續可以擴展為完整的 repository 模式
 
 export interface ContactQueryInput {
-  vendor_id?: string
-  name?: string
-  position?: string
-  department?: string
-  phone?: string
-  email?: string
-  mvpn?: string
-  supervisor?: string
-  status?: string
-  is_primary?: boolean
-  is_active?: boolean
-  page?: number
-  limit?: number
-  sortBy?: string
-  sortOrder?: string
+  vendor_id?: string;
+  name?: string;
+  position?: string;
+  department?: string;
+  phone?: string;
+  email?: string;
+  mvpn?: string;
+  supervisor?: string;
+  status?: string;
+  is_primary?: boolean;
+  is_active?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 export interface CreateContactInput {
-  vendor_id: string
-  name: string
-  position?: string
-  department?: string
-  phone?: string
-  extension?: string
-  mvpn?: string
-  email?: string
-  supervisor?: string
-  work_supervisor?: string
-  photo_url?: string
-  status?: string
-  is_primary?: boolean
-  notes?: string
-  display_order?: number
+  vendor_id: string;
+  name: string;
+  position?: string;
+  department?: string;
+  phone?: string;
+  extension?: string;
+  mvpn?: string;
+  email?: string;
+  supervisor?: string;
+  work_supervisor?: string;
+  photo_url?: string;
+  status?: string;
+  is_primary?: boolean;
+  notes?: string;
+  display_order?: number;
 }
 
 export class ContactService {
@@ -53,16 +53,16 @@ export class ContactService {
         total: 0,
         totalPages: 0,
         hasNext: false,
-        hasPrev: false
+        hasPrev: false,
       },
       stats: {
         totalContacts: 0,
         activeContacts: 0,
         primaryContacts: 0,
         totalByDepartment: {},
-        totalByStatus: {}
-      }
-    }
+        totalByStatus: {},
+      },
+    };
   }
 
   /**
@@ -89,8 +89,8 @@ export class ContactService {
       notes: data.notes,
       display_order: data.display_order || 0,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
+      updated_at: new Date().toISOString(),
+    };
   }
 
   /**
@@ -98,7 +98,7 @@ export class ContactService {
    */
   async updateContact(id: string, data: Partial<CreateContactInput>) {
     // TODO: 實現資料庫更新邏輯
-    return { ...data, id, updated_at: new Date().toISOString() }
+    return { ...data, id, updated_at: new Date().toISOString() };
   }
 
   /**
@@ -106,9 +106,9 @@ export class ContactService {
    */
   async deleteContact(id: string) {
     // TODO: 實現資料庫刪除邏輯
-    return true
+    return true;
   }
 }
 
 // 單例實例
-export const contactService = new ContactService()
+export const contactService = new ContactService();

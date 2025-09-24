@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
@@ -19,50 +19,50 @@ export async function GET(
     delayedTasks: 1,
     onTrackTasks: 6,
     statusDistribution: {
-      'COMPLETED': 3,
-      'IN_PROGRESS': 4,
-      'PLANNED': 3,
-      'ON_HOLD': 0,
-      'CANCELLED': 0
+      COMPLETED: 3,
+      IN_PROGRESS: 4,
+      PLANNED: 3,
+      ON_HOLD: 0,
+      CANCELLED: 0,
     },
     priorityDistribution: {
-      'HIGH': 5,
-      'MEDIUM': 4,
-      'LOW': 1
+      HIGH: 5,
+      MEDIUM: 4,
+      LOW: 1,
     },
     typeDistribution: {
-      'PROJECT': 1,
-      'PHASE': 3,
-      'WORK_PACKAGE': 6,
-      'MILESTONE': 0
+      PROJECT: 1,
+      PHASE: 3,
+      WORK_PACKAGE: 6,
+      MILESTONE: 0,
     },
     levelDistribution: {
       0: 1,
       1: 3,
       2: 6,
-      3: 0
+      3: 0,
     },
     progressByLevel: {
       0: 65,
       1: 58.3,
-      2: 46.7
+      2: 46.7,
     },
     budgetByStatus: {
-      'COMPLETED': 150000000,
-      'IN_PROGRESS': 200000000,
-      'PLANNED': 150000000
+      COMPLETED: 150000000,
+      IN_PROGRESS: 200000000,
+      PLANNED: 150000000,
     },
     actualCostByStatus: {
-      'COMPLETED': 148000000,
-      'IN_PROGRESS': 125000000,
-      'PLANNED': 2000000
-    }
-  }
+      COMPLETED: 148000000,
+      IN_PROGRESS: 125000000,
+      PLANNED: 2000000,
+    },
+  };
 
   const response = {
     success: true,
-    data: mockStats
-  }
+    data: mockStats,
+  };
 
-  return NextResponse.json(response)
+  return NextResponse.json(response);
 }

@@ -23,7 +23,7 @@ export async function authenticateToken(request: NextRequest): Promise<{
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return {
         success: false,
-        error: '缺少 Authorization header 或格式錯誤'
+        error: '缺少 Authorization header 或格式錯誤',
       };
     }
 
@@ -31,7 +31,7 @@ export async function authenticateToken(request: NextRequest): Promise<{
     if (!token) {
       return {
         success: false,
-        error: 'Token 不能為空'
+        error: 'Token 不能為空',
       };
     }
 
@@ -41,12 +41,12 @@ export async function authenticateToken(request: NextRequest): Promise<{
 
     return {
       success: true,
-      user
+      user,
     };
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || 'Token 驗證失敗'
+      error: error.message || 'Token 驗證失敗',
     };
   }
 }
@@ -68,23 +68,26 @@ export async function requirePermission(
 
   try {
     const authService = new AuthService();
-    const hasPermission = await authService.hasPermission(authResult.user!.id, permission);
+    const hasPermission = await authService.hasPermission(
+      authResult.user!.id,
+      permission
+    );
 
     if (!hasPermission) {
       return {
         success: false,
-        error: '權限不足'
+        error: '權限不足',
       };
     }
 
     return {
       success: true,
-      user: authResult.user
+      user: authResult.user,
     };
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || '權限檢查失敗'
+      error: error.message || '權限檢查失敗',
     };
   }
 }
@@ -111,18 +114,18 @@ export async function requireRole(
     if (!hasRole) {
       return {
         success: false,
-        error: '角色權限不足'
+        error: '角色權限不足',
       };
     }
 
     return {
       success: true,
-      user: authResult.user
+      user: authResult.user,
     };
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || '角色檢查失敗'
+      error: error.message || '角色檢查失敗',
     };
   }
 }
@@ -153,25 +156,28 @@ export async function requireAllPermissions(
 
   try {
     const authService = new AuthService();
-    
+
     for (const permission of permissions) {
-      const hasPermission = await authService.hasPermission(authResult.user!.id, permission);
+      const hasPermission = await authService.hasPermission(
+        authResult.user!.id,
+        permission
+      );
       if (!hasPermission) {
         return {
           success: false,
-          error: `缺少權限: ${permission}`
+          error: `缺少權限: ${permission}`,
         };
       }
     }
 
     return {
       success: true,
-      user: authResult.user
+      user: authResult.user,
     };
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || '權限檢查失敗'
+      error: error.message || '權限檢查失敗',
     };
   }
 }
@@ -193,25 +199,28 @@ export async function requireAnyPermission(
 
   try {
     const authService = new AuthService();
-    
+
     for (const permission of permissions) {
-      const hasPermission = await authService.hasPermission(authResult.user!.id, permission);
+      const hasPermission = await authService.hasPermission(
+        authResult.user!.id,
+        permission
+      );
       if (hasPermission) {
         return {
           success: true,
-          user: authResult.user
+          user: authResult.user,
         };
       }
     }
 
     return {
       success: false,
-      error: `需要以下任一權限: ${permissions.join(', ')}`
+      error: `需要以下任一權限: ${permissions.join(', ')}`,
     };
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || '權限檢查失敗'
+      error: error.message || '權限檢查失敗',
     };
   }
 }
@@ -235,33 +244,36 @@ export async function requireProjectAccess(
     // 檢查是否為管理員 (管理員可以訪問所有專案)
     const authService = new AuthService();
     const isAdmin = await authService.hasRole(authResult.user!.id, 'admin');
-    
+
     if (isAdmin) {
       return {
         success: true,
-        user: authResult.user
+        user: authResult.user,
       };
     }
 
     // 這裡需要實作專案成員檢查邏輯
     // 目前先簡單檢查是否有專案讀取權限
-    const hasProjectAccess = await authService.hasPermission(authResult.user!.id, 'project:read');
-    
+    const hasProjectAccess = await authService.hasPermission(
+      authResult.user!.id,
+      'project:read'
+    );
+
     if (!hasProjectAccess) {
       return {
         success: false,
-        error: '無權限訪問該專案'
+        error: '無權限訪問該專案',
       };
     }
 
     return {
       success: true,
-      user: authResult.user
+      user: authResult.user,
     };
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || '專案權限檢查失敗'
+      error: error.message || '專案權限檢查失敗',
     };
   }
 }
@@ -283,47 +295,51 @@ export async function requireOwnerOrAdmin(
 
   try {
     const user = authResult.user!;
-    
+
     // 檢查是否為資源擁有者
     if (user.id === resourceOwnerId) {
       return {
         success: true,
-        user
+        user,
       };
     }
 
     // 檢查是否為管理員
     const authService = new AuthService();
     const isAdmin = await authService.hasRole(user.id, 'admin');
-    
+
     if (!isAdmin) {
       return {
         success: false,
-        error: '只有資源擁有者或管理員可以執行此操作'
+        error: '只有資源擁有者或管理員可以執行此操作',
       };
     }
 
     return {
       success: true,
-      user
+      user,
     };
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || '擁有者權限檢查失敗'
+      error: error.message || '擁有者權限檢查失敗',
     };
   }
 }
 
 // IP 白名單檢查 (可選功能)
-export function checkIPWhitelist(request: NextRequest, allowedIPs?: string[]): boolean {
+export function checkIPWhitelist(
+  request: NextRequest,
+  allowedIPs?: string[]
+): boolean {
   if (!allowedIPs || allowedIPs.length === 0) {
     return true; // 如果沒有設定白名單，則允許所有 IP
   }
 
-  const clientIP = request.headers.get('x-forwarded-for') || 
-                   request.headers.get('x-real-ip') || 
-                   'unknown';
+  const clientIP =
+    request.headers.get('x-forwarded-for') ||
+    request.headers.get('x-real-ip') ||
+    'unknown';
 
   return allowedIPs.includes(clientIP);
 }
@@ -332,8 +348,8 @@ export function checkIPWhitelist(request: NextRequest, allowedIPs?: string[]): b
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 export function checkRateLimit(
-  identifier: string, 
-  maxRequests: number = 100, 
+  identifier: string,
+  maxRequests: number = 100,
   windowMs: number = 60 * 1000 // 1 分鐘
 ): { allowed: boolean; remaining: number; resetTime: number } {
   const now = Date.now();
@@ -351,19 +367,22 @@ export function checkRateLimit(
   }
 
   record.count++;
-  return { 
-    allowed: true, 
-    remaining: maxRequests - record.count, 
-    resetTime: record.resetTime 
+  return {
+    allowed: true,
+    remaining: maxRequests - record.count,
+    resetTime: record.resetTime,
   };
 }
 
 // 清理過期的速率限制記錄
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, record] of rateLimitStore.entries()) {
-    if (now > record.resetTime) {
-      rateLimitStore.delete(key);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, record] of rateLimitStore.entries()) {
+      if (now > record.resetTime) {
+        rateLimitStore.delete(key);
+      }
     }
-  }
-}, 5 * 60 * 1000); // 每 5 分鐘清理一次
+  },
+  5 * 60 * 1000
+); // 每 5 分鐘清理一次

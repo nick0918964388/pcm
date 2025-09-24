@@ -8,15 +8,15 @@ import { db } from '@/lib/database/connection';
 export async function GET(request: NextRequest) {
   try {
     console.log('嘗試連接資料庫...');
-    
+
     // 測試基本查詢 (Oracle 需要 FROM dual)
     const testResult = await db.query('SELECT 1 as test FROM dual');
     console.log('基本查詢結果:', testResult);
-    
+
     // 取得連接池狀態
     const poolStatus = db.getPoolStatus();
     console.log('連接池狀態:', poolStatus);
-    
+
     // 測試查詢表格 (Oracle 使用 user_tables)
     const tables = await db.query(`
       SELECT table_name
@@ -24,19 +24,19 @@ export async function GET(request: NextRequest) {
       ORDER BY table_name
     `);
     console.log('Oracle 表格:', tables);
-    
+
     return NextResponse.json({
       status: 'healthy',
       database: 'connected',
       poolStatus,
       schema: 'pcm_user',
-      tables: tables.map(t => t.TABLE_NAME || t.table_name),  // Oracle 返回大寫欄位名
+      tables: tables.map(t => t.TABLE_NAME || t.table_name), // Oracle 返回大寫欄位名
       testResult: testResult[0],
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('資料庫健康檢查失敗:', error);
-    
+
     // 提供更詳細的錯誤信息
     let errorDetails = '';
     if (error instanceof Error) {
@@ -45,22 +45,25 @@ export async function GET(request: NextRequest) {
         console.error('Stack trace:', error.stack);
       }
     }
-    
+
     // 顯示連接配置信息（隱藏敏感資訊）
     const connectionInfo = {
       host: process.env.DB_HOST || process.env.HOSTNAME || '192.168.1.183',
       port: parseInt(process.env.DB_PORT || process.env.PORT || '30432'),
       database: process.env.DB_DATABASE || process.env.DATABASE || 'app_db',
       user: process.env.DB_USER || process.env.USERNAME || 'admin',
-      ssl: process.env.NODE_ENV === 'production' ? true : false
+      ssl: process.env.NODE_ENV === 'production' ? true : false,
     };
-    
-    return NextResponse.json({
-      status: 'unhealthy',
-      database: 'error',
-      error: errorDetails || '資料庫連接失敗',
-      connectionInfo,
-      timestamp: new Date().toISOString()
-    }, { status: 503 });
+
+    return NextResponse.json(
+      {
+        status: 'unhealthy',
+        database: 'error',
+        error: errorDetails || '資料庫連接失敗',
+        connectionInfo,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 503 }
+    );
   }
 }

@@ -7,9 +7,12 @@
 ## 需求
 
 ### 需求1：Docker容器化環境建置
-**目標：** 作為開發團隊，我希望建立統一的Docker本地開發環境，讓所有開發者能在一致的環境中進行開發和測試。
+
+**目標：**
+作為開發團隊，我希望建立統一的Docker本地開發環境，讓所有開發者能在一致的環境中進行開發和測試。
 
 #### 驗收標準
+
 1. WHEN 開發者執行 `docker-compose up` THEN Docker環境 SHALL 啟動完整的Oracle資料庫容器
 2. WHEN Oracle容器啟動完成 THEN 容器 SHALL 監聽預設的1521埠口並接受連線
 3. WHEN 容器初次啟動 THEN Oracle資料庫 SHALL 自動建立PCM專案所需的資料庫實例
@@ -18,9 +21,12 @@
 6. WHEN 開發者需要重置環境 THEN Docker環境 SHALL 支援完全清除和重建資料庫的指令
 
 ### 需求2：資料庫Schema遷移
-**目標：** 作為系統架構師，我希望將所有現有PostgreSQL資料庫結構完整遷移至Oracle，確保資料完整性和功能一致性。
+
+**目標：**
+作為系統架構師，我希望將所有現有PostgreSQL資料庫結構完整遷移至Oracle，確保資料完整性和功能一致性。
 
 #### 驗收標準
+
 1. WHEN 執行schema遷移腳本 THEN Oracle資料庫 SHALL 建立等效的所有現有資料表結構
 2. WHEN 建立資料表 THEN Oracle系統 SHALL 正確轉換PostgreSQL特有的資料型別為Oracle對應型別
 3. WHEN 處理JSONB欄位 THEN Oracle系統 SHALL 使用JSON資料型別或CLOB欄位實作等效功能
@@ -31,9 +37,12 @@
 8. WHEN 執行資料遷移 THEN Oracle系統 SHALL 保留所有現有業務資料且無資料遺失
 
 ### 需求3：連線層重構
-**目標：** 作為後端開發者，我希望更新資料庫連線層從PostgreSQL適配器遷移至Oracle適配器，確保API功能無中斷。
+
+**目標：**
+作為後端開發者，我希望更新資料庫連線層從PostgreSQL適配器遷移至Oracle適配器，確保API功能無中斷。
 
 #### 驗收標準
+
 1. WHEN 應用程式啟動 THEN 連線層 SHALL 使用Oracle專用的oracledb驅動程式建立連線池
 2. WHEN 建立資料庫連線 THEN 系統 SHALL 支援Oracle特有的連線參數，包括服務名稱和SID
 3. WHEN 執行SQL查詢 THEN 連線層 SHALL 正確處理Oracle特有的SQL語法，包括分頁和日期函數
@@ -43,9 +52,11 @@
 7. WHEN 執行預處理語句 THEN 系統 SHALL 使用Oracle的bind variables提升查詢效能
 
 ### 需求4：API端點更新
+
 **目標：** 作為API開發者，我希望更新所有現有API端點以支援Oracle資料庫操作，確保前端功能完全兼容。
 
 #### 驗收標準
+
 1. WHEN API接收到資料查詢請求 THEN 系統 SHALL 使用Oracle優化的查詢語法執行操作
 2. WHEN 執行分頁查詢 THEN API SHALL 使用Oracle的OFFSET FETCH或ROW_NUMBER()實作分頁功能
 3. WHEN 處理JSON資料 THEN API SHALL 使用Oracle的JSON_VALUE和JSON_QUERY處理metadata欄位
@@ -56,9 +67,11 @@
 8. WHEN 處理序列號 THEN API SHALL 使用Oracle SEQUENCE替代PostgreSQL的SERIAL型別
 
 ### 需求5：環境配置管理
+
 **目標：** 作為DevOps工程師，我希望建立完整的環境配置管理，支援本地開發、測試和生產環境的一致性。
 
 #### 驗收標準
+
 1. WHEN 設定本地開發環境 THEN 系統 SHALL 使用Docker環境變數配置Oracle連線參數
 2. WHEN 切換環境 THEN 系統 SHALL 支援透過環境變數無縫切換不同Oracle實例
 3. WHEN 配置資料庫認證 THEN 系統 SHALL 支援安全的密碼管理和Oracle Wallet整合
@@ -67,9 +80,12 @@
 6. WHEN 設定字元編碼 THEN 系統 SHALL 正確配置Oracle的NLS_LANG和字元集設定
 
 ### 需求6：資料一致性驗證
-**目標：** 作為品質保證工程師，我希望驗證遷移後的Oracle資料庫與原PostgreSQL資料庫在功能和資料上完全一致。
+
+**目標：**
+作為品質保證工程師，我希望驗證遷移後的Oracle資料庫與原PostgreSQL資料庫在功能和資料上完全一致。
 
 #### 驗收標準
+
 1. WHEN 執行資料比對測試 THEN 驗證工具 SHALL 確認Oracle中的資料與PostgreSQL源資料100%一致
 2. WHEN 執行功能測試 THEN 所有現有API端點 SHALL 在Oracle環境下提供相同的回應結果
 3. WHEN 執行效能測試 THEN Oracle環境 SHALL 達到或超越原PostgreSQL環境的查詢效能
@@ -79,9 +95,11 @@
 7. WHEN 執行邊界值測試 THEN Oracle系統 SHALL 正確處理極大資料量和特殊字元
 
 ### 需求7：開發工具整合
+
 **目標：** 作為開發團隊，我希望整合必要的開發工具，提升Oracle資料庫的開發和維護效率。
 
 #### 驗收標準
+
 1. WHEN 開發者需要查看資料庫 THEN Docker環境 SHALL 包含Oracle SQL Developer Web或等效的管理工具
 2. WHEN 執行資料庫遷移 THEN 系統 SHALL 提供自動化的遷移腳本和回滾機制
 3. WHEN 開發者修改Schema THEN 系統 SHALL 支援版本控制的資料庫變更管理
@@ -91,9 +109,11 @@
 7. WHEN 開發者需要除錯 THEN 系統 SHALL 支援SQL trace和詳細的錯誤日誌記錄
 
 ### 需求8：向後相容性與移轉策略
+
 **目標：** 作為專案經理，我希望確保遷移過程平順，並維持系統的可用性和穩定性。
 
 #### 驗收標準
+
 1. WHEN 執行系統遷移 THEN 遷移策略 SHALL 支援階段性切換，允許回滾至PostgreSQL
 2. WHEN 進行資料同步 THEN 系統 SHALL 支援PostgreSQL和Oracle之間的資料同步機制
 3. WHEN 測試新環境 THEN 系統 SHALL 允許並行運行兩套資料庫進行比較測試

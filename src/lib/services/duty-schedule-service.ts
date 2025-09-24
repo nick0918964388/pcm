@@ -1,7 +1,12 @@
 import { DutyScheduleRepository } from '../repositories/duty-schedule-repository';
 import { VendorRepository } from '../repositories/vendor-repository';
 import { ProjectRepository } from '../repositories/project-repository';
-import { DutySchedule, ShiftType, DutyStatus, UrgencyLevel } from '../types/database';
+import {
+  DutySchedule,
+  ShiftType,
+  DutyStatus,
+  UrgencyLevel,
+} from '../types/database';
 
 export interface CreateScheduleData {
   projectId: string;
@@ -41,9 +46,14 @@ export class DutyScheduleService {
   }
 
   // 創建排班
-  async createSchedule(scheduleData: CreateScheduleData, createdBy: string): Promise<DutySchedule> {
+  async createSchedule(
+    scheduleData: CreateScheduleData,
+    createdBy: string
+  ): Promise<DutySchedule> {
     // 驗證專案存在
-    const project = await this.projectRepository.findById(scheduleData.projectId);
+    const project = await this.projectRepository.findById(
+      scheduleData.projectId
+    );
     if (!project) {
       throw new Error('指定的專案不存在');
     }
@@ -83,7 +93,11 @@ export class DutyScheduleService {
   }
 
   // 更新排班
-  async updateSchedule(scheduleId: string, updateData: UpdateScheduleData, updatedBy: string): Promise<DutySchedule | null> {
+  async updateSchedule(
+    scheduleId: string,
+    updateData: UpdateScheduleData,
+    updatedBy: string
+  ): Promise<DutySchedule | null> {
     // 檢查排班存在
     const existingSchedule = await this.scheduleRepository.findById(scheduleId);
     if (!existingSchedule) {
@@ -110,7 +124,10 @@ export class DutyScheduleService {
     }
 
     // 更新排班記錄
-    const updatedSchedule = await this.scheduleRepository.update(scheduleId, updateData);
+    const updatedSchedule = await this.scheduleRepository.update(
+      scheduleId,
+      updateData
+    );
 
     return updatedSchedule;
   }
@@ -186,7 +203,11 @@ export class DutyScheduleService {
   }
 
   // 請假
-  async requestLeave(scheduleId: string, reason: string, requestedBy: string): Promise<void> {
+  async requestLeave(
+    scheduleId: string,
+    reason: string,
+    requestedBy: string
+  ): Promise<void> {
     // 檢查排班存在
     const schedule = await this.scheduleRepository.findById(scheduleId);
     if (!schedule) {
@@ -206,19 +227,19 @@ export class DutyScheduleService {
     await this.scheduleRepository.updateStatus(scheduleId, '請假', requestedBy);
 
     // 更新備註
-    const updatedNotes = schedule.notes ? 
-      `${schedule.notes}\n請假原因: ${reason}` : 
-      `請假原因: ${reason}`;
+    const updatedNotes = schedule.notes
+      ? `${schedule.notes}\n請假原因: ${reason}`
+      : `請假原因: ${reason}`;
 
     await this.scheduleRepository.update(scheduleId, {
-      notes: updatedNotes
+      notes: updatedNotes,
     });
   }
 
   // 設定代班人員
   async setReplacement(
-    scheduleId: string, 
-    replacementPersonId: string, 
+    scheduleId: string,
+    replacementPersonId: string,
     reason: string,
     updatedBy: string
   ): Promise<void> {
@@ -245,7 +266,12 @@ export class DutyScheduleService {
     }
 
     // 設定代班
-    await this.scheduleRepository.setReplacement(scheduleId, replacementPersonId, reason, updatedBy);
+    await this.scheduleRepository.setReplacement(
+      scheduleId,
+      replacementPersonId,
+      reason,
+      updatedBy
+    );
   }
 
   // 批准排班
@@ -266,7 +292,11 @@ export class DutyScheduleService {
   }
 
   // 取消排班
-  async cancelSchedule(scheduleId: string, reason: string, cancelledBy: string): Promise<void> {
+  async cancelSchedule(
+    scheduleId: string,
+    reason: string,
+    cancelledBy: string
+  ): Promise<void> {
     // 檢查排班存在
     const schedule = await this.scheduleRepository.findById(scheduleId);
     if (!schedule) {
@@ -286,12 +316,12 @@ export class DutyScheduleService {
     await this.scheduleRepository.updateStatus(scheduleId, '取消', cancelledBy);
 
     // 更新備註
-    const updatedNotes = schedule.notes ? 
-      `${schedule.notes}\n取消原因: ${reason}` : 
-      `取消原因: ${reason}`;
+    const updatedNotes = schedule.notes
+      ? `${schedule.notes}\n取消原因: ${reason}`
+      : `取消原因: ${reason}`;
 
     await this.scheduleRepository.update(scheduleId, {
-      notes: updatedNotes
+      notes: updatedNotes,
     });
   }
 
@@ -311,8 +341,16 @@ export class DutyScheduleService {
   }
 
   // 獲取排班統計
-  async getScheduleStatistics(projectId?: string, dateFrom?: Date, dateTo?: Date): Promise<any> {
-    return this.scheduleRepository.getScheduleStats(projectId, dateFrom, dateTo);
+  async getScheduleStatistics(
+    projectId?: string,
+    dateFrom?: Date,
+    dateTo?: Date
+  ): Promise<any> {
+    return this.scheduleRepository.getScheduleStats(
+      projectId,
+      dateFrom,
+      dateTo
+    );
   }
 
   // 批量創建排班 (排班模板)
@@ -325,7 +363,10 @@ export class DutyScheduleService {
 
     for (let i = 0; i < scheduleTemplate.length; i++) {
       try {
-        const schedule = await this.createSchedule(scheduleTemplate[i], createdBy);
+        const schedule = await this.createSchedule(
+          scheduleTemplate[i],
+          createdBy
+        );
         results.push(schedule);
       } catch (error) {
         errors.push(`排班 ${i + 1}: ${error.message}`);
@@ -377,7 +418,11 @@ export class DutyScheduleService {
     };
   }> {
     // 獲取統計數據
-    const summary = await this.getScheduleStatistics(projectId, dateFrom, dateTo);
+    const summary = await this.getScheduleStatistics(
+      projectId,
+      dateFrom,
+      dateTo
+    );
 
     // 獲取詳細排班記錄
     const schedules = await this.scheduleRepository.findByDateRange(
@@ -392,30 +437,41 @@ export class DutyScheduleService {
     return {
       summary,
       schedules,
-      analysis
+      analysis,
     };
   }
 
   // 私有方法：分析排班數據
   private analyzeScheduleData(schedules: DutySchedule[], summary: any): any {
     // 找出最活躍的班別
-    const shiftCounts = Object.entries(summary.schedulesByShift as Record<ShiftType, number>);
-    const mostActiveShift = shiftCounts.reduce((a, b) => a[1] > b[1] ? a : b)[0] as ShiftType;
+    const shiftCounts = Object.entries(
+      summary.schedulesByShift as Record<ShiftType, number>
+    );
+    const mostActiveShift = shiftCounts.reduce((a, b) =>
+      a[1] > b[1] ? a : b
+    )[0] as ShiftType;
 
     // 找出最常見的狀態
-    const statusCounts = Object.entries(summary.schedulesByStatus as Record<DutyStatus, number>);
-    const mostCommonStatus = statusCounts.reduce((a, b) => a[1] > b[1] ? a : b)[0] as DutyStatus;
+    const statusCounts = Object.entries(
+      summary.schedulesByStatus as Record<DutyStatus, number>
+    );
+    const mostCommonStatus = statusCounts.reduce((a, b) =>
+      a[1] > b[1] ? a : b
+    )[0] as DutyStatus;
 
     // 計算代班率
     const totalSchedules = summary.totalSchedules;
-    const replacementSchedules = schedules.filter(s => s.replacement_person_id).length;
-    const replacementRate = totalSchedules > 0 ? (replacementSchedules / totalSchedules) * 100 : 0;
+    const replacementSchedules = schedules.filter(
+      s => s.replacement_person_id
+    ).length;
+    const replacementRate =
+      totalSchedules > 0 ? (replacementSchedules / totalSchedules) * 100 : 0;
 
     return {
       mostActiveShift,
       mostCommonStatus,
       averageWorkHours: summary.averageWorkHours,
-      replacementRate: parseFloat(replacementRate.toFixed(2))
+      replacementRate: parseFloat(replacementRate.toFixed(2)),
     };
   }
 }

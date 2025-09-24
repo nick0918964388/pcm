@@ -22,9 +22,10 @@ export class RoleRepository extends BaseRepository<Role> {
 
   mapToDB(entity: Partial<Role>): Record<string, any> {
     const mapped: Record<string, any> = {};
-    
+
     if (entity.name !== undefined) mapped.name = entity.name;
-    if (entity.description !== undefined) mapped.description = entity.description;
+    if (entity.description !== undefined)
+      mapped.description = entity.description;
     if (entity.permissions !== undefined) {
       mapped.permissions = JSON.stringify(entity.permissions);
     }
@@ -91,7 +92,11 @@ export class RoleRepository extends BaseRepository<Role> {
   }
 
   // 分配角色給用戶
-  async assignRoleToUser(userId: string, roleId: string, assignedBy: string): Promise<void> {
+  async assignRoleToUser(
+    userId: string,
+    roleId: string,
+    assignedBy: string
+  ): Promise<void> {
     // 檢查是否已經分配過
     const existing = await db.queryOne(
       'SELECT 1 FROM user_roles WHERE user_id = $1 AND role_id = $2',
@@ -99,10 +104,13 @@ export class RoleRepository extends BaseRepository<Role> {
     );
 
     if (!existing) {
-      await db.query(`
+      await db.query(
+        `
         INSERT INTO user_roles (user_id, role_id, assigned_at, assigned_by)
         VALUES ($1, $2, NOW(), $3)
-      `, [userId, roleId, assignedBy]);
+      `,
+        [userId, roleId, assignedBy]
+      );
     }
   }
 
@@ -115,24 +123,33 @@ export class RoleRepository extends BaseRepository<Role> {
   }
 
   // 更新用戶的所有角色 (完全替換)
-  async updateUserRoles(userId: string, roleIds: string[], assignedBy: string): Promise<void> {
-    await db.transaction(async (client) => {
+  async updateUserRoles(
+    userId: string,
+    roleIds: string[],
+    assignedBy: string
+  ): Promise<void> {
+    await db.transaction(async client => {
       // 刪除現有角色
       await client.query('DELETE FROM user_roles WHERE user_id = $1', [userId]);
 
       // 分配新角色
       if (roleIds.length > 0) {
-        const values = roleIds.map((roleId, index) => {
-          const base = index * 4;
-          return `($${base + 1}, $${base + 2}, NOW(), $${base + 3})`;
-        }).join(', ');
+        const values = roleIds
+          .map((roleId, index) => {
+            const base = index * 4;
+            return `($${base + 1}, $${base + 2}, NOW(), $${base + 3})`;
+          })
+          .join(', ');
 
         const params = roleIds.flatMap(roleId => [userId, roleId, assignedBy]);
-        
-        await client.query(`
+
+        await client.query(
+          `
           INSERT INTO user_roles (user_id, role_id, assigned_at, assigned_by)
           VALUES ${values}
-        `, params);
+        `,
+          params
+        );
       }
     });
   }
@@ -169,11 +186,13 @@ export class RoleRepository extends BaseRepository<Role> {
       WHERE ur.user_id = $1 AND r.is_active = true
     `;
     const rows = await db.query<{ permissions: string }>(query, [userId]);
-    
+
     const allPermissions = new Set<string>();
     rows.forEach(row => {
       const permissions = JSON.parse(row.permissions || '[]');
-      permissions.forEach((permission: string) => allPermissions.add(permission));
+      permissions.forEach((permission: string) =>
+        allPermissions.add(permission)
+      );
     });
 
     return Array.from(allPermissions);
@@ -194,27 +213,33 @@ export class RoleRepository extends BaseRepository<Role> {
        WHERE r.is_active = true
        GROUP BY r.id, r.name
        ORDER BY user_count DESC
-       LIMIT 1`
+       LIMIT 1`,
     ];
 
     const [totalRoles, totalUserRoles, mostUsed] = await Promise.all([
       db.queryOne<{ total: number }>(queries[0]),
       db.queryOne<{ total: number }>(queries[1]),
-      db.queryOne<{ name: string; user_count: number }>(queries[2])
+      db.queryOne<{ name: string; user_count: number }>(queries[2]),
     ]);
 
     return {
       totalRoles: totalRoles?.total || 0,
       totalUserRoles: totalUserRoles?.total || 0,
-      mostUsedRole: mostUsed ? {
-        name: mostUsed.name,
-        userCount: mostUsed.user_count
-      } : null
+      mostUsedRole: mostUsed
+        ? {
+            name: mostUsed.name,
+            userCount: mostUsed.user_count,
+          }
+        : null,
     };
   }
 
   // 複製角色
-  async duplicateRole(sourceRoleId: string, newName: string, newDescription?: string): Promise<Role> {
+  async duplicateRole(
+    sourceRoleId: string,
+    newName: string,
+    newDescription?: string
+  ): Promise<Role> {
     const sourceRole = await this.findById(sourceRoleId);
     if (!sourceRole) {
       throw new Error('來源角色不存在');
@@ -223,7 +248,7 @@ export class RoleRepository extends BaseRepository<Role> {
     return this.create({
       name: newName,
       description: newDescription || `複製自 ${sourceRole.name}`,
-      permissions: sourceRole.permissions
+      permissions: sourceRole.permissions,
     });
   }
 }

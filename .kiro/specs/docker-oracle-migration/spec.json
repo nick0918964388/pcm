@@ -30,18 +30,8 @@
       "generated_at": "2025-01-23T01:40:00Z"
     }
   },
-  "stakeholders": [
-    "development-team",
-    "devops-engineer",
-    "system-architect",
-    "backend-developer",
-    "qa-engineer"
-  ],
-  "dependencies": [
-    "existing-postgresql-database",
-    "current-api-endpoints",
-    "docker-environment"
-  ],
+  "stakeholders": ["development-team", "devops-engineer", "system-architect", "backend-developer", "qa-engineer"],
+  "dependencies": ["existing-postgresql-database", "current-api-endpoints", "docker-environment"],
   "technical_requirements": {
     "oracle_version": "19c or 21c Express Edition",
     "docker_version": "20.x+",

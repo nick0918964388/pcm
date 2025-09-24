@@ -20,7 +20,7 @@ import type {
   TableDefinition,
   IndexDefinition,
   ConstraintDefinition,
-  TriggerDefinition
+  TriggerDefinition,
 } from '../schema-types';
 
 describe('Schema Migrator', () => {
@@ -36,7 +36,7 @@ describe('Schema Migrator', () => {
     it('should read and parse PostgreSQL table structures', async () => {
       const mockSqlFiles = [
         'CREATE TABLE users (id UUID PRIMARY KEY, name VARCHAR(255), created_at TIMESTAMP);',
-        'CREATE TABLE projects (id SERIAL PRIMARY KEY, name TEXT, user_id UUID REFERENCES users(id));'
+        'CREATE TABLE projects (id SERIAL PRIMARY KEY, name TEXT, user_id UUID REFERENCES users(id));',
       ];
 
       const schema = await migrator.analyzePostgreSQLSchema(mockSqlFiles);
@@ -90,14 +90,20 @@ describe('Schema Migrator', () => {
 
       expect(schema.indexes).toHaveLength(3);
 
-      const userIdIndex = schema.indexes.find(i => i.name === 'idx_orders_user_id');
+      const userIdIndex = schema.indexes.find(
+        i => i.name === 'idx_orders_user_id'
+      );
       expect(userIdIndex?.columns).toEqual(['user_id']);
       expect(userIdIndex?.isUnique).toBe(false);
 
-      const statusIndex = schema.indexes.find(i => i.name === 'idx_orders_status_date');
+      const statusIndex = schema.indexes.find(
+        i => i.name === 'idx_orders_status_date'
+      );
       expect(statusIndex?.isUnique).toBe(true);
 
-      const ginIndex = schema.indexes.find(i => i.name === 'idx_orders_metadata_gin');
+      const ginIndex = schema.indexes.find(
+        i => i.name === 'idx_orders_metadata_gin'
+      );
       expect(ginIndex?.indexType).toBe('GIN');
     });
 
@@ -120,7 +126,9 @@ describe('Schema Migrator', () => {
       expect(userFk?.referencedColumn).toBe('id');
       expect(userFk?.onDelete).toBe('CASCADE');
 
-      const productFk = table.foreignKeys.find(fk => fk.columnName === 'product_id');
+      const productFk = table.foreignKeys.find(
+        fk => fk.columnName === 'product_id'
+      );
       expect(productFk?.onUpdate).toBe('RESTRICT');
     });
 
@@ -157,13 +165,29 @@ describe('Schema Migrator', () => {
         name: 'users',
         columns: [
           { name: 'id', dataType: 'UUID', isPrimary: true, isNullable: false },
-          { name: 'name', dataType: 'VARCHAR(255)', isPrimary: false, isNullable: false },
-          { name: 'email', dataType: 'TEXT', isPrimary: false, isNullable: true },
-          { name: 'is_active', dataType: 'BOOLEAN', isPrimary: false, isNullable: false, defaultValue: 'true' }
+          {
+            name: 'name',
+            dataType: 'VARCHAR(255)',
+            isPrimary: false,
+            isNullable: false,
+          },
+          {
+            name: 'email',
+            dataType: 'TEXT',
+            isPrimary: false,
+            isNullable: true,
+          },
+          {
+            name: 'is_active',
+            dataType: 'BOOLEAN',
+            isPrimary: false,
+            isNullable: false,
+            defaultValue: 'true',
+          },
         ],
         primaryKey: ['id'],
         foreignKeys: [],
-        indexes: []
+        indexes: [],
       };
 
       const oracleDDL = await migrator.generateOracleTableDDL(postgresTable);
@@ -181,21 +205,26 @@ describe('Schema Migrator', () => {
         {
           name: 'chk_users_email',
           type: 'CHECK',
-          definition: 'email LIKE \'%@%\'',
-          tableName: 'users'
+          definition: "email LIKE '%@%'",
+          tableName: 'users',
         },
         {
           name: 'fk_orders_user_id',
           type: 'FOREIGN KEY',
           definition: 'user_id REFERENCES users(id)',
-          tableName: 'orders'
-        }
+          tableName: 'orders',
+        },
       ];
 
-      const constraintsDDL = await migrator.generateOracleConstraintsDDL(constraints);
+      const constraintsDDL =
+        await migrator.generateOracleConstraintsDDL(constraints);
 
-      expect(constraintsDDL).toContain('ALTER TABLE users ADD CONSTRAINT chk_users_email');
-      expect(constraintsDDL).toContain('ALTER TABLE orders ADD CONSTRAINT fk_orders_user_id');
+      expect(constraintsDDL).toContain(
+        'ALTER TABLE users ADD CONSTRAINT chk_users_email'
+      );
+      expect(constraintsDDL).toContain(
+        'ALTER TABLE orders ADD CONSTRAINT fk_orders_user_id'
+      );
     });
 
     it('should generate Oracle indexes DDL', async () => {
@@ -205,21 +234,25 @@ describe('Schema Migrator', () => {
           tableName: 'users',
           columns: ['email'],
           isUnique: true,
-          indexType: 'BTREE'
+          indexType: 'BTREE',
         },
         {
           name: 'idx_orders_metadata',
           tableName: 'orders',
           columns: ['metadata'],
           isUnique: false,
-          indexType: 'GIN'
-        }
+          indexType: 'GIN',
+        },
       ];
 
       const indexesDDL = await migrator.generateOracleIndexesDDL(indexes);
 
-      expect(indexesDDL).toContain('CREATE UNIQUE INDEX idx_users_email ON users(email)');
-      expect(indexesDDL).toContain('CREATE INDEX idx_orders_metadata ON orders');
+      expect(indexesDDL).toContain(
+        'CREATE UNIQUE INDEX idx_users_email ON users(email)'
+      );
+      expect(indexesDDL).toContain(
+        'CREATE INDEX idx_orders_metadata ON orders'
+      );
       // GIN索引應該轉換為函數索引
       expect(indexesDDL).toContain('JSON_VALUE');
     });
@@ -231,12 +264,14 @@ describe('Schema Migrator', () => {
         timing: 'BEFORE',
         event: 'UPDATE',
         functionName: 'update_modified_time',
-        functionBody: 'NEW.updated_at = NOW(); RETURN NEW;'
+        functionBody: 'NEW.updated_at = NOW(); RETURN NEW;',
       };
 
       const oracleTrigger = await migrator.convertTriggerToOracle(trigger);
 
-      expect(oracleTrigger).toContain('CREATE OR REPLACE TRIGGER users_update_trigger');
+      expect(oracleTrigger).toContain(
+        'CREATE OR REPLACE TRIGGER users_update_trigger'
+      );
       expect(oracleTrigger).toContain('BEFORE UPDATE ON users');
       expect(oracleTrigger).toContain('FOR EACH ROW');
       expect(oracleTrigger).toContain(':NEW.updated_at := SYSTIMESTAMP');
@@ -246,20 +281,32 @@ describe('Schema Migrator', () => {
   describe('Migration Plan Generation', () => {
     it('should create comprehensive migration plan', async () => {
       const postgresSchema: PostgreSQLSchema = {
-        tables: [{
-          name: 'users',
-          columns: [
-            { name: 'id', dataType: 'UUID', isPrimary: true, isNullable: false },
-            { name: 'name', dataType: 'VARCHAR(255)', isPrimary: false, isNullable: false }
-          ],
-          primaryKey: ['id'],
-          foreignKeys: [],
-          indexes: []
-        }],
+        tables: [
+          {
+            name: 'users',
+            columns: [
+              {
+                name: 'id',
+                dataType: 'UUID',
+                isPrimary: true,
+                isNullable: false,
+              },
+              {
+                name: 'name',
+                dataType: 'VARCHAR(255)',
+                isPrimary: false,
+                isNullable: false,
+              },
+            ],
+            primaryKey: ['id'],
+            foreignKeys: [],
+            indexes: [],
+          },
+        ],
         indexes: [],
         constraints: [],
         triggers: [],
-        sequences: []
+        sequences: [],
       };
 
       const plan = await migrator.createMigrationPlan(postgresSchema);
@@ -276,54 +323,86 @@ describe('Schema Migrator', () => {
         tables: [
           {
             name: 'users',
-            columns: [{ name: 'id', dataType: 'UUID', isPrimary: true, isNullable: false }],
+            columns: [
+              {
+                name: 'id',
+                dataType: 'UUID',
+                isPrimary: true,
+                isNullable: false,
+              },
+            ],
             primaryKey: ['id'],
             foreignKeys: [],
-            indexes: []
+            indexes: [],
           },
           {
             name: 'orders',
             columns: [
-              { name: 'id', dataType: 'SERIAL', isPrimary: true, isNullable: false },
-              { name: 'user_id', dataType: 'UUID', isPrimary: false, isNullable: false }
+              {
+                name: 'id',
+                dataType: 'SERIAL',
+                isPrimary: true,
+                isNullable: false,
+              },
+              {
+                name: 'user_id',
+                dataType: 'UUID',
+                isPrimary: false,
+                isNullable: false,
+              },
             ],
             primaryKey: ['id'],
-            foreignKeys: [{
-              constraintName: 'fk_orders_user_id',
-              columnName: 'user_id',
-              referencedTable: 'users',
-              referencedColumn: 'id'
-            }],
-            indexes: []
-          }
+            foreignKeys: [
+              {
+                constraintName: 'fk_orders_user_id',
+                columnName: 'user_id',
+                referencedTable: 'users',
+                referencedColumn: 'id',
+              },
+            ],
+            indexes: [],
+          },
         ],
         indexes: [],
         constraints: [],
         triggers: [],
-        sequences: []
+        sequences: [],
       };
 
       const plan = await migrator.createMigrationPlan(postgresSchema);
 
       // 確保users表在orders表之前創建
-      const usersStepIndex = plan.steps.findIndex(s => s.description.includes('users'));
-      const ordersStepIndex = plan.steps.findIndex(s => s.description.includes('orders'));
+      const usersStepIndex = plan.steps.findIndex(s =>
+        s.description.includes('users')
+      );
+      const ordersStepIndex = plan.steps.findIndex(s =>
+        s.description.includes('orders')
+      );
       expect(usersStepIndex).toBeLessThan(ordersStepIndex);
     });
 
     it('should include rollback plan', async () => {
       const postgresSchema: PostgreSQLSchema = {
-        tables: [{
-          name: 'test_table',
-          columns: [{ name: 'id', dataType: 'SERIAL', isPrimary: true, isNullable: false }],
-          primaryKey: ['id'],
-          foreignKeys: [],
-          indexes: []
-        }],
+        tables: [
+          {
+            name: 'test_table',
+            columns: [
+              {
+                name: 'id',
+                dataType: 'SERIAL',
+                isPrimary: true,
+                isNullable: false,
+              },
+            ],
+            primaryKey: ['id'],
+            foreignKeys: [],
+            indexes: [],
+          },
+        ],
         indexes: [],
         constraints: [],
         triggers: [],
-        sequences: []
+        sequences: [],
       };
 
       const plan = await migrator.createMigrationPlan(postgresSchema);
@@ -340,15 +419,27 @@ describe('Schema Migrator', () => {
       const initialVersion = await migrator.getCurrentSchemaVersion();
       expect(initialVersion).toBeDefined();
 
-      await migrator.recordMigration('001', 'Initial schema creation', 'CREATE TABLE test...');
+      await migrator.recordMigration(
+        '001',
+        'Initial schema creation',
+        'CREATE TABLE test...'
+      );
 
       const newVersion = await migrator.getCurrentSchemaVersion();
       expect(newVersion).not.toBe(initialVersion);
     });
 
     it('should maintain migration history', async () => {
-      await migrator.recordMigration('001', 'Create users table', 'CREATE TABLE users...');
-      await migrator.recordMigration('002', 'Create orders table', 'CREATE TABLE orders...');
+      await migrator.recordMigration(
+        '001',
+        'Create users table',
+        'CREATE TABLE users...'
+      );
+      await migrator.recordMigration(
+        '002',
+        'Create orders table',
+        'CREATE TABLE orders...'
+      );
 
       const history = await migrator.getMigrationHistory();
 
@@ -360,7 +451,10 @@ describe('Schema Migrator', () => {
 
     it('should validate migration dependencies', async () => {
       const dependencies = ['001_create_users', '002_create_products'];
-      const isValid = await migrator.validateMigrationDependencies('003_create_orders', dependencies);
+      const isValid = await migrator.validateMigrationDependencies(
+        '003_create_orders',
+        dependencies
+      );
 
       expect(isValid).toBeDefined();
       // 具體驗證邏輯取決於實作
@@ -386,11 +480,15 @@ describe('Schema Migrator', () => {
         );
       `;
 
-      const result = await migrator.analyzePostgreSQLSchema([sqlWithUnsupportedFeatures]);
+      const result = await migrator.analyzePostgreSQLSchema([
+        sqlWithUnsupportedFeatures,
+      ]);
 
       expect(result.warnings).toBeDefined();
       expect(result.warnings!.length).toBeGreaterThan(0);
-      expect(result.warnings!.some(w => w.includes('Unsupported data type'))).toBe(true);
+      expect(
+        result.warnings!.some(w => w.includes('Unsupported data type'))
+      ).toBe(true);
     });
 
     it('should validate Oracle DDL syntax', async () => {

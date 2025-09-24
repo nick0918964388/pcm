@@ -105,7 +105,9 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
     console.log('Cleaning up capacity planning tests...');
   });
 
-  async function executeLoadTest(config: LoadTestConfig): Promise<LoadTestResult> {
+  async function executeLoadTest(
+    config: LoadTestConfig
+  ): Promise<LoadTestResult> {
     // RED: This will fail until load testing infrastructure is implemented
     const startTime = new Date();
     const endTime = new Date(Date.now() + config.testDuration);
@@ -125,7 +127,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       const workerDelay = (config.rampUpTime / config.concurrentUsers) * i;
 
       workerPromises.push(
-        new Promise(async (resolve) => {
+        new Promise(async resolve => {
           // Ramp up delay
           await new Promise(r => setTimeout(r, workerDelay));
 
@@ -137,9 +139,11 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
                 method: config.method,
                 headers: {
                   'Content-Type': 'application/json',
-                  'User-Agent': `LoadTest-Worker-${i}`
+                  'User-Agent': `LoadTest-Worker-${i}`,
                 },
-                body: config.payload ? JSON.stringify(config.payload) : undefined
+                body: config.payload
+                  ? JSON.stringify(config.payload)
+                  : undefined,
               });
 
               const requestEnd = performance.now();
@@ -155,14 +159,14 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
               } else {
                 errors.push(`HTTP_${response.status}`);
               }
-
             } catch (error) {
               totalRequests++;
               errors.push(error.message || 'NETWORK_ERROR');
             }
 
             // Maintain target RPS with small delay
-            const targetInterval = 1000 / (config.targetRPS / config.concurrentUsers);
+            const targetInterval =
+              1000 / (config.targetRPS / config.concurrentUsers);
             await new Promise(r => setTimeout(r, Math.max(10, targetInterval)));
           }
           resolve();
@@ -180,11 +184,15 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
     const p50Latency = latencies[Math.floor(latencies.length * 0.5)] || 0;
     const p95Latency = latencies[Math.floor(latencies.length * 0.95)] || 0;
     const p99Latency = latencies[Math.floor(latencies.length * 0.99)] || 0;
-    const averageLatency = latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 0;
+    const averageLatency =
+      latencies.length > 0
+        ? latencies.reduce((a, b) => a + b, 0) / latencies.length
+        : 0;
 
     const actualRPS = (totalRequests / actualDuration) * 1000;
-    const errorRate = totalRequests > 0 ? (errors.length / totalRequests) * 100 : 0;
-    const throughputMBps = (totalBytes / 1024 / 1024) / (actualDuration / 1000);
+    const errorRate =
+      totalRequests > 0 ? (errors.length / totalRequests) * 100 : 0;
+    const throughputMBps = totalBytes / 1024 / 1024 / (actualDuration / 1000);
 
     return {
       testName: config.testName,
@@ -207,7 +215,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       databaseResponseTime: averageLatency * 0.7, // Estimated DB portion
       startTime: startTime.toISOString(),
       endTime: finalEndTime.toISOString(),
-      duration: actualDuration
+      duration: actualDuration,
     };
   }
 
@@ -237,7 +245,9 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       const systemInfo = poolInfo[0] || {};
 
       return {
-        maxConcurrentUsers: Math.floor((systemInfo.maximum_connections || 100) * 0.8), // 80% of max connections
+        maxConcurrentUsers: Math.floor(
+          (systemInfo.maximum_connections || 100) * 0.8
+        ), // 80% of max connections
         maxThroughput: systemInfo.max_sessions_per_second || 100,
         maxDatabaseConnections: systemInfo.maximum_connections || 100,
         resourceBottlenecks: [],
@@ -246,14 +256,14 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
           cpu: 80, // 80% CPU utilization threshold
           memory: 85, // 85% memory utilization threshold
           disk: 90, // 90% disk utilization threshold
-          network: 70 // 70% network utilization threshold
+          network: 70, // 70% network utilization threshold
         },
         databaseLimits: {
           connections: systemInfo.maximum_connections || 100,
           sessionsPerSecond: systemInfo.max_sessions_per_second || 100,
           transactionsPerSecond: 50,
-          queriesPerSecond: 500
-        }
+          queriesPerSecond: 500,
+        },
       };
     } catch (error) {
       console.warn('Could not measure system capacity:', error);
@@ -267,14 +277,14 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
           cpu: 80,
           memory: 85,
           disk: 90,
-          network: 70
+          network: 70,
         },
         databaseLimits: {
           connections: 100,
           sessionsPerSecond: 100,
           transactionsPerSecond: 50,
-          queriesPerSecond: 500
-        }
+          queriesPerSecond: 500,
+        },
       };
     }
   }
@@ -285,17 +295,24 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
     projectedGrowth: number = 2.0
   ): CapacityPlan {
     const currentPeakRPS = Math.max(...loadTestResults.map(r => r.actualRPS));
-    const currentPeakLatency = Math.max(...loadTestResults.map(r => r.p95Latency));
-    const averageErrorRate = loadTestResults.reduce((sum, r) => sum + r.errorRate, 0) / loadTestResults.length;
+    const currentPeakLatency = Math.max(
+      ...loadTestResults.map(r => r.p95Latency)
+    );
+    const averageErrorRate =
+      loadTestResults.reduce((sum, r) => sum + r.errorRate, 0) /
+      loadTestResults.length;
 
     const projectedPeakRPS = currentPeakRPS * projectedGrowth;
-    const projectedConcurrentUsers = Math.max(...loadTestResults.map(r => r.config.concurrentUsers)) * projectedGrowth;
+    const projectedConcurrentUsers =
+      Math.max(...loadTestResults.map(r => r.config.concurrentUsers)) *
+      projectedGrowth;
 
     const recommendations = {
-      hardwareUpgrade: projectedConcurrentUsers > currentMetrics.maxConcurrentUsers,
+      hardwareUpgrade:
+        projectedConcurrentUsers > currentMetrics.maxConcurrentUsers,
       databaseOptimization: [] as string[],
       architectureChanges: [] as string[],
-      monitoringRequirements: [] as string[]
+      monitoringRequirements: [] as string[],
     };
 
     // Analyze bottlenecks and generate recommendations
@@ -314,13 +331,21 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       recommendations.architectureChanges.push('Implement connection pooling');
     }
 
-    recommendations.monitoringRequirements.push('Real-time performance dashboards');
-    recommendations.monitoringRequirements.push('Automated alerting for capacity thresholds');
+    recommendations.monitoringRequirements.push(
+      'Real-time performance dashboards'
+    );
+    recommendations.monitoringRequirements.push(
+      'Automated alerting for capacity thresholds'
+    );
 
     const riskLevel =
-      projectedConcurrentUsers > currentMetrics.maxConcurrentUsers * 1.5 ? 'critical' :
-      projectedConcurrentUsers > currentMetrics.maxConcurrentUsers * 1.2 ? 'high' :
-      projectedConcurrentUsers > currentMetrics.maxConcurrentUsers ? 'medium' : 'low';
+      projectedConcurrentUsers > currentMetrics.maxConcurrentUsers * 1.5
+        ? 'critical'
+        : projectedConcurrentUsers > currentMetrics.maxConcurrentUsers * 1.2
+          ? 'high'
+          : projectedConcurrentUsers > currentMetrics.maxConcurrentUsers
+            ? 'medium'
+            : 'low';
 
     return {
       currentCapacity: currentMetrics,
@@ -328,27 +353,27 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         users: Math.floor(projectedConcurrentUsers),
         requestsPerDay: Math.floor(projectedPeakRPS * 86400),
         peakConcurrentUsers: Math.floor(projectedConcurrentUsers),
-        growthRate: projectedGrowth
+        growthRate: projectedGrowth,
       },
       recommendations,
       estimatedCosts: {
         currentMonthly: 1000, // Placeholder
         projectedMonthly: 1000 * projectedGrowth,
-        upgradeOneTime: recommendations.hardwareUpgrade ? 5000 : 0
+        upgradeOneTime: recommendations.hardwareUpgrade ? 5000 : 0,
       },
       riskAssessment: {
         level: riskLevel,
         factors: [
           `Projected load increase: ${((projectedGrowth - 1) * 100).toFixed(0)}%`,
           `Current error rate: ${averageErrorRate.toFixed(1)}%`,
-          `Peak latency: ${currentPeakLatency.toFixed(0)}ms`
+          `Peak latency: ${currentPeakLatency.toFixed(0)}ms`,
         ],
         mitigationStrategies: [
           'Gradual capacity scaling',
           'Performance monitoring and alerting',
-          'Load balancing optimization'
-        ]
-      }
+          'Load balancing optimization',
+        ],
+      },
     };
   }
 
@@ -365,11 +390,11 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         targetRPS: 10,
         concurrentUsers: 5,
         testDuration: 30000, // 30 seconds
-        rampUpTime: 5000,    // 5 seconds
+        rampUpTime: 5000, // 5 seconds
         endpoint: '/api/health',
         method: 'GET',
         expectedLatency: 100,
-        expectedThroughput: 10
+        expectedThroughput: 10,
       };
 
       const result = await executeLoadTest(config);
@@ -379,7 +404,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         actualRPS: result.actualRPS,
         averageLatency: result.averageLatency,
         errorRate: result.errorRate,
-        successRate: (result.successfulRequests / result.totalRequests) * 100
+        successRate: (result.successfulRequests / result.totalRequests) * 100,
       });
 
       expect(result.totalRequests).toBeGreaterThan(0);
@@ -393,11 +418,11 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         targetRPS: 5,
         concurrentUsers: 10,
         testDuration: 20000, // 20 seconds
-        rampUpTime: 3000,    // 3 seconds
+        rampUpTime: 3000, // 3 seconds
         endpoint: '/api/auth/me',
         method: 'GET',
         expectedLatency: 200,
-        expectedThroughput: 5
+        expectedThroughput: 5,
       };
 
       const result = await executeLoadTest(config);
@@ -406,7 +431,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       console.log('Authentication load test results:', {
         actualRPS: result.actualRPS,
         p95Latency: result.p95Latency,
-        errorRate: result.errorRate
+        errorRate: result.errorRate,
       });
 
       expect(result.p95Latency).toBeLessThan(1000); // 95th percentile under 1 second
@@ -419,11 +444,11 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         targetRPS: 3,
         concurrentUsers: 8,
         testDuration: 25000, // 25 seconds
-        rampUpTime: 5000,    // 5 seconds
+        rampUpTime: 5000, // 5 seconds
         endpoint: '/api/projects',
         method: 'GET',
         expectedLatency: 300,
-        expectedThroughput: 3
+        expectedThroughput: 3,
       };
 
       const result = await executeLoadTest(config);
@@ -432,7 +457,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       console.log('Database heavy load test results:', {
         actualRPS: result.actualRPS,
         databaseResponseTime: result.databaseResponseTime,
-        throughputMBps: result.throughputMBps
+        throughputMBps: result.throughputMBps,
       });
 
       expect(result.databaseResponseTime).toBeLessThan(500); // Database response under 500ms
@@ -444,7 +469,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         name: 'Load Test Project',
         description: 'Created during load testing',
         type: 'internal',
-        priority: 3
+        priority: 3,
       };
 
       const config: LoadTestConfig = {
@@ -452,12 +477,12 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         targetRPS: 2,
         concurrentUsers: 5,
         testDuration: 15000, // 15 seconds
-        rampUpTime: 2000,    // 2 seconds
+        rampUpTime: 2000, // 2 seconds
         endpoint: '/api/projects',
         method: 'POST',
         payload: testProject,
         expectedLatency: 500,
-        expectedThroughput: 2
+        expectedThroughput: 2,
       };
 
       const result = await executeLoadTest(config);
@@ -466,7 +491,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       console.log('Write operations load test results:', {
         actualRPS: result.actualRPS,
         averageLatency: result.averageLatency,
-        errorRate: result.errorRate
+        errorRate: result.errorRate,
       });
 
       // Write operations may have higher latency and error rates
@@ -481,7 +506,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         { users: 5, duration: 10000 },
         { users: 10, duration: 10000 },
         { users: 20, duration: 10000 },
-        { users: 30, duration: 10000 }
+        { users: 30, duration: 10000 },
       ];
 
       const results: LoadTestResult[] = [];
@@ -496,7 +521,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
           endpoint: '/api/health',
           method: 'GET',
           expectedLatency: 200,
-          expectedThroughput: test.users * 2
+          expectedThroughput: test.users * 2,
         };
 
         const result = await executeLoadTest(config);
@@ -505,12 +530,14 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         console.log(`Capacity test with ${test.users} users:`, {
           actualRPS: result.actualRPS,
           errorRate: result.errorRate,
-          p95Latency: result.p95Latency
+          p95Latency: result.p95Latency,
         });
 
         // Break if performance degrades significantly
         if (result.errorRate > 50 || result.p95Latency > 5000) {
-          console.log(`Performance degradation detected at ${test.users} concurrent users`);
+          console.log(
+            `Performance degradation detected at ${test.users} concurrent users`
+          );
           break;
         }
       }
@@ -518,8 +545,12 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       saveResults('capacity-discovery.json', results);
 
       // Find the highest successful load level
-      const successfulTests = results.filter(r => r.errorRate < 20 && r.p95Latency < 2000);
-      const maxCapacity = Math.max(...successfulTests.map(r => r.config.concurrentUsers));
+      const successfulTests = results.filter(
+        r => r.errorRate < 20 && r.p95Latency < 2000
+      );
+      const maxCapacity = Math.max(
+        ...successfulTests.map(r => r.config.concurrentUsers)
+      );
 
       console.log(`Maximum concurrent user capacity: ${maxCapacity}`);
 
@@ -542,9 +573,21 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       // Test different endpoints to identify bottlenecks
       const bottleneckTests = [
         { endpoint: '/api/health', name: 'health_check', expectedFast: true },
-        { endpoint: '/api/auth/me', name: 'authentication', expectedFast: false },
-        { endpoint: '/api/projects', name: 'database_query', expectedFast: false },
-        { endpoint: '/api/vendors', name: 'complex_query', expectedFast: false }
+        {
+          endpoint: '/api/auth/me',
+          name: 'authentication',
+          expectedFast: false,
+        },
+        {
+          endpoint: '/api/projects',
+          name: 'database_query',
+          expectedFast: false,
+        },
+        {
+          endpoint: '/api/vendors',
+          name: 'complex_query',
+          expectedFast: false,
+        },
       ];
 
       const bottleneckResults: LoadTestResult[] = [];
@@ -559,7 +602,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
           endpoint: test.endpoint,
           method: 'GET',
           expectedLatency: test.expectedFast ? 50 : 200,
-          expectedThroughput: 5
+          expectedThroughput: 5,
         };
 
         const result = await executeLoadTest(config);
@@ -569,13 +612,15 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       saveResults('bottleneck-analysis.json', bottleneckResults);
 
       // Identify slowest endpoints
-      const sortedByLatency = bottleneckResults.sort((a, b) => b.p95Latency - a.p95Latency);
+      const sortedByLatency = bottleneckResults.sort(
+        (a, b) => b.p95Latency - a.p95Latency
+      );
       const slowestEndpoint = sortedByLatency[0];
 
       console.log('Performance bottleneck analysis:', {
         slowestEndpoint: slowestEndpoint.config.endpoint,
         p95Latency: slowestEndpoint.p95Latency,
-        errorRate: slowestEndpoint.errorRate
+        errorRate: slowestEndpoint.errorRate,
       });
 
       expect(bottleneckResults.length).toBe(bottleneckTests.length);
@@ -591,20 +636,20 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
           name: 'current_load',
           targetRPS: 5,
           concurrentUsers: 10,
-          duration: 20000
+          duration: 20000,
         },
         {
           name: 'peak_load',
           targetRPS: 15,
           concurrentUsers: 25,
-          duration: 15000
+          duration: 15000,
         },
         {
           name: 'stress_test',
           targetRPS: 25,
           concurrentUsers: 40,
-          duration: 10000
-        }
+          duration: 10000,
+        },
       ];
 
       const planningResults: LoadTestResult[] = [];
@@ -619,7 +664,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
           endpoint: '/api/projects',
           method: 'GET',
           expectedLatency: 300,
-          expectedThroughput: test.targetRPS
+          expectedThroughput: test.targetRPS,
         };
 
         const result = await executeLoadTest(config);
@@ -630,7 +675,11 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       const currentMetrics = await measureSystemCapacity();
 
       // Generate capacity plan with 2x growth projection
-      const capacityPlan = generateCapacityPlan(currentMetrics, planningResults, 2.0);
+      const capacityPlan = generateCapacityPlan(
+        currentMetrics,
+        planningResults,
+        2.0
+      );
 
       saveResults('capacity-plan.json', capacityPlan);
 
@@ -639,13 +688,17 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         projectedUsers: capacityPlan.projectedLoad.peakConcurrentUsers,
         riskLevel: capacityPlan.riskAssessment.level,
         hardwareUpgradeNeeded: capacityPlan.recommendations.hardwareUpgrade,
-        estimatedMonthlyCost: capacityPlan.estimatedCosts.projectedMonthly
+        estimatedMonthlyCost: capacityPlan.estimatedCosts.projectedMonthly,
       });
 
-      expect(capacityPlan.currentCapacity.maxConcurrentUsers).toBeGreaterThan(0);
+      expect(capacityPlan.currentCapacity.maxConcurrentUsers).toBeGreaterThan(
+        0
+      );
       expect(capacityPlan.projectedLoad.peakConcurrentUsers).toBeGreaterThan(0);
       expect(capacityPlan.riskAssessment.level).toBeDefined();
-      expect(capacityPlan.recommendations.monitoringRequirements.length).toBeGreaterThan(0);
+      expect(
+        capacityPlan.recommendations.monitoringRequirements.length
+      ).toBeGreaterThan(0);
     });
 
     it('should calculate scaling thresholds and triggers', async () => {
@@ -656,8 +709,8 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         memoryThreshold: capacityMetrics.hardwareLimits.memory,
         connectionThreshold: capacityMetrics.databaseLimits.connections * 0.8,
         latencyThreshold: 1000, // milliseconds
-        errorRateThreshold: 5,  // percentage
-        throughputThreshold: capacityMetrics.maxThroughput * 0.9
+        errorRateThreshold: 5, // percentage
+        throughputThreshold: capacityMetrics.maxThroughput * 0.9,
       };
 
       const scalingTriggers = {
@@ -666,13 +719,13 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
           `Memory usage > ${scalingThresholds.memoryThreshold}%`,
           `Active connections > ${scalingThresholds.connectionThreshold}`,
           `P95 latency > ${scalingThresholds.latencyThreshold}ms`,
-          `Error rate > ${scalingThresholds.errorRateThreshold}%`
+          `Error rate > ${scalingThresholds.errorRateThreshold}%`,
         ],
         scaleDown: [
           `CPU usage < ${scalingThresholds.cpuThreshold * 0.5}% for 30 minutes`,
           `Memory usage < ${scalingThresholds.memoryThreshold * 0.5}% for 30 minutes`,
-          `Active connections < ${scalingThresholds.connectionThreshold * 0.3} for 30 minutes`
-        ]
+          `Active connections < ${scalingThresholds.connectionThreshold * 0.3} for 30 minutes`,
+        ],
       };
 
       const scalingConfiguration = {
@@ -684,14 +737,16 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
             maxInstances: 10,
             targetCPU: 70,
             scaleUpCooldown: 300, // seconds
-            scaleDownCooldown: 600 // seconds
+            scaleDownCooldown: 600, // seconds
           },
           databaseScaling: {
             minConnections: 10,
             maxConnections: capacityMetrics.databaseLimits.connections,
-            connectionPoolSize: Math.floor(capacityMetrics.databaseLimits.connections * 0.8)
-          }
-        }
+            connectionPoolSize: Math.floor(
+              capacityMetrics.databaseLimits.connections * 0.8
+            ),
+          },
+        },
       };
 
       saveResults('scaling-configuration.json', scalingConfiguration);
@@ -699,7 +754,8 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       console.log('Scaling configuration:', {
         cpuThreshold: scalingThresholds.cpuThreshold,
         connectionThreshold: scalingThresholds.connectionThreshold,
-        maxInstances: scalingConfiguration.actions.horizontalScaling.maxInstances
+        maxInstances:
+          scalingConfiguration.actions.horizontalScaling.maxInstances,
       });
 
       expect(scalingThresholds.cpuThreshold).toBeGreaterThan(0);
@@ -716,7 +772,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         bufferCacheSize: '512M',
         redoLogSize: '100M',
         tempTablespaceSize: '1G',
-        undoTablespaceSize: '500M'
+        undoTablespaceSize: '500M',
       };
 
       // Test Oracle connection capacity
@@ -729,7 +785,7 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
         endpoint: '/api/health/database',
         method: 'GET',
         expectedLatency: 100,
-        expectedThroughput: 10
+        expectedThroughput: 10,
       };
 
       const result = await executeLoadTest(connectionTest);
@@ -737,37 +793,55 @@ describe('Capacity Planning and Load Testing - Oracle Environment', () => {
       const oracleCapacityValidation = {
         requirements: oracleRequirements,
         testResult: result,
-        connectionPoolUtilization: (result.config.concurrentUsers / oracleRequirements.connectionPoolSize) * 100,
-        recommendations: [] as string[]
+        connectionPoolUtilization:
+          (result.config.concurrentUsers /
+            oracleRequirements.connectionPoolSize) *
+          100,
+        recommendations: [] as string[],
       };
 
       // Analyze results and generate Oracle-specific recommendations
       if (result.errorRate > 10) {
-        oracleCapacityValidation.recommendations.push('Increase Oracle connection pool size');
-        oracleCapacityValidation.recommendations.push('Optimize Oracle session management');
+        oracleCapacityValidation.recommendations.push(
+          'Increase Oracle connection pool size'
+        );
+        oracleCapacityValidation.recommendations.push(
+          'Optimize Oracle session management'
+        );
       }
 
       if (result.p95Latency > 500) {
-        oracleCapacityValidation.recommendations.push('Increase Oracle shared pool size');
-        oracleCapacityValidation.recommendations.push('Tune Oracle buffer cache');
+        oracleCapacityValidation.recommendations.push(
+          'Increase Oracle shared pool size'
+        );
+        oracleCapacityValidation.recommendations.push(
+          'Tune Oracle buffer cache'
+        );
       }
 
       if (oracleCapacityValidation.connectionPoolUtilization > 80) {
-        oracleCapacityValidation.recommendations.push('Consider Oracle RAC for high availability');
-        oracleCapacityValidation.recommendations.push('Implement connection pooling optimization');
+        oracleCapacityValidation.recommendations.push(
+          'Consider Oracle RAC for high availability'
+        );
+        oracleCapacityValidation.recommendations.push(
+          'Implement connection pooling optimization'
+        );
       }
 
       saveResults('oracle-capacity-validation.json', oracleCapacityValidation);
 
       console.log('Oracle capacity validation:', {
-        connectionPoolUtilization: oracleCapacityValidation.connectionPoolUtilization,
+        connectionPoolUtilization:
+          oracleCapacityValidation.connectionPoolUtilization,
         errorRate: result.errorRate,
         p95Latency: result.p95Latency,
-        recommendations: oracleCapacityValidation.recommendations.length
+        recommendations: oracleCapacityValidation.recommendations.length,
       });
 
       expect(result.totalRequests).toBeGreaterThan(0);
-      expect(oracleCapacityValidation.connectionPoolUtilization).toBeGreaterThan(0);
+      expect(
+        oracleCapacityValidation.connectionPoolUtilization
+      ).toBeGreaterThan(0);
     });
   });
 });

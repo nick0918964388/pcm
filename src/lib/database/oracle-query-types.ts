@@ -59,7 +59,12 @@ export type ErrorSeverity = 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
 // 約束資訊
 export interface ConstraintInfo {
   constraintName: string;
-  constraintType: 'PRIMARY_KEY' | 'FOREIGN_KEY' | 'UNIQUE' | 'CHECK' | 'NOT_NULL';
+  constraintType:
+    | 'PRIMARY_KEY'
+    | 'FOREIGN_KEY'
+    | 'UNIQUE'
+    | 'CHECK'
+    | 'NOT_NULL';
   affectedColumns: string[];
   referencedTable?: string;
   referencedColumns?: string[];
@@ -271,7 +276,11 @@ export interface QueryBuilder {
   select(columns: string | string[]): QueryBuilder;
   from(table: string): QueryBuilder;
   where(condition: string, binds?: Record<string, any>): QueryBuilder;
-  join(table: string, condition: string, type?: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL'): QueryBuilder;
+  join(
+    table: string,
+    condition: string,
+    type?: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL'
+  ): QueryBuilder;
   orderBy(column: string, direction?: 'ASC' | 'DESC'): QueryBuilder;
   groupBy(columns: string | string[]): QueryBuilder;
   having(condition: string): QueryBuilder;

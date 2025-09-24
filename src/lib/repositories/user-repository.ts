@@ -28,17 +28,21 @@ export class UserRepository extends BaseRepository<User> {
 
   mapToDB(entity: Partial<User>): Record<string, any> {
     const mapped: Record<string, any> = {};
-    
+
     if (entity.username !== undefined) mapped.username = entity.username;
     if (entity.email !== undefined) mapped.email = entity.email;
-    if (entity.password_hash !== undefined) mapped.password_hash = entity.password_hash;
+    if (entity.password_hash !== undefined)
+      mapped.password_hash = entity.password_hash;
     if (entity.first_name !== undefined) mapped.first_name = entity.first_name;
     if (entity.last_name !== undefined) mapped.last_name = entity.last_name;
-    if (entity.is_verified !== undefined) mapped.is_verified = entity.is_verified;
+    if (entity.is_verified !== undefined)
+      mapped.is_verified = entity.is_verified;
     if (entity.is_active !== undefined) mapped.is_active = entity.is_active;
     if (entity.last_login !== undefined) mapped.last_login = entity.last_login;
-    if (entity.failed_login_attempts !== undefined) mapped.failed_login_attempts = entity.failed_login_attempts;
-    if (entity.locked_until !== undefined) mapped.locked_until = entity.locked_until;
+    if (entity.failed_login_attempts !== undefined)
+      mapped.failed_login_attempts = entity.failed_login_attempts;
+    if (entity.locked_until !== undefined)
+      mapped.locked_until = entity.locked_until;
 
     return mapped;
   }
@@ -69,7 +73,10 @@ export class UserRepository extends BaseRepository<User> {
   }
 
   // 檢查使用者名稱是否已存在
-  async isUsernameExists(username: string, excludeUserId?: string): Promise<boolean> {
+  async isUsernameExists(
+    username: string,
+    excludeUserId?: string
+  ): Promise<boolean> {
     let query = `SELECT 1 FROM users WHERE username = $1 AND is_active = true`;
     const params = [username];
 
@@ -170,7 +177,7 @@ export class UserRepository extends BaseRepository<User> {
       page = 1,
       pageSize = 20,
       sortBy = 'created_at',
-      sortOrder = 'DESC'
+      sortOrder = 'DESC',
     } = options;
 
     const builder = new QueryBuilder()
@@ -195,11 +202,17 @@ export class UserRepository extends BaseRepository<User> {
   }
 
   // 查找最近登入的用戶
-  async findRecentlyLoggedIn(days = 30, options: FindOptions = {}): Promise<User[]> {
+  async findRecentlyLoggedIn(
+    days = 30,
+    options: FindOptions = {}
+  ): Promise<User[]> {
     const builder = new QueryBuilder()
       .from(this.tableName)
       .where('is_active = ?', true)
-      .where('last_login >= ?', new Date(Date.now() - days * 24 * 60 * 60 * 1000))
+      .where(
+        'last_login >= ?',
+        new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+      )
       .orderBy('last_login', 'DESC');
 
     if (options.pageSize) {
@@ -221,16 +234,16 @@ export class UserRepository extends BaseRepository<User> {
     const queries = [
       // 總用戶數
       'SELECT COUNT(*) as total FROM users WHERE is_active = true',
-      
+
       // 已驗證用戶數
       'SELECT COUNT(*) as verified FROM users WHERE is_active = true AND is_verified = true',
-      
+
       // 被鎖定用戶數
       'SELECT COUNT(*) as locked FROM users WHERE is_active = true AND locked_until > NOW()',
-      
+
       // 最近活躍用戶數 (7天內)
       `SELECT COUNT(*) as recent FROM users 
-       WHERE is_active = true AND last_login >= NOW() - INTERVAL '7 days'`
+       WHERE is_active = true AND last_login >= NOW() - INTERVAL '7 days'`,
     ];
 
     const results = await Promise.all(
@@ -246,7 +259,10 @@ export class UserRepository extends BaseRepository<User> {
   }
 
   // 自訂查詢參數處理
-  protected applyFilters(builder: QueryBuilder, filters: Record<string, any>): void {
+  protected applyFilters(
+    builder: QueryBuilder,
+    filters: Record<string, any>
+  ): void {
     super.applyFilters(builder, filters);
 
     // 特殊篩選條件
@@ -255,7 +271,10 @@ export class UserRepository extends BaseRepository<User> {
     }
 
     if (filters.hasRecentLogin) {
-      builder.where('last_login >= ?', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+      builder.where(
+        'last_login >= ?',
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      );
     }
 
     if (filters.isLocked) {

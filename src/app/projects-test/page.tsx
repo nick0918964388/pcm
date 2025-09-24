@@ -1,8 +1,8 @@
-"use client"
+'use client';
 
-import React from 'react'
-import { ProjectGrid } from '../projects/components'
-import { Project, ProjectStatus, ProjectType } from '@/types/project'
+import React from 'react';
+import { ProjectGrid } from '../projects/components';
+import { Project, ProjectStatus, ProjectType } from '@/types/project';
 
 // Mock 測試資料
 const mockProjects: Project[] = [
@@ -10,7 +10,8 @@ const mockProjects: Project[] = [
     id: '1',
     code: 'F20P1',
     name: '台北市政大樓建設專案',
-    description: '位於信義區的現代化政府辦公大樓建設，包含智慧建築系統和節能設計',
+    description:
+      '位於信義區的現代化政府辦公大樓建設，包含智慧建築系統和節能設計',
     status: ProjectStatus.IN_PROGRESS,
     type: ProjectType.CONSTRUCTION,
     progress: 65,
@@ -29,7 +30,7 @@ const mockProjects: Project[] = [
     createdAt: new Date('2023-12-01'),
     updatedAt: new Date('2024-08-30'),
     tags: ['建築', '政府', '智慧建築'],
-    lastAccessDate: new Date('2024-08-29')
+    lastAccessDate: new Date('2024-08-29'),
   },
   {
     id: '2',
@@ -55,7 +56,7 @@ const mockProjects: Project[] = [
     createdAt: new Date('2023-05-01'),
     updatedAt: new Date('2024-05-28'),
     tags: ['交通', '捷運', '基礎建設'],
-    lastAccessDate: new Date('2024-08-25')
+    lastAccessDate: new Date('2024-08-25'),
   },
   {
     id: '3',
@@ -78,7 +79,7 @@ const mockProjects: Project[] = [
     permissions: [],
     createdAt: new Date('2024-07-15'),
     updatedAt: new Date('2024-08-30'),
-    tags: ['翻新', '機場', '服務提升']
+    tags: ['翻新', '機場', '服務提升'],
   },
   {
     id: '4',
@@ -103,84 +104,84 @@ const mockProjects: Project[] = [
     createdAt: new Date('2023-01-15'),
     updatedAt: new Date('2024-06-15'),
     tags: ['維護', '綠能', '設備更新'],
-    lastAccessDate: new Date('2024-08-20')
-  }
-]
+    lastAccessDate: new Date('2024-08-20'),
+  },
+];
 
 export default function ProjectsTestPage() {
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
-  const [compact, setCompact] = React.useState(false)
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [compact, setCompact] = React.useState(false);
 
   const handleProjectEnter = React.useCallback(async (projectId: string) => {
-    console.log('進入專案:', projectId)
+    console.log('進入專案:', projectId);
     // 模擬進入專案的處理
-    setLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setLoading(false)
-  }, [])
+    setLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setLoading(false);
+  }, []);
 
   const handleAccessRecord = React.useCallback(async (projectId: string) => {
-    console.log('記錄專案存取:', projectId)
+    console.log('記錄專案存取:', projectId);
     // 模擬記錄存取的處理
-  }, [])
+  }, []);
 
   const handleRetry = React.useCallback(() => {
-    console.log('重新整理專案列表')
-    setError(null)
-  }, [])
+    console.log('重新整理專案列表');
+    setError(null);
+  }, []);
 
   const simulateError = () => {
-    setError('網路連線失敗，請稍後再試')
-  }
+    setError('網路連線失敗，請稍後再試');
+  };
 
   const clearError = () => {
-    setError(null)
-  }
+    setError(null);
+  };
 
   const toggleCompact = () => {
-    setCompact(!compact)
-  }
+    setCompact(!compact);
+  };
 
   const simulateLoading = () => {
-    setLoading(true)
-    setTimeout(() => setLoading(false), 2000)
-  }
+    setLoading(true);
+    setTimeout(() => setLoading(false), 2000);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-4">
+    <div className='min-h-screen bg-background'>
+      <div className='container mx-auto px-4 py-8'>
+        <div className='mb-8'>
+          <h1 className='text-3xl font-bold text-foreground mb-4'>
             ProjectGrid 元件測試
           </h1>
-          <p className="text-muted-foreground mb-6">
+          <p className='text-muted-foreground mb-6'>
             測試 ProjectGrid 元件的各種狀態和功能
           </p>
 
           {/* 控制按鈕 */}
-          <div className="flex flex-wrap gap-4 mb-8">
+          <div className='flex flex-wrap gap-4 mb-8'>
             <button
               onClick={toggleCompact}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              className='px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'
             >
               {compact ? '切換到標準模式' : '切換到緊湊模式'}
             </button>
             <button
               onClick={simulateLoading}
-              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
+              className='px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors'
             >
               模擬載入狀態
             </button>
             <button
               onClick={simulateError}
-              className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
+              className='px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors'
             >
               模擬錯誤狀態
             </button>
             <button
               onClick={clearError}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className='px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors'
             >
               清除錯誤
             </button>
@@ -188,11 +189,11 @@ export default function ProjectsTestPage() {
         </div>
 
         {/* ProjectGrid 測試區域 */}
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">
+        <div className='bg-card border border-border rounded-lg p-6'>
+          <h2 className='text-xl font-semibold mb-4'>
             專案網格顯示 {compact && '(緊湊模式)'}
           </h2>
-          
+
           <ProjectGrid
             projects={mockProjects}
             loading={loading}
@@ -205,8 +206,8 @@ export default function ProjectsTestPage() {
         </div>
 
         {/* 空狀態測試 */}
-        <div className="bg-card border border-border rounded-lg p-6 mt-8">
-          <h2 className="text-xl font-semibold mb-4">空狀態測試</h2>
+        <div className='bg-card border border-border rounded-lg p-6 mt-8'>
+          <h2 className='text-xl font-semibold mb-4'>空狀態測試</h2>
           <ProjectGrid
             projects={[]}
             loading={false}
@@ -216,15 +217,11 @@ export default function ProjectsTestPage() {
         </div>
 
         {/* 載入狀態測試 */}
-        <div className="bg-card border border-border rounded-lg p-6 mt-8">
-          <h2 className="text-xl font-semibold mb-4">載入狀態測試</h2>
-          <ProjectGrid
-            projects={[]}
-            loading={true}
-            error={null}
-          />
+        <div className='bg-card border border-border rounded-lg p-6 mt-8'>
+          <h2 className='text-xl font-semibold mb-4'>載入狀態測試</h2>
+          <ProjectGrid projects={[]} loading={true} error={null} />
         </div>
       </div>
     </div>
-  )
+  );
 }

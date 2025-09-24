@@ -3,6 +3,7 @@
 ## 1. 架構層次設計
 
 ### 1.1 分層架構
+
 ```
 ┌──────────────────────────┐
 │   API Routes Layer       │ ← Next.js API Routes
@@ -18,6 +19,7 @@
 ```
 
 ### 1.2 設計原則
+
 - **關注點分離**: 每層負責不同功能
 - **依賴注入**: 降低耦合度
 - **Interface抽象**: 便於測試和替換
@@ -27,6 +29,7 @@
 ## 2. 資料庫連接層
 
 ### 2.1 連接池管理
+
 ```typescript
 // src/lib/database/connection.ts
 import { Pool, PoolClient, PoolConfig } from 'pg';
@@ -50,10 +53,10 @@ class DatabaseConnection {
     };
 
     this.pool = new Pool(config);
-    
+
     // 連接池事件監聽
     this.pool.on('connect', () => console.log('Database connected'));
-    this.pool.on('error', (err) => console.error('Database connection error:', err));
+    this.pool.on('error', err => console.error('Database connection error:', err));
   }
 
   public static getInstance(): DatabaseConnection {
@@ -81,9 +84,7 @@ class DatabaseConnection {
     }
   }
 
-  public async transaction<T>(
-    callback: (client: PoolClient) => Promise<T>
-  ): Promise<T> {
+  public async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
     const client = await this.getClient();
     try {
       await client.query('BEGIN');
@@ -103,6 +104,7 @@ export const db = DatabaseConnection.getInstance();
 ```
 
 ### 2.2 查詢建構器
+
 ```typescript
 // src/lib/database/query-builder.ts
 export class QueryBuilder {
@@ -176,6 +178,7 @@ export class QueryBuilder {
 ## 3. 資料模型定義
 
 ### 3.1 基礎資料模型
+
 ```typescript
 // src/lib/models/base.ts
 export abstract class BaseModel {
@@ -267,6 +270,7 @@ export class DutySchedule extends BaseModel {
 ## 4. Repository 模式實現
 
 ### 4.1 基礎 Repository 抽象類
+
 ```typescript
 // src/lib/repositories/base-repository.ts
 export interface IRepository<T, TKey = string> {
@@ -298,9 +302,9 @@ export abstract class BaseRepository<T extends BaseModel> implements IRepository
   async findAll(filters: any = {}): Promise<T[]> {
     const builder = new QueryBuilder();
     builder.select(['*']).from(this.tableName);
-    
+
     this.applyFilters(builder, filters);
-    
+
     const { query, params } = builder.build();
     const rows = await this.db.query(query, params);
     return rows.map(row => this.mapFromDB(row));
@@ -349,9 +353,9 @@ export abstract class BaseRepository<T extends BaseModel> implements IRepository
   async count(filters: any = {}): Promise<number> {
     const builder = new QueryBuilder();
     builder.select(['COUNT(*) as count']).from(this.tableName);
-    
+
     this.applyFilters(builder, filters);
-    
+
     const { query, params } = builder.build();
     const rows = await this.db.query<{ count: string }>(query, params);
     return parseInt(rows[0].count);
@@ -362,6 +366,7 @@ export abstract class BaseRepository<T extends BaseModel> implements IRepository
 ```
 
 ### 4.2 值班排程 Repository
+
 ```typescript
 // src/lib/repositories/duty-schedule-repository.ts
 export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
@@ -417,66 +422,71 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
     if (filters.projectId) {
       builder.where('project_id = ?', filters.projectId);
     }
-    
+
     if (filters.dateFrom) {
       builder.where('duty_date >= ?', filters.dateFrom);
     }
-    
+
     if (filters.dateTo) {
       builder.where('duty_date <= ?', filters.dateTo);
     }
-    
+
     if (filters.specificDate) {
       builder.where('duty_date = ?', filters.specificDate);
     }
-    
+
     if (filters.personIds?.length) {
       builder.whereIn('person_id', filters.personIds);
     }
-    
+
     if (filters.shiftTypes?.length) {
       builder.whereIn('shift_type', filters.shiftTypes);
     }
-    
+
     if (filters.statuses?.length) {
       builder.whereIn('status', filters.statuses);
     }
-    
+
     if (filters.workAreas?.length) {
       builder.whereIn('work_area', filters.workAreas);
     }
-    
+
     if (filters.urgencyLevels?.length) {
       builder.whereIn('urgency_level', filters.urgencyLevels);
     }
-    
+
     if (filters.currentOnly) {
       builder.where("status = '值班中'");
     }
-    
+
     if (filters.search) {
-      builder.where(`(
+      builder.where(
+        `(
         EXISTS (
           SELECT 1 FROM duty_persons dp 
           WHERE dp.id = person_id 
           AND (dp.name ILIKE '%' || ? || '%' OR dp.position ILIKE '%' || ? || '%')
         )
-      )`, [filters.search, filters.search]);
+      )`,
+        [filters.search, filters.search]
+      );
     }
   }
 
   // 特定查詢方法
-  async findWithPersonDetails(filters: any = {}): Promise<(DutySchedule & { person: DutyPerson })[]> {
+  async findWithPersonDetails(
+    filters: any = {}
+  ): Promise<(DutySchedule & { person: DutyPerson })[]> {
     const builder = new QueryBuilder();
     builder
       .select([
         'ds.*',
         'dp.name as person_name',
-        'dp.position as person_position', 
+        'dp.position as person_position',
         'dp.mobile as person_mobile',
         'dp.email as person_email',
         'v.name as vendor_name',
-        'v.vendor_type'
+        'v.vendor_type',
       ])
       .from('duty_schedules ds')
       .leftJoin('duty_persons dp', 'ds.person_id = dp.id')
@@ -486,7 +496,7 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
 
     const { query, params } = builder.build();
     const rows = await this.db.query(query, params);
-    
+
     return rows.map(row => {
       const schedule = this.mapFromDB(row);
       schedule.person = new DutyPerson({
@@ -513,7 +523,7 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
         AND ds.duty_date = CURRENT_DATE
       ORDER BY ds.shift_type, dp.name
     `;
-    
+
     const rows = await this.db.query(query, [projectId]);
     return rows.map(row => this.mapFromDB(row));
   }
@@ -525,7 +535,7 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
       JOIN vendors v ON dp.vendor_id = v.id
       WHERE ds.project_id = $1
     `;
-    
+
     const totalQuery = `SELECT COUNT(*) as total ${baseQuery}`;
     const statusQuery = `
       SELECT ds.status, COUNT(*) as count 
@@ -537,13 +547,13 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
       ${baseQuery} 
       GROUP BY ds.shift_type
     `;
-    
+
     const [totalResult, statusResult, shiftResult] = await Promise.all([
       this.db.query(totalQuery, [projectId]),
       this.db.query(statusQuery, [projectId]),
       this.db.query(shiftQuery, [projectId]),
     ]);
-    
+
     return {
       total: parseInt(totalResult[0].total),
       byStatus: statusResult.reduce((acc, row) => {
@@ -562,6 +572,7 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
 ## 5. 服務層設計
 
 ### 5.1 基礎服務類
+
 ```typescript
 // src/lib/services/base-service.ts
 export abstract class BaseService<T, TRepository extends IRepository<T>> {
@@ -584,6 +595,7 @@ export abstract class BaseService<T, TRepository extends IRepository<T>> {
 ```
 
 ### 5.2 值班管理服務
+
 ```typescript
 // src/lib/services/duty-schedule-service.ts
 import { DutyScheduleRepository } from '../repositories/duty-schedule-repository';
@@ -761,8 +773,7 @@ export class DutyScheduleService extends BaseService<DutySchedule, DutyScheduleR
     });
 
     const hasConflict = conflictingSchedules.some(
-      schedule => schedule.id !== excludeScheduleId && 
-                  schedule.status !== '取消'
+      schedule => schedule.id !== excludeScheduleId && schedule.status !== '取消'
     );
 
     if (hasConflict) {
@@ -794,6 +805,7 @@ export class DutyScheduleService extends BaseService<DutySchedule, DutyScheduleR
 ## 6. 依賴注入容器
 
 ### 6.1 服務容器
+
 ```typescript
 // src/lib/container/service-container.ts
 export class ServiceContainer {
@@ -827,29 +839,31 @@ container.register('dutyScheduleRepository', () => new DutyScheduleRepository())
 container.register('dutyPersonRepository', () => new DutyPersonRepository());
 container.register('vendorRepository', () => new VendorRepository());
 
-container.register('dutyScheduleService', () => new DutyScheduleService(
-  container.get('dutyScheduleRepository'),
-  container.get('dutyPersonRepository')
-));
+container.register(
+  'dutyScheduleService',
+  () =>
+    new DutyScheduleService(
+      container.get('dutyScheduleRepository'),
+      container.get('dutyPersonRepository')
+    )
+);
 ```
 
 ## 7. 使用範例
 
 ### 7.1 在 API Route 中使用
+
 ```typescript
 // src/app/api/projects/[projectId]/duty-schedules/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { ServiceContainer } from '@/lib/container/service-container';
 import { DutyScheduleService } from '@/lib/services/duty-schedule-service';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { projectId: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { projectId: string } }) {
   try {
     const container = ServiceContainer.getInstance();
     const dutyScheduleService = container.get<DutyScheduleService>('dutyScheduleService');
-    
+
     const { searchParams } = new URL(request.url);
     const filters = {
       search: searchParams.get('search'),
@@ -857,17 +871,13 @@ export async function GET(
       dateTo: searchParams.get('dateTo'),
       // ... 其他篩選條件
     };
-    
+
     const pagination = {
       page: parseInt(searchParams.get('page') || '1'),
       pageSize: parseInt(searchParams.get('pageSize') || '20'),
     };
 
-    const result = await dutyScheduleService.getSchedules(
-      params.projectId,
-      filters,
-      pagination
-    );
+    const result = await dutyScheduleService.getSchedules(params.projectId, filters, pagination);
 
     return NextResponse.json({
       success: true,
@@ -875,13 +885,17 @@ export async function GET(
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }
 ```
 
-這個設計提供了完整的資料存取層架構，包括連接管理、查詢建構、資料映射、事務處理和服務層業務邏輯，為真實的PostgreSQL CRUD操作提供了堅實的基礎。
+這個設計提供了完整的資料存取層架構，包括連接管理、查詢建構、資料映射、事務處理和服務層業務邏輯，為真實的PostgreSQL
+CRUD操作提供了堅實的基礎。

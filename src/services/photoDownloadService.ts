@@ -8,12 +8,12 @@ import type {
   DownloadProgress,
   DownloadRequest,
   DownloadResponse,
-  PhotoResolution
-} from '../types/photo.types'
+  PhotoResolution,
+} from '../types/photo.types';
 
 export class PhotoDownloadService {
-  private downloadProgress: Map<string, DownloadProgress> = new Map()
-  private abortControllers: Map<string, AbortController> = new Map()
+  private downloadProgress: Map<string, DownloadProgress> = new Map();
+  private abortControllers: Map<string, AbortController> = new Map();
 
   /**
    * 下載照片
@@ -21,27 +21,30 @@ export class PhotoDownloadService {
    * @param options 下載選項
    * @returns 下載回應
    */
-  async downloadPhoto(photoId: string, options: DownloadOptions): Promise<DownloadResponse> {
+  async downloadPhoto(
+    photoId: string,
+    options: DownloadOptions
+  ): Promise<DownloadResponse> {
     try {
       const response = await fetch(`/api/photos/${photoId}/download`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          options
-        })
-      })
+          options,
+        }),
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `HTTP ${response.status}`)
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 
-      const result = await response.json()
-      return result
+      const result = await response.json();
+      return result;
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : '下載失敗')
+      throw new Error(error instanceof Error ? error.message : '下載失敗');
     }
   }
 
@@ -51,19 +54,24 @@ export class PhotoDownloadService {
    * @param userId 使用者ID
    * @returns 是否有權限
    */
-  async validateDownloadPermissions(photoId: string, userId: string): Promise<boolean> {
+  async validateDownloadPermissions(
+    photoId: string,
+    userId: string
+  ): Promise<boolean> {
     try {
-      const response = await fetch(`/api/photos/${photoId}/permissions?userId=${userId}`)
+      const response = await fetch(
+        `/api/photos/${photoId}/permissions?userId=${userId}`
+      );
 
       if (!response.ok) {
-        return false
+        return false;
       }
 
-      const result = await response.json()
-      return result.success && result.canDownload
+      const result = await response.json();
+      return result.success && result.canDownload;
     } catch (error) {
-      console.error('權限驗證失敗:', error)
-      return false
+      console.error('權限驗證失敗:', error);
+      return false;
     }
   }
 
@@ -73,17 +81,21 @@ export class PhotoDownloadService {
    * @param photoId 照片ID
    * @param fileName 檔案名稱
    */
-  startDownloadTracking(downloadId: string, photoId: string, fileName: string): void {
+  startDownloadTracking(
+    downloadId: string,
+    photoId: string,
+    fileName: string
+  ): void {
     const progress: DownloadProgress = {
       id: downloadId,
       photoId,
       fileName,
       progress: 0,
       status: 'pending',
-      startedAt: new Date()
-    }
+      startedAt: new Date(),
+    };
 
-    this.downloadProgress.set(downloadId, progress)
+    this.downloadProgress.set(downloadId, progress);
   }
 
   /**
@@ -92,19 +104,19 @@ export class PhotoDownloadService {
    * @param progress 進度百分比 (0-100)
    */
   updateDownloadProgress(downloadId: string, progress: number): void {
-    const current = this.downloadProgress.get(downloadId)
-    if (!current) return
+    const current = this.downloadProgress.get(downloadId);
+    if (!current) return;
 
-    current.progress = Math.min(100, Math.max(0, progress))
+    current.progress = Math.min(100, Math.max(0, progress));
 
     if (progress === 100) {
-      current.status = 'completed'
-      current.completedAt = new Date()
+      current.status = 'completed';
+      current.completedAt = new Date();
     } else if (progress > 0) {
-      current.status = 'downloading'
+      current.status = 'downloading';
     }
 
-    this.downloadProgress.set(downloadId, current)
+    this.downloadProgress.set(downloadId, current);
   }
 
   /**
@@ -113,7 +125,7 @@ export class PhotoDownloadService {
    * @returns 下載進度
    */
   getDownloadProgress(downloadId: string): DownloadProgress | undefined {
-    return this.downloadProgress.get(downloadId)
+    return this.downloadProgress.get(downloadId);
   }
 
   /**
@@ -121,16 +133,16 @@ export class PhotoDownloadService {
    * @param downloadId 下載ID
    */
   cancelDownload(downloadId: string): void {
-    const progress = this.downloadProgress.get(downloadId)
+    const progress = this.downloadProgress.get(downloadId);
     if (progress) {
-      progress.status = 'cancelled'
-      this.downloadProgress.set(downloadId, progress)
+      progress.status = 'cancelled';
+      this.downloadProgress.set(downloadId, progress);
     }
 
-    const controller = this.abortControllers.get(downloadId)
+    const controller = this.abortControllers.get(downloadId);
     if (controller) {
-      controller.abort()
-      this.abortControllers.delete(downloadId)
+      controller.abort();
+      this.abortControllers.delete(downloadId);
     }
   }
 
@@ -140,7 +152,7 @@ export class PhotoDownloadService {
   cleanupCompletedDownloads(): void {
     for (const [id, progress] of this.downloadProgress.entries()) {
       if (progress.status === 'completed' || progress.status === 'cancelled') {
-        this.downloadProgress.delete(id)
+        this.downloadProgress.delete(id);
       }
     }
   }
@@ -151,22 +163,25 @@ export class PhotoDownloadService {
    * @param resolution 解析度
    * @returns 下載檔名
    */
-  generateDownloadFileName(originalFileName: string, resolution: PhotoResolution): string {
+  generateDownloadFileName(
+    originalFileName: string,
+    resolution: PhotoResolution
+  ): string {
     if (resolution === 'original') {
-      return originalFileName
+      return originalFileName;
     }
 
-    const lastDotIndex = originalFileName.lastIndexOf('.')
+    const lastDotIndex = originalFileName.lastIndexOf('.');
 
     if (lastDotIndex === -1) {
       // 沒有副檔名
-      return `${originalFileName}-${resolution}`
+      return `${originalFileName}-${resolution}`;
     }
 
-    const nameWithoutExt = originalFileName.substring(0, lastDotIndex)
-    const extension = originalFileName.substring(lastDotIndex)
+    const nameWithoutExt = originalFileName.substring(0, lastDotIndex);
+    const extension = originalFileName.substring(lastDotIndex);
 
-    return `${nameWithoutExt}-${resolution}${extension}`
+    return `${nameWithoutExt}-${resolution}${extension}`;
   }
 
   /**
@@ -180,10 +195,10 @@ export class PhotoDownloadService {
       small: '小圖 (400x300)',
       medium: '中圖 (800x600)',
       large: '大圖 (1200x900)',
-      original: '原圖'
-    }
+      original: '原圖',
+    };
 
-    return names[resolution]
+    return names[resolution];
   }
 
   /**
@@ -192,13 +207,13 @@ export class PhotoDownloadService {
    * @returns 格式化後的大小
    */
   formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes'
+    if (bytes === 0) return '0 Bytes';
 
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   /**
@@ -207,13 +222,13 @@ export class PhotoDownloadService {
    * @param fileName 檔案名稱
    */
   triggerDownload(url: string, fileName: string): void {
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    link.style.display = 'none'
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
 
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 }

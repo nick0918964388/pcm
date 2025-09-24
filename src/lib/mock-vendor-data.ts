@@ -1,4 +1,4 @@
-import { Vendor, Contact } from '@/types/vendor'
+import { Vendor, Contact } from '@/types/vendor';
 
 // 示例廠商數據
 export const mockVendors: Vendor[] = [
@@ -14,7 +14,7 @@ export const mockVendors: Vendor[] = [
     phone: '03-5636688',
     email: 'contact@tsmc-construction.com',
     createdAt: '2024-01-15',
-    updatedAt: '2024-12-01'
+    updatedAt: '2024-12-01',
   },
   {
     id: '2',
@@ -28,7 +28,7 @@ export const mockVendors: Vendor[] = [
     phone: '07-8036611',
     email: 'info@csc.com.tw',
     createdAt: '2024-02-01',
-    updatedAt: '2024-11-28'
+    updatedAt: '2024-11-28',
   },
   {
     id: '3',
@@ -42,7 +42,7 @@ export const mockVendors: Vendor[] = [
     phone: '03-3287288',
     email: 'sales@fukuta.com.tw',
     createdAt: '2024-01-20',
-    updatedAt: '2024-12-05'
+    updatedAt: '2024-12-05',
   },
   {
     id: '4',
@@ -56,7 +56,7 @@ export const mockVendors: Vendor[] = [
     phone: '02-89691234',
     email: 'service@fareast-concrete.com',
     createdAt: '2024-02-10',
-    updatedAt: '2024-11-30'
+    updatedAt: '2024-11-30',
   },
   {
     id: '5',
@@ -70,7 +70,7 @@ export const mockVendors: Vendor[] = [
     phone: '02-27581234',
     email: 'info@sinotech.org.tw',
     createdAt: '2024-03-01',
-    updatedAt: '2024-11-15'
+    updatedAt: '2024-11-15',
   },
   {
     id: '6',
@@ -84,7 +84,7 @@ export const mockVendors: Vendor[] = [
     phone: '02-22993939',
     email: 'contact@sgs.com.tw',
     createdAt: '2024-02-15',
-    updatedAt: '2024-11-25'
+    updatedAt: '2024-11-25',
   },
   {
     id: '7',
@@ -98,7 +98,7 @@ export const mockVendors: Vendor[] = [
     phone: '02-25925252',
     email: 'info@tatung.com',
     createdAt: '2024-01-30',
-    updatedAt: '2024-10-20'
+    updatedAt: '2024-10-20',
   },
   {
     id: '8',
@@ -112,9 +112,9 @@ export const mockVendors: Vendor[] = [
     phone: '02-27011234',
     email: 'contact@yfy.com',
     createdAt: '2024-01-10',
-    updatedAt: '2024-09-10'
-  }
-]
+    updatedAt: '2024-09-10',
+  },
+];
 
 // 示例聯絡人數據
 export const mockContacts: Contact[] = [
@@ -133,7 +133,7 @@ export const mockContacts: Contact[] = [
     isPrimary: true,
     notes: '主要專案負責人，負責整體工程進度管控',
     createdAt: '2024-01-15',
-    updatedAt: '2024-12-01'
+    updatedAt: '2024-12-01',
   },
   {
     id: 'c2',
@@ -149,7 +149,7 @@ export const mockContacts: Contact[] = [
     isPrimary: false,
     notes: '現場施工管理及品質控制',
     createdAt: '2024-01-20',
-    updatedAt: '2024-11-28'
+    updatedAt: '2024-11-28',
   },
   {
     id: 'c3',
@@ -165,7 +165,7 @@ export const mockContacts: Contact[] = [
     isPrimary: false,
     notes: '工地安全管理及教育訓練',
     createdAt: '2024-02-01',
-    updatedAt: '2024-11-30'
+    updatedAt: '2024-11-30',
   },
 
   // 中鋼結構股份有限公司 (id: '2')
@@ -183,7 +183,7 @@ export const mockContacts: Contact[] = [
     isPrimary: true,
     notes: '鋼結構工程業務窗口',
     createdAt: '2024-02-01',
-    updatedAt: '2024-11-28'
+    updatedAt: '2024-11-28',
   },
   {
     id: 'c5',
@@ -199,7 +199,7 @@ export const mockContacts: Contact[] = [
     isPrimary: false,
     notes: '結構設計及施工技術支援',
     createdAt: '2024-02-05',
-    updatedAt: '2024-11-25'
+    updatedAt: '2024-11-25',
   },
 
   // 富田電機股份有限公司 (id: '3')
@@ -217,7 +217,7 @@ export const mockContacts: Contact[] = [
     isPrimary: true,
     notes: '北區銷售業務負責人',
     createdAt: '2024-01-20',
-    updatedAt: '2024-12-05'
+    updatedAt: '2024-12-05',
   },
   {
     id: 'c7',
@@ -233,7 +233,7 @@ export const mockContacts: Contact[] = [
     isPrimary: false,
     notes: '設備安裝及維護技術支援',
     createdAt: '2024-01-25',
-    updatedAt: '2024-12-01'
+    updatedAt: '2024-12-01',
   },
   {
     id: 'c8',
@@ -249,7 +249,7 @@ export const mockContacts: Contact[] = [
     isPrimary: false,
     notes: '變頻器產品線負責人',
     createdAt: '2024-02-01',
-    updatedAt: '2024-11-28'
+    updatedAt: '2024-11-28',
   },
 
   // 亞東預拌混凝土股份有限公司 (id: '4')
@@ -267,7 +267,7 @@ export const mockContacts: Contact[] = [
     isPrimary: true,
     notes: '預拌混凝土供應業務聯絡人',
     createdAt: '2024-02-10',
-    updatedAt: '2024-11-30'
+    updatedAt: '2024-11-30',
   },
   {
     id: 'c10',
@@ -283,7 +283,7 @@ export const mockContacts: Contact[] = [
     isPrimary: false,
     notes: '混凝土品質檢驗及認證',
     createdAt: '2024-02-15',
-    updatedAt: '2024-11-25'
+    updatedAt: '2024-11-25',
   },
 
   // 中華工程顧問股份有限公司 (id: '5')
@@ -301,7 +301,7 @@ export const mockContacts: Contact[] = [
     isPrimary: true,
     notes: '工程顧問專案總負責人',
     createdAt: '2024-03-01',
-    updatedAt: '2024-11-15'
+    updatedAt: '2024-11-15',
   },
 
   // 台灣檢驗科技股份有限公司 (id: '6')
@@ -319,7 +319,7 @@ export const mockContacts: Contact[] = [
     isPrimary: true,
     notes: '材料檢驗及品質認證負責人',
     createdAt: '2024-02-15',
-    updatedAt: '2024-11-25'
+    updatedAt: '2024-11-25',
   },
 
   // 大同世界科技股份有限公司 (id: '7')
@@ -336,6 +336,6 @@ export const mockContacts: Contact[] = [
     isPrimary: true,
     notes: '空調設備銷售代表',
     createdAt: '2024-01-30',
-    updatedAt: '2024-10-20'
-  }
-]
+    updatedAt: '2024-10-20',
+  },
+];

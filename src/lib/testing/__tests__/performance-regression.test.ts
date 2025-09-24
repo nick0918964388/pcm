@@ -106,14 +106,17 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       const endMemory = process.memoryUsage();
 
       // Get execution plan and statistics
-      const planResult = await dbConnection.query(`
+      const planResult = await dbConnection.query(
+        `
         SELECT sql_id, plan_hash_value, executions, buffer_gets, disk_reads, cpu_time
         FROM v$sql
         WHERE sql_text LIKE ?
         AND last_active_time >= SYSDATE - INTERVAL '1' MINUTE
         ORDER BY last_active_time DESC
         FETCH FIRST 1 ROWS ONLY
-      `, [`%${queryText.substring(0, 50)}%`]);
+      `,
+        [`%${queryText.substring(0, 50)}%`]
+      );
 
       const sessionStats = await dbConnection.query(`
         SELECT name, value
@@ -141,16 +144,17 @@ describe('Performance Regression Detection - Oracle Environment', () => {
         executionTime: endTime - startTime,
         cpuTime: planInfo.cpu_time || 0,
         memoryUsage: endMemory.heapUsed - startMemory.heapUsed,
-        ioOperations: (stats['session logical reads'] || 0) + (stats['physical reads'] || 0),
+        ioOperations:
+          (stats['session logical reads'] || 0) +
+          (stats['physical reads'] || 0),
         bufferGets: stats['session logical reads'] || 0,
         diskReads: stats['physical reads'] || 0,
         indexesUsed: [], // Would be extracted from execution plan
         planHash: planInfo.plan_hash_value?.toString() || '',
         timestamp: new Date().toISOString(),
         environment: 'oracle-test',
-        dataSize: result.length
+        dataSize: result.length,
       };
-
     } finally {
       await dbConnection.query('ALTER SESSION SET STATISTICS_LEVEL = TYPICAL');
     }
@@ -176,7 +180,10 @@ describe('Performance Regression Detection - Oracle Environment', () => {
     writeFileSync(baselineFile, JSON.stringify(baseline, null, 2));
   }
 
-  function updateBaseline(metric: PerformanceMetric, tolerance: number = 10): PerformanceBaseline {
+  function updateBaseline(
+    metric: PerformanceMetric,
+    tolerance: number = 10
+  ): PerformanceBaseline {
     const existing = loadBaseline(metric.queryId);
 
     if (!existing) {
@@ -186,7 +193,7 @@ describe('Performance Regression Detection - Oracle Environment', () => {
         tolerancePercentage: tolerance,
         criticalThreshold: tolerance * 3,
         lastUpdated: metric.timestamp,
-        sampleCount: 1
+        sampleCount: 1,
       };
     }
 
@@ -198,25 +205,41 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       ...existing,
       baselineMetric: {
         ...existing.baselineMetric,
-        executionTime: existing.baselineMetric.executionTime * (1 - alpha) + metric.executionTime * alpha,
-        cpuTime: existing.baselineMetric.cpuTime * (1 - alpha) + metric.cpuTime * alpha,
-        memoryUsage: existing.baselineMetric.memoryUsage * (1 - alpha) + metric.memoryUsage * alpha,
-        bufferGets: existing.baselineMetric.bufferGets * (1 - alpha) + metric.bufferGets * alpha,
-        diskReads: existing.baselineMetric.diskReads * (1 - alpha) + metric.diskReads * alpha,
-        timestamp: metric.timestamp
+        executionTime:
+          existing.baselineMetric.executionTime * (1 - alpha) +
+          metric.executionTime * alpha,
+        cpuTime:
+          existing.baselineMetric.cpuTime * (1 - alpha) +
+          metric.cpuTime * alpha,
+        memoryUsage:
+          existing.baselineMetric.memoryUsage * (1 - alpha) +
+          metric.memoryUsage * alpha,
+        bufferGets:
+          existing.baselineMetric.bufferGets * (1 - alpha) +
+          metric.bufferGets * alpha,
+        diskReads:
+          existing.baselineMetric.diskReads * (1 - alpha) +
+          metric.diskReads * alpha,
+        timestamp: metric.timestamp,
       },
       lastUpdated: metric.timestamp,
-      sampleCount: newSampleCount
+      sampleCount: newSampleCount,
     };
 
     return updatedBaseline;
   }
 
-  function detectRegression(current: PerformanceMetric, baseline: PerformanceBaseline): RegressionDetectionResult {
+  function detectRegression(
+    current: PerformanceMetric,
+    baseline: PerformanceBaseline
+  ): RegressionDetectionResult {
     const baselineMetric = baseline.baselineMetric;
 
     // Calculate performance change percentage
-    const performanceChange = ((current.executionTime - baselineMetric.executionTime) / baselineMetric.executionTime) * 100;
+    const performanceChange =
+      ((current.executionTime - baselineMetric.executionTime) /
+        baselineMetric.executionTime) *
+      100;
 
     // Determine if this is a regression
     const isRegression = performanceChange > baseline.tolerancePercentage;
@@ -234,11 +257,14 @@ describe('Performance Regression Detection - Oracle Environment', () => {
     // Generate recommendation
     let recommendation = '';
     if (severity === 'critical') {
-      recommendation = 'CRITICAL: Immediate investigation required - performance degraded significantly';
+      recommendation =
+        'CRITICAL: Immediate investigation required - performance degraded significantly';
     } else if (severity === 'major') {
-      recommendation = 'MAJOR: Query optimization needed - consider index review or query rewrite';
+      recommendation =
+        'MAJOR: Query optimization needed - consider index review or query rewrite';
     } else if (severity === 'minor') {
-      recommendation = 'MINOR: Monitor trend - may need optimization if continues';
+      recommendation =
+        'MINOR: Monitor trend - may need optimization if continues';
     } else if (performanceChange < -5) {
       recommendation = 'IMPROVEMENT: Performance has improved';
     } else {
@@ -256,17 +282,22 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       isRegression,
       severity,
       recommendation,
-      confidence
+      confidence,
     };
   }
 
-  function generateRegressionReport(results: RegressionDetectionResult[]): RegressionReport {
+  function generateRegressionReport(
+    results: RegressionDetectionResult[]
+  ): RegressionReport {
     const criticalRegressions = results.filter(r => r.severity === 'critical');
     const majorRegressions = results.filter(r => r.severity === 'major');
     const minorRegressions = results.filter(r => r.severity === 'minor');
     const improvements = results.filter(r => r.performanceChange < -5);
 
-    const totalRegressions = criticalRegressions.length + majorRegressions.length + minorRegressions.length;
+    const totalRegressions =
+      criticalRegressions.length +
+      majorRegressions.length +
+      minorRegressions.length;
 
     let summary = '';
     if (criticalRegressions.length > 0) {
@@ -290,35 +321,68 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       majorRegressions,
       minorRegressions,
       improvements,
-      summary
+      summary,
     };
   }
 
   function saveRegressionReport(report: RegressionReport): void {
-    const reportFile = join(reportsDir, `regression-report-${currentTestRun}.json`);
+    const reportFile = join(
+      reportsDir,
+      `regression-report-${currentTestRun}.json`
+    );
     writeFileSync(reportFile, JSON.stringify(report, null, 2));
   }
 
   describe('Baseline Establishment', () => {
     it('should establish baseline metrics for core queries', async () => {
       const coreQueries = [
-        { id: 'user_authentication', sql: 'SELECT * FROM users WHERE email = ? AND password_hash = ?', type: 'authentication' },
-        { id: 'project_listing', sql: 'SELECT * FROM projects WHERE status = ? ORDER BY updated_at DESC LIMIT 50', type: 'listing' },
-        { id: 'project_details', sql: 'SELECT p.*, u.username FROM projects p JOIN users u ON p.created_by = u.id WHERE p.id = ?', type: 'detail' },
-        { id: 'duty_schedule_query', sql: 'SELECT * FROM duty_schedules WHERE project_id = ? AND date_assigned >= ? ORDER BY date_assigned', type: 'schedule' },
-        { id: 'vendor_search', sql: 'SELECT * FROM vendors WHERE name ILIKE ? OR contact_info ILIKE ? LIMIT 20', type: 'search' }
+        {
+          id: 'user_authentication',
+          sql: 'SELECT * FROM users WHERE email = ? AND password_hash = ?',
+          type: 'authentication',
+        },
+        {
+          id: 'project_listing',
+          sql: 'SELECT * FROM projects WHERE status = ? ORDER BY updated_at DESC LIMIT 50',
+          type: 'listing',
+        },
+        {
+          id: 'project_details',
+          sql: 'SELECT p.*, u.username FROM projects p JOIN users u ON p.created_by = u.id WHERE p.id = ?',
+          type: 'detail',
+        },
+        {
+          id: 'duty_schedule_query',
+          sql: 'SELECT * FROM duty_schedules WHERE project_id = ? AND date_assigned >= ? ORDER BY date_assigned',
+          type: 'schedule',
+        },
+        {
+          id: 'vendor_search',
+          sql: 'SELECT * FROM vendors WHERE name ILIKE ? OR contact_info ILIKE ? LIMIT 20',
+          type: 'search',
+        },
       ];
 
       const baselines: PerformanceBaseline[] = [];
 
       for (const query of coreQueries) {
-        const testParams = query.id === 'user_authentication' ? ['test@example.com', 'hash'] :
-                          query.id === 'project_listing' ? ['active'] :
-                          query.id === 'project_details' ? [1] :
-                          query.id === 'duty_schedule_query' ? [1, new Date()] :
-                          ['%test%', '%test%'];
+        const testParams =
+          query.id === 'user_authentication'
+            ? ['test@example.com', 'hash']
+            : query.id === 'project_listing'
+              ? ['active']
+              : query.id === 'project_details'
+                ? [1]
+                : query.id === 'duty_schedule_query'
+                  ? [1, new Date()]
+                  : ['%test%', '%test%'];
 
-        const metric = await executeQueryWithMetrics(query.id, query.sql, query.type, testParams);
+        const metric = await executeQueryWithMetrics(
+          query.id,
+          query.sql,
+          query.type,
+          testParams
+        );
         const baseline = updateBaseline(metric, 15); // 15% tolerance for baselines
 
         saveBaseline(baseline);
@@ -327,13 +391,17 @@ describe('Performance Regression Detection - Oracle Environment', () => {
         console.log(`Baseline established for ${query.id}:`, {
           executionTime: metric.executionTime,
           bufferGets: metric.bufferGets,
-          diskReads: metric.diskReads
+          diskReads: metric.diskReads,
         });
       }
 
       expect(baselines.length).toBe(coreQueries.length);
-      expect(baselines.every(b => b.baselineMetric.executionTime > 0)).toBe(true);
-      expect(baselines.every(b => existsSync(join(baselineDir, `${b.queryId}.json`)))).toBe(true);
+      expect(baselines.every(b => b.baselineMetric.executionTime > 0)).toBe(
+        true
+      );
+      expect(
+        baselines.every(b => existsSync(join(baselineDir, `${b.queryId}.json`)))
+      ).toBe(true);
     });
 
     it('should handle baseline updates with new measurements', async () => {
@@ -341,18 +409,30 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       const testQuery = 'SELECT COUNT(*) FROM projects WHERE status = ?';
 
       // First measurement
-      const metric1 = await executeQueryWithMetrics(queryId, testQuery, 'count', ['active']);
+      const metric1 = await executeQueryWithMetrics(
+        queryId,
+        testQuery,
+        'count',
+        ['active']
+      );
       const baseline1 = updateBaseline(metric1, 10);
       saveBaseline(baseline1);
 
       // Second measurement
-      const metric2 = await executeQueryWithMetrics(queryId, testQuery, 'count', ['active']);
+      const metric2 = await executeQueryWithMetrics(
+        queryId,
+        testQuery,
+        'count',
+        ['active']
+      );
       const baseline2 = updateBaseline(metric2, 10);
       saveBaseline(baseline2);
 
       expect(baseline1.sampleCount).toBe(1);
       expect(baseline2.sampleCount).toBe(2);
-      expect(baseline2.baselineMetric.executionTime).not.toBe(metric1.executionTime);
+      expect(baseline2.baselineMetric.executionTime).not.toBe(
+        metric1.executionTime
+      );
 
       // Baseline should be influenced by both measurements
       const loadedBaseline = loadBaseline(queryId);
@@ -364,10 +444,16 @@ describe('Performance Regression Detection - Oracle Environment', () => {
   describe('Regression Detection', () => {
     it('should detect performance regressions in query execution', async () => {
       const queryId = 'regression_test_query';
-      const testQuery = 'SELECT * FROM projects WHERE priority >= ? ORDER BY created_at DESC LIMIT 100';
+      const testQuery =
+        'SELECT * FROM projects WHERE priority >= ? ORDER BY created_at DESC LIMIT 100';
 
       // Establish baseline
-      const baselineMetric = await executeQueryWithMetrics(queryId, testQuery, 'priority_filter', [3]);
+      const baselineMetric = await executeQueryWithMetrics(
+        queryId,
+        testQuery,
+        'priority_filter',
+        [3]
+      );
       const baseline = updateBaseline(baselineMetric, 10);
       saveBaseline(baseline);
 
@@ -383,7 +469,12 @@ describe('Performance Regression Detection - Oracle Environment', () => {
         LIMIT 100
       `;
 
-      const currentMetric = await executeQueryWithMetrics(queryId, regressedQuery, 'priority_filter', [3]);
+      const currentMetric = await executeQueryWithMetrics(
+        queryId,
+        regressedQuery,
+        'priority_filter',
+        [3]
+      );
       const regression = detectRegression(currentMetric, baseline);
 
       console.log('Regression detection result:', regression);
@@ -410,7 +501,7 @@ describe('Performance Regression Detection - Oracle Environment', () => {
         planHash: 'test-hash',
         timestamp: new Date().toISOString(),
         environment: 'test',
-        dataSize: 1
+        dataSize: 1,
       };
 
       const baseline: PerformanceBaseline = {
@@ -419,7 +510,7 @@ describe('Performance Regression Detection - Oracle Environment', () => {
         tolerancePercentage: 10,
         criticalThreshold: 30,
         lastUpdated: new Date().toISOString(),
-        sampleCount: 5
+        sampleCount: 5,
       };
 
       // Test minor regression (15% slower)
@@ -435,8 +526,14 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       expect(majorResult.isRegression).toBe(true);
 
       // Test critical regression (40% slower)
-      const criticalRegressionMetric = { ...baselineMetric, executionTime: 140 };
-      const criticalResult = detectRegression(criticalRegressionMetric, baseline);
+      const criticalRegressionMetric = {
+        ...baselineMetric,
+        executionTime: 140,
+      };
+      const criticalResult = detectRegression(
+        criticalRegressionMetric,
+        baseline
+      );
       expect(criticalResult.severity).toBe('critical');
       expect(criticalResult.isRegression).toBe(true);
 
@@ -452,7 +549,12 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       const newQueryId = 'new_query_without_baseline';
       const newQuery = 'SELECT COUNT(*) FROM vendors WHERE created_at >= ?';
 
-      const metric = await executeQueryWithMetrics(newQueryId, newQuery, 'vendor_count', [new Date()]);
+      const metric = await executeQueryWithMetrics(
+        newQueryId,
+        newQuery,
+        'vendor_count',
+        [new Date()]
+      );
       const baseline = loadBaseline(newQueryId);
 
       expect(baseline).toBeNull();
@@ -471,19 +573,39 @@ describe('Performance Regression Detection - Oracle Environment', () => {
   describe('Regression Reporting', () => {
     it('should generate comprehensive regression reports', async () => {
       const testQueries = [
-        { id: 'report_test_1', sql: 'SELECT * FROM users WHERE status = ?', type: 'user_query' },
-        { id: 'report_test_2', sql: 'SELECT * FROM projects WHERE created_at >= ?', type: 'project_query' },
-        { id: 'report_test_3', sql: 'SELECT COUNT(*) FROM duty_schedules GROUP BY project_id', type: 'aggregation' }
+        {
+          id: 'report_test_1',
+          sql: 'SELECT * FROM users WHERE status = ?',
+          type: 'user_query',
+        },
+        {
+          id: 'report_test_2',
+          sql: 'SELECT * FROM projects WHERE created_at >= ?',
+          type: 'project_query',
+        },
+        {
+          id: 'report_test_3',
+          sql: 'SELECT COUNT(*) FROM duty_schedules GROUP BY project_id',
+          type: 'aggregation',
+        },
       ];
 
       const regressionResults: RegressionDetectionResult[] = [];
 
       for (const query of testQueries) {
-        const params = query.id === 'report_test_1' ? ['active'] :
-                      query.id === 'report_test_2' ? [new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)] :
-                      [];
+        const params =
+          query.id === 'report_test_1'
+            ? ['active']
+            : query.id === 'report_test_2'
+              ? [new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)]
+              : [];
 
-        const metric = await executeQueryWithMetrics(query.id, query.sql, query.type, params);
+        const metric = await executeQueryWithMetrics(
+          query.id,
+          query.sql,
+          query.type,
+          params
+        );
 
         // Create baseline
         const baseline = updateBaseline(metric, 10);
@@ -501,28 +623,37 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       expect(report.testRun).toBe(currentTestRun);
       expect(report.timestamp).toBeDefined();
       expect(report.summary).toBeDefined();
-      expect(existsSync(join(reportsDir, `regression-report-${currentTestRun}.json`))).toBe(true);
+      expect(
+        existsSync(join(reportsDir, `regression-report-${currentTestRun}.json`))
+      ).toBe(true);
 
       console.log('Regression report generated:', {
         totalQueries: report.totalQueries,
         regressionsDetected: report.regressionsDetected,
         improvements: report.improvements,
-        summary: report.summary
+        summary: report.summary,
       });
     });
 
     it('should track performance trends over time', async () => {
       const queryId = 'trend_tracking_query';
-      const testQuery = 'SELECT * FROM projects ORDER BY updated_at DESC LIMIT 10';
+      const testQuery =
+        'SELECT * FROM projects ORDER BY updated_at DESC LIMIT 10';
 
       const measurements = [];
 
       // Simulate multiple measurements over time
       for (let i = 0; i < 5; i++) {
-        const metric = await executeQueryWithMetrics(queryId, testQuery, 'trend_test', []);
+        const metric = await executeQueryWithMetrics(
+          queryId,
+          testQuery,
+          'trend_test',
+          []
+        );
 
         // Simulate slight performance variation
-        metric.executionTime = metric.executionTime * (1 + (Math.random() - 0.5) * 0.1);
+        metric.executionTime =
+          metric.executionTime * (1 + (Math.random() - 0.5) * 0.1);
 
         measurements.push(metric);
 
@@ -535,14 +666,18 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       expect(finalBaseline!.sampleCount).toBe(5);
 
       // Verify that baseline represents a running average
-      const avgExecutionTime = measurements.reduce((sum, m) => sum + m.executionTime, 0) / measurements.length;
-      expect(Math.abs(finalBaseline!.baselineMetric.executionTime - avgExecutionTime)).toBeLessThan(avgExecutionTime * 0.2);
+      const avgExecutionTime =
+        measurements.reduce((sum, m) => sum + m.executionTime, 0) /
+        measurements.length;
+      expect(
+        Math.abs(finalBaseline!.baselineMetric.executionTime - avgExecutionTime)
+      ).toBeLessThan(avgExecutionTime * 0.2);
 
       console.log('Trend tracking results:', {
         measurements: measurements.length,
         finalSampleCount: finalBaseline!.sampleCount,
         avgExecutionTime,
-        baselineExecutionTime: finalBaseline!.baselineMetric.executionTime
+        baselineExecutionTime: finalBaseline!.baselineMetric.executionTime,
       });
     });
   });
@@ -550,11 +685,33 @@ describe('Performance Regression Detection - Oracle Environment', () => {
   describe('Automated Regression Testing', () => {
     it('should run full regression test suite and report results', async () => {
       const regressionSuite = [
-        { id: 'auth_performance', sql: 'SELECT * FROM users WHERE email = ?', params: ['test@example.com'], tolerance: 10 },
-        { id: 'project_search', sql: 'SELECT * FROM projects WHERE name ILIKE ? LIMIT 20', params: ['%test%'], tolerance: 15 },
-        { id: 'duty_aggregation', sql: 'SELECT project_id, COUNT(*) FROM duty_schedules GROUP BY project_id', params: [], tolerance: 20 },
-        { id: 'vendor_lookup', sql: 'SELECT * FROM vendors WHERE id IN (?, ?, ?)', params: [1, 2, 3], tolerance: 10 },
-        { id: 'complex_join', sql: `
+        {
+          id: 'auth_performance',
+          sql: 'SELECT * FROM users WHERE email = ?',
+          params: ['test@example.com'],
+          tolerance: 10,
+        },
+        {
+          id: 'project_search',
+          sql: 'SELECT * FROM projects WHERE name ILIKE ? LIMIT 20',
+          params: ['%test%'],
+          tolerance: 15,
+        },
+        {
+          id: 'duty_aggregation',
+          sql: 'SELECT project_id, COUNT(*) FROM duty_schedules GROUP BY project_id',
+          params: [],
+          tolerance: 20,
+        },
+        {
+          id: 'vendor_lookup',
+          sql: 'SELECT * FROM vendors WHERE id IN (?, ?, ?)',
+          params: [1, 2, 3],
+          tolerance: 10,
+        },
+        {
+          id: 'complex_join',
+          sql: `
           SELECT p.name, u.username, COUNT(d.id) as duties
           FROM projects p
           JOIN users u ON p.created_by = u.id
@@ -562,7 +719,10 @@ describe('Performance Regression Detection - Oracle Environment', () => {
           WHERE p.status = ?
           GROUP BY p.id, p.name, u.username
           LIMIT 50
-        `, params: ['active'], tolerance: 25 }
+        `,
+          params: ['active'],
+          tolerance: 25,
+        },
       ];
 
       const regressionResults: RegressionDetectionResult[] = [];
@@ -591,9 +751,8 @@ describe('Performance Regression Detection - Oracle Environment', () => {
           console.log(`Regression test ${testCase.id}:`, {
             executionTime: currentMetric.executionTime,
             performanceChange: regression.performanceChange,
-            severity: regression.severity
+            severity: regression.severity,
           });
-
         } catch (error) {
           console.error(`Failed to run regression test ${testCase.id}:`, error);
         }
@@ -608,9 +767,13 @@ describe('Performance Regression Detection - Oracle Environment', () => {
       expect(regressionResults.every(r => r.confidence > 0)).toBe(true);
 
       // Check for critical regressions
-      const criticalCount = regressionResults.filter(r => r.severity === 'critical').length;
+      const criticalCount = regressionResults.filter(
+        r => r.severity === 'critical'
+      ).length;
       if (criticalCount > 0) {
-        console.warn(`ALERT: ${criticalCount} critical performance regressions detected!`);
+        console.warn(
+          `ALERT: ${criticalCount} critical performance regressions detected!`
+        );
       }
 
       // The test should pass even if regressions are detected (for reporting purposes)
@@ -621,7 +784,7 @@ describe('Performance Regression Detection - Oracle Environment', () => {
         regressionsDetected: report.regressionsDetected,
         criticalRegressions: report.criticalRegressions.length,
         majorRegressions: report.majorRegressions.length,
-        improvements: report.improvements
+        improvements: report.improvements,
       });
     });
   });

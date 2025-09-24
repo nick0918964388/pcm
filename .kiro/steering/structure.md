@@ -3,6 +3,7 @@
 ## 專案目錄結構 (Project Structure)
 
 ### 根目錄配置
+
 ```
 E:\nworkspace\pcm\
 ├── .claude/                    # Claude 規格文件
@@ -15,6 +16,7 @@ E:\nworkspace\pcm\
 ```
 
 ### 核心源代碼結構
+
 ```
 src/
 ├── app/                      # Next.js App Router 頁面
@@ -23,13 +25,13 @@ src/
 │   ├── dashboard/           # 儀表板頁面
 │   ├── projects/            # 專案管理頁面
 │   ├── human-resources/     # 人力資源模組
-│   │   ├── contacts/       
-│   │   ├── attendance/     
-│   │   └── statistics/     
+│   │   ├── contacts/
+│   │   ├── attendance/
+│   │   └── statistics/
 │   ├── schedule/           # 時程管理模組
-│   │   ├── milestones/    
-│   │   ├── packages/      
-│   │   └── permits/       
+│   │   ├── milestones/
+│   │   ├── packages/
+│   │   └── permits/
 │   ├── cost/               # 成本管理模組
 │   ├── quality/            # 品質管理模組
 │   ├── communication/      # 溝通管理模組
@@ -103,6 +105,7 @@ src/
 ## 命名規範 (Naming Conventions)
 
 ### 檔案命名
+
 - **React 元件**: PascalCase - `DashboardWidget.tsx`
 - **Hooks**: camelCase，以 "use" 開頭 - `useAuth.ts`
 - **工具函式**: camelCase - `utils.ts`
@@ -110,48 +113,51 @@ src/
 - **類型定義**: camelCase，以 ".types" 結尾 - `auth.types.ts`
 
 ### 變數與函式命名
+
 ```typescript
 // 變數使用 camelCase
-const userProject = 'F20P1'
-const isAuthenticated = true
+const userProject = 'F20P1';
+const isAuthenticated = true;
 
 // 函式使用 camelCase
 function getUserProjects() {}
-const handleSubmit = () => {}
+const handleSubmit = () => {};
 
 // 常數使用 UPPER_SNAKE_CASE
-const API_BASE_URL = 'https://api.pcm.com'
-const MAX_RETRY_ATTEMPTS = 3
+const API_BASE_URL = 'https://api.pcm.com';
+const MAX_RETRY_ATTEMPTS = 3;
 
 // 型別使用 PascalCase
 interface UserProject {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 type ApiResponse<T> = {
-  data: T
-  success: boolean
-}
+  data: T;
+  success: boolean;
+};
 ```
 
 ### React 元件命名
+
 ```typescript
 // 元件名稱使用 PascalCase
-const DashboardWidget = () => {}
-const StatCard = () => {}
-const DataTable = () => {}
+const DashboardWidget = () => {};
+const StatCard = () => {};
+const DataTable = () => {};
 
 // Props 介面以元件名 + Props
 interface DashboardWidgetProps {
-  title: string
-  value: number
+  title: string;
+  value: number;
 }
 ```
 
 ## 程式碼組織原則
 
 ### 元件結構
+
 ```typescript
 // 元件檔案標準結構
 import { FC } from 'react'
@@ -164,10 +170,10 @@ interface ComponentProps {
 }
 
 // 2. 元件實作
-const Component: FC<ComponentProps> = ({ 
-  className, 
+const Component: FC<ComponentProps> = ({
+  className,
   children,
-  ...props 
+  ...props
 }) => {
   return (
     <div className={cn("base-styles", className)} {...props}>
@@ -185,19 +191,20 @@ export type { ComponentProps }
 ```
 
 ### API 服務結構
+
 ```typescript
 // API 服務標準結構
-import { ApiResponse, Project } from '@/services/types'
+import { ApiResponse, Project } from '@/services/types';
 
 export class ProjectService {
-  private baseUrl = '/api/projects'
+  private baseUrl = '/api/projects';
 
   async getProjects(): Promise<ApiResponse<Project[]>> {
     // 實作
   }
 
   async getProject(id: string): Promise<ApiResponse<Project>> {
-    // 實作  
+    // 實作
   }
 
   async createProject(data: CreateProjectData): Promise<ApiResponse<Project>> {
@@ -205,12 +212,13 @@ export class ProjectService {
   }
 }
 
-export const projectService = new ProjectService()
+export const projectService = new ProjectService();
 ```
 
 ## 樣式規範 (Styling Guidelines)
 
 ### Tailwind CSS 使用原則
+
 ```typescript
 // 1. 使用 cn() 函式合併類別
 import { cn } from '@/lib/utils'
@@ -242,6 +250,7 @@ const Button = ({ variant, className, ...props }) => {
 ```
 
 ### shadcn/ui 元件客製化
+
 ```typescript
 // 基於 shadcn/ui 擴展業務元件
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -267,6 +276,7 @@ const StatCard = ({ title, value, trend, status }) => {
 ## 類型安全規範
 
 ### TypeScript 配置
+
 ```json
 // tsconfig.json 重要設定
 {
@@ -281,37 +291,39 @@ const StatCard = ({ title, value, trend, status }) => {
 ```
 
 ### 型別定義最佳實踐
+
 ```typescript
 // 1. 使用 interface 定義物件結構
 interface User {
-  id: string
-  name: string
-  email: string
-  role: UserRole
-  createdAt: Date
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: Date;
 }
 
 // 2. 使用 type 定義聯合類型和工具類型
-type UserRole = 'admin' | 'manager' | 'engineer' | 'contractor'
-type UserCreateData = Omit<User, 'id' | 'createdAt'>
+type UserRole = 'admin' | 'manager' | 'engineer' | 'contractor';
+type UserCreateData = Omit<User, 'id' | 'createdAt'>;
 
 // 3. 使用泛型提高複用性
 interface ApiResponse<T> {
-  data: T
-  success: boolean
-  message?: string
+  data: T;
+  success: boolean;
+  message?: string;
 }
 
 // 4. 嚴格定義 Props
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'destructive'
-  size?: 'sm' | 'md' | 'lg'
+  variant?: 'primary' | 'secondary' | 'destructive';
+  size?: 'sm' | 'md' | 'lg';
 }
 ```
 
 ## 測試策略
 
 ### 測試檔案結構
+
 ```
 src/
 ├── components/
@@ -330,6 +342,7 @@ src/
 ```
 
 ### 測試命名和結構
+
 ```typescript
 // Button.test.tsx
 import { render, screen, fireEvent } from '@testing-library/react'
@@ -344,7 +357,7 @@ describe('Button Component', () => {
   it('handles click events', () => {
     const handleClick = jest.fn()
     render(<Button onClick={handleClick}>Click me</Button>)
-    
+
     fireEvent.click(screen.getByText('Click me'))
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
@@ -354,6 +367,7 @@ describe('Button Component', () => {
 ## 效能優化規範
 
 ### 元件優化
+
 ```typescript
 // 1. 使用 memo 避免不必要的重渲染
 import { memo } from 'react'
@@ -390,6 +404,7 @@ const ProjectList = ({ projects, onProjectSelect }) => {
 ## 錯誤處理規範
 
 ### 統一錯誤處理
+
 ```typescript
 // 1. API 錯誤處理
 class ApiError extends Error {
@@ -418,10 +433,10 @@ class ErrorBoundary extends React.Component {
 // 3. 表單驗證錯誤處理
 const validateForm = (data: FormData) => {
   const errors: Record<string, string> = {}
-  
+
   if (!data.name) errors.name = '專案名稱為必填'
   if (!data.startDate) errors.startDate = '開始日期為必填'
-  
+
   return { isValid: Object.keys(errors).length === 0, errors }
 }
 ```
@@ -429,29 +444,30 @@ const validateForm = (data: FormData) => {
 ## 安全性規範
 
 ### 輸入驗證與清理
+
 ```typescript
 // 1. 使用 zod 進行資料驗證
-import { z } from 'zod'
+import { z } from 'zod';
 
 const ProjectSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
   startDate: z.date(),
-  budget: z.number().positive()
-})
+  budget: z.number().positive(),
+});
 
 // 2. XSS 防護
-import DOMPurify from 'dompurify'
+import DOMPurify from 'dompurify';
 
 const sanitizeHtml = (html: string) => {
-  return DOMPurify.sanitize(html)
-}
+  return DOMPurify.sanitize(html);
+};
 
 // 3. 權限檢查
 const usePermission = (requiredRole: UserRole) => {
-  const { user } = useAuth()
-  return user?.role === requiredRole || user?.role === 'admin'
-}
+  const { user } = useAuth();
+  return user?.role === requiredRole || user?.role === 'admin';
+};
 ```
 
 這個結構化的引導文件將為所有未來的開發工作提供一致的標準和最佳實踐指引。

@@ -23,7 +23,9 @@ test.describe('iPhoto 2.0 照片庫功能測試', () => {
 
   test('應該正確顯示iPhoto 2.0照片庫頁面', async ({ page }) => {
     // 驗證頁面標題
-    await expect(page.getByRole('heading', { name: /iPhoto 2\.0 - 工程照片庫/ })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /iPhoto 2\.0 - 工程照片庫/ })
+    ).toBeVisible();
 
     // 驗證專案ID顯示
     await expect(page.getByText('專案 proj001 的照片管理與預覽')).toBeVisible();
@@ -75,7 +77,9 @@ test.describe('iPhoto 2.0 照片庫功能測試', () => {
 
   test('應該顯示正確的照片數量', async ({ page }) => {
     // 驗證照片數量顯示（預期為0，因為這是測試環境）
-    await expect(page.getByText('所有照片').locator('..').getByText('0')).toBeVisible();
+    await expect(
+      page.getByText('所有照片').locator('..').getByText('0')
+    ).toBeVisible();
   });
 
   test('應該能夠展開篩選功能', async ({ page }) => {
@@ -109,7 +113,7 @@ test.describe('iPhoto 2.0 照片庫功能測試', () => {
 
     // 檢查是否有空狀態提示（如果有的話）
     const emptyStateElements = page.locator('text=暫無照片');
-    if (await emptyStateElements.count() > 0) {
+    if ((await emptyStateElements.count()) > 0) {
       await expect(emptyStateElements.first()).toBeVisible();
     }
   });
@@ -117,15 +121,21 @@ test.describe('iPhoto 2.0 照片庫功能測試', () => {
   test('應該響應式設計正常工作', async ({ page }) => {
     // 測試桌面視圖
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await expect(page.getByRole('heading', { name: 'iPhoto 2.0 - 工程照片庫' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'iPhoto 2.0 - 工程照片庫' })
+    ).toBeVisible();
 
     // 測試平板視圖
     await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.getByRole('heading', { name: 'iPhoto 2.0 - 工程照片庫' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'iPhoto 2.0 - 工程照片庫' })
+    ).toBeVisible();
 
     // 測試手機視圖
     await page.setViewportSize({ width: 375, height: 667 });
-    await expect(page.getByRole('heading', { name: 'iPhoto 2.0 - 工程照片庫' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'iPhoto 2.0 - 工程照片庫' })
+    ).toBeVisible();
 
     // 恢復桌面視圖
     await page.setViewportSize({ width: 1920, height: 1080 });
@@ -162,8 +172,8 @@ test.describe('iPhoto 2.0 照片庫功能測試', () => {
     await page.waitForLoadState('networkidle');
 
     // 驗證沒有HTTP錯誤
-    const criticalErrors = responses.filter(r =>
-      r.includes('photos') || r.includes('api') && !r.includes('404')
+    const criticalErrors = responses.filter(
+      r => r.includes('photos') || (r.includes('api') && !r.includes('404'))
     );
     expect(criticalErrors.length).toBe(0);
   });

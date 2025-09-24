@@ -96,9 +96,8 @@ describe('Query Performance Tests - Oracle Environment', () => {
         cpuTime: endCpuTime.user / 1000, // Convert to milliseconds
         ioWaits: 0, // Would be calculated from Oracle wait events
         bufferGets: stats['session logical reads'] || 0,
-        diskReads: stats['physical reads'] || 0
+        diskReads: stats['physical reads'] || 0,
       };
-
     } finally {
       await dbConnection.query('ALTER SESSION SET SQL_TRACE = FALSE');
     }
@@ -126,10 +125,12 @@ describe('Query Performance Tests - Oracle Environment', () => {
         maxExecutionTime: 100, // 100ms
         maxCpuTime: 50,
         maxBufferGets: 1000,
-        targetRowsPerSecond: 1000
+        targetRowsPerSecond: 1000,
       };
 
-      const result = await executePerformanceTest(queryText, 'simple_select', ['active']);
+      const result = await executePerformanceTest(queryText, 'simple_select', [
+        'active',
+      ]);
 
       console.log('Simple SELECT performance:', result);
       validatePerformance(result, benchmark);
@@ -154,11 +155,13 @@ describe('Query Performance Tests - Oracle Environment', () => {
         maxExecutionTime: 500, // 500ms
         maxCpuTime: 200,
         maxBufferGets: 5000,
-        targetRowsPerSecond: 500
+        targetRowsPerSecond: 500,
       };
 
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const result = await executePerformanceTest(queryText, 'complex_join', [thirtyDaysAgo]);
+      const result = await executePerformanceTest(queryText, 'complex_join', [
+        thirtyDaysAgo,
+      ]);
 
       console.log('JOIN query performance:', result);
       validatePerformance(result, benchmark);
@@ -183,11 +186,13 @@ describe('Query Performance Tests - Oracle Environment', () => {
         maxExecutionTime: 300, // 300ms
         maxCpuTime: 150,
         maxBufferGets: 3000,
-        targetRowsPerSecond: 100
+        targetRowsPerSecond: 100,
       };
 
       const sixMonthsAgo = new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000);
-      const result = await executePerformanceTest(queryText, 'aggregation', [sixMonthsAgo]);
+      const result = await executePerformanceTest(queryText, 'aggregation', [
+        sixMonthsAgo,
+      ]);
 
       console.log('Aggregation query performance:', result);
       validatePerformance(result, benchmark);
@@ -208,10 +213,12 @@ describe('Query Performance Tests - Oracle Environment', () => {
         maxExecutionTime: 400, // 400ms
         maxCpuTime: 200,
         maxBufferGets: 4000,
-        targetRowsPerSecond: 250
+        targetRowsPerSecond: 250,
       };
 
-      const result = await executePerformanceTest(queryText, 'json_query', ['important']);
+      const result = await executePerformanceTest(queryText, 'json_query', [
+        'important',
+      ]);
 
       console.log('Oracle JSON query performance:', result);
       validatePerformance(result, benchmark);
@@ -230,10 +237,14 @@ describe('Query Performance Tests - Oracle Environment', () => {
         maxExecutionTime: 150, // 150ms
         maxCpuTime: 75,
         maxBufferGets: 2000,
-        targetRowsPerSecond: 1000
+        targetRowsPerSecond: 1000,
       };
 
-      const result = await executePerformanceTest(queryText, 'pagination', [100, 20]);
+      const result = await executePerformanceTest(
+        queryText,
+        'pagination',
+        [100, 20]
+      );
 
       console.log('Oracle pagination performance:', result);
       validatePerformance(result, benchmark);
@@ -257,11 +268,15 @@ describe('Query Performance Tests - Oracle Environment', () => {
         maxExecutionTime: 600, // 600ms
         maxCpuTime: 300,
         maxBufferGets: 6000,
-        targetRowsPerSecond: 200
+        targetRowsPerSecond: 200,
       };
 
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const result = await executePerformanceTest(queryText, 'analytic_functions', [thirtyDaysAgo]);
+      const result = await executePerformanceTest(
+        queryText,
+        'analytic_functions',
+        [thirtyDaysAgo]
+      );
 
       console.log('Oracle analytic functions performance:', result);
       validatePerformance(result, benchmark);
@@ -281,10 +296,14 @@ describe('Query Performance Tests - Oracle Environment', () => {
         maxExecutionTime: 200, // 200ms
         maxCpuTime: 100,
         maxBufferGets: 1500,
-        targetRowsPerSecond: 500
+        targetRowsPerSecond: 500,
       };
 
-      const result = await executePerformanceTest(queryText, 'sequence_operations', [100]);
+      const result = await executePerformanceTest(
+        queryText,
+        'sequence_operations',
+        [100]
+      );
 
       console.log('Oracle SEQUENCE performance:', result);
       validatePerformance(result, benchmark);
@@ -308,11 +327,13 @@ describe('Query Performance Tests - Oracle Environment', () => {
         maxExecutionTime: 2000, // 2 seconds
         maxCpuTime: 1000,
         maxBufferGets: 20000,
-        targetRowsPerSecond: 500
+        targetRowsPerSecond: 500,
       };
 
       const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
-      const result = await executePerformanceTest(queryText, 'large_dataset', [oneYearAgo]);
+      const result = await executePerformanceTest(queryText, 'large_dataset', [
+        oneYearAgo,
+      ]);
 
       console.log('Large dataset performance:', result);
       validatePerformance(result, benchmark);
@@ -332,11 +353,13 @@ describe('Query Performance Tests - Oracle Environment', () => {
         maxExecutionTime: 3000, // 3 seconds
         maxCpuTime: 1500,
         maxBufferGets: 30000,
-        targetRowsPerSecond: 1000
+        targetRowsPerSecond: 1000,
       };
 
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const result = await executePerformanceTest(queryText, 'bulk_update', [oneWeekAgo]);
+      const result = await executePerformanceTest(queryText, 'bulk_update', [
+        oneWeekAgo,
+      ]);
 
       console.log('Bulk update performance:', result);
       validatePerformance(result, benchmark);
@@ -348,18 +371,27 @@ describe('Query Performance Tests - Oracle Environment', () => {
       const queries = [
         { sql: 'SELECT * FROM projects WHERE id = ?', params: [1] },
         { sql: 'SELECT * FROM projects WHERE status = ?', params: ['active'] },
-        { sql: 'SELECT * FROM users WHERE email = ?', params: ['test@example.com'] },
-        { sql: 'SELECT * FROM duty_schedules WHERE project_id = ? AND date_assigned >= ?',
-          params: [1, new Date()] }
+        {
+          sql: 'SELECT * FROM users WHERE email = ?',
+          params: ['test@example.com'],
+        },
+        {
+          sql: 'SELECT * FROM duty_schedules WHERE project_id = ? AND date_assigned >= ?',
+          params: [1, new Date()],
+        },
       ];
 
       for (const query of queries) {
-        const result = await executePerformanceTest(query.sql, 'index_validation', query.params);
+        const result = await executePerformanceTest(
+          query.sql,
+          'index_validation',
+          query.params
+        );
 
         console.log(`Index usage for query: ${query.sql}`, {
           indexUsed: result.indexUsed,
           executionTime: result.executionTime,
-          bufferGets: result.bufferGets
+          bufferGets: result.bufferGets,
         });
 
         // Verify that indexes are being used for filtered queries
@@ -371,20 +403,33 @@ describe('Query Performance Tests - Oracle Environment', () => {
 
     it('should identify queries that require index optimization', async () => {
       const potentiallySlowQueries = [
-        { sql: 'SELECT * FROM projects WHERE UPPER(name) LIKE ?', params: ['%TEST%'] },
-        { sql: 'SELECT * FROM duty_schedules WHERE extract(year from date_assigned) = ?', params: [2024] },
-        { sql: 'SELECT * FROM users WHERE created_at::date = ?', params: [new Date().toISOString().split('T')[0]] }
+        {
+          sql: 'SELECT * FROM projects WHERE UPPER(name) LIKE ?',
+          params: ['%TEST%'],
+        },
+        {
+          sql: 'SELECT * FROM duty_schedules WHERE extract(year from date_assigned) = ?',
+          params: [2024],
+        },
+        {
+          sql: 'SELECT * FROM users WHERE created_at::date = ?',
+          params: [new Date().toISOString().split('T')[0]],
+        },
       ];
 
       const slowQueries: any[] = [];
 
       for (const query of potentiallySlowQueries) {
-        const result = await executePerformanceTest(query.sql, 'optimization_check', query.params);
+        const result = await executePerformanceTest(
+          query.sql,
+          'optimization_check',
+          query.params
+        );
 
         if (result.executionTime > 200 || !result.indexUsed) {
           slowQueries.push({
             query: query.sql,
-            result
+            result,
           });
         }
       }
@@ -393,7 +438,9 @@ describe('Query Performance Tests - Oracle Environment', () => {
 
       // Document slow queries for optimization
       if (slowQueries.length > 0) {
-        console.warn(`Found ${slowQueries.length} queries that may benefit from index optimization`);
+        console.warn(
+          `Found ${slowQueries.length} queries that may benefit from index optimization`
+        );
       }
     });
   });
@@ -415,13 +462,14 @@ describe('Query Performance Tests - Oracle Environment', () => {
 
       const results = await Promise.all(queryPromises);
 
-      const avgExecutionTime = results.reduce((sum, r) => sum + r.executionTime, 0) / results.length;
+      const avgExecutionTime =
+        results.reduce((sum, r) => sum + r.executionTime, 0) / results.length;
       const maxExecutionTime = Math.max(...results.map(r => r.executionTime));
 
       console.log('Concurrent query performance:', {
         avgExecutionTime,
         maxExecutionTime,
-        totalQueries: concurrentQueries
+        totalQueries: concurrentQueries,
       });
 
       // Under connection pressure, performance should remain reasonable
@@ -455,7 +503,7 @@ describe('Query Performance Tests - Oracle Environment', () => {
         totalQueries: excessiveQueries,
         totalTime,
         avgTimePerQuery: totalTime / excessiveQueries,
-        successfulQueries: results.length
+        successfulQueries: results.length,
       });
 
       // System should handle all queries, even if slower

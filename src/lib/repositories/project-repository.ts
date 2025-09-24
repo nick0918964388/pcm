@@ -1,5 +1,10 @@
 import { BaseRepository, FindOptions } from '../database/base-repository';
-import { Project, ProjectStatus, ProjectType, ProjectQueryParams } from '../types/database';
+import {
+  Project,
+  ProjectStatus,
+  ProjectType,
+  ProjectQueryParams,
+} from '../types/database';
 import { QueryBuilder } from '../database/query-builder';
 import { db } from '../database/connection';
 
@@ -31,10 +36,11 @@ export class ProjectRepository extends BaseRepository<Project> {
 
   mapToDB(entity: Partial<Project>): Record<string, any> {
     const mapped: Record<string, any> = {};
-    
+
     if (entity.id !== undefined) mapped.id = entity.id;
     if (entity.name !== undefined) mapped.name = entity.name;
-    if (entity.description !== undefined) mapped.description = entity.description;
+    if (entity.description !== undefined)
+      mapped.description = entity.description;
     if (entity.status !== undefined) mapped.status = entity.status;
     if (entity.type !== undefined) mapped.type = entity.type;
     if (entity.priority !== undefined) mapped.priority = entity.priority;
@@ -55,33 +61,45 @@ export class ProjectRepository extends BaseRepository<Project> {
   }
 
   // 根據狀態查找專案
-  async findByStatus(status: ProjectStatus, options: FindOptions = {}): Promise<Project[]> {
+  async findByStatus(
+    status: ProjectStatus,
+    options: FindOptions = {}
+  ): Promise<Project[]> {
     const filters = { status, ...(options.filters || {}) };
     const result = await this.findAll({ ...options, filters });
     return result.data;
   }
 
   // 根據類型查找專案
-  async findByType(type: ProjectType, options: FindOptions = {}): Promise<Project[]> {
+  async findByType(
+    type: ProjectType,
+    options: FindOptions = {}
+  ): Promise<Project[]> {
     const filters = { type, ...(options.filters || {}) };
     const result = await this.findAll({ ...options, filters });
     return result.data;
   }
 
   // 根據專案經理查找專案
-  async findByManager(managerId: string, options: FindOptions = {}): Promise<Project[]> {
+  async findByManager(
+    managerId: string,
+    options: FindOptions = {}
+  ): Promise<Project[]> {
     const filters = { manager_id: managerId, ...(options.filters || {}) };
     const result = await this.findAll({ ...options, filters });
     return result.data;
   }
 
   // 查找用戶參與的專案
-  async findUserProjects(userId: string, options: FindOptions = {}): Promise<Project[]> {
+  async findUserProjects(
+    userId: string,
+    options: FindOptions = {}
+  ): Promise<Project[]> {
     const {
       page = 1,
       pageSize = 20,
       sortBy = 'created_at',
-      sortOrder = 'DESC'
+      sortOrder = 'DESC',
     } = options;
 
     const builder = new QueryBuilder()
@@ -99,7 +117,11 @@ export class ProjectRepository extends BaseRepository<Project> {
   }
 
   // 根據日期範圍查找專案
-  async findByDateRange(startDate?: Date, endDate?: Date, options: FindOptions = {}): Promise<Project[]> {
+  async findByDateRange(
+    startDate?: Date,
+    endDate?: Date,
+    options: FindOptions = {}
+  ): Promise<Project[]> {
     const builder = new QueryBuilder()
       .from(this.tableName)
       .where('is_active = ?', true);
@@ -182,26 +204,26 @@ export class ProjectRepository extends BaseRepository<Project> {
     const queries = [
       // 總專案數
       'SELECT COUNT(*) as total FROM projects WHERE is_active = true',
-      
+
       // 進行中專案數
-      'SELECT COUNT(*) as active FROM projects WHERE is_active = true AND status = \'active\'',
-      
+      "SELECT COUNT(*) as active FROM projects WHERE is_active = true AND status = 'active'",
+
       // 已完成專案數
-      'SELECT COUNT(*) as completed FROM projects WHERE is_active = true AND status = \'completed\'',
-      
+      "SELECT COUNT(*) as completed FROM projects WHERE is_active = true AND status = 'completed'",
+
       // 逾期專案數
       `SELECT COUNT(*) as overdue FROM projects 
        WHERE is_active = true AND end_date < CURRENT_DATE 
        AND status IN ('planning', 'active', 'on_hold')`,
-      
+
       // 平均進度
       'SELECT AVG(progress) as avg_progress FROM projects WHERE is_active = true',
-      
+
       // 按狀態分組
       'SELECT status, COUNT(*) as count FROM projects WHERE is_active = true GROUP BY status',
-      
+
       // 按類型分組
-      'SELECT type, COUNT(*) as count FROM projects WHERE is_active = true GROUP BY type'
+      'SELECT type, COUNT(*) as count FROM projects WHERE is_active = true GROUP BY type',
     ];
 
     const [
@@ -211,7 +233,7 @@ export class ProjectRepository extends BaseRepository<Project> {
       overdueResult,
       avgProgressResult,
       statusResults,
-      typeResults
+      typeResults,
     ] = await Promise.all([
       db.queryOne<{ total: number }>(queries[0]),
       db.queryOne<{ active: number }>(queries[1]),
@@ -219,7 +241,7 @@ export class ProjectRepository extends BaseRepository<Project> {
       db.queryOne<{ overdue: number }>(queries[3]),
       db.queryOne<{ avg_progress: number }>(queries[4]),
       db.query<{ status: ProjectStatus; count: number }>(queries[5]),
-      db.query<{ type: ProjectType; count: number }>(queries[6])
+      db.query<{ type: ProjectType; count: number }>(queries[6]),
     ]);
 
     const projectsByStatus = {} as Record<ProjectStatus, number>;
@@ -239,12 +261,15 @@ export class ProjectRepository extends BaseRepository<Project> {
       overdueProjects: overdueResult?.overdue || 0,
       averageProgress: avgProgressResult?.avg_progress || 0,
       projectsByStatus,
-      projectsByType
+      projectsByType,
     };
   }
 
   // 複製專案
-  async duplicateProject(sourceProjectId: string, newProjectData: Partial<Project>): Promise<Project> {
+  async duplicateProject(
+    sourceProjectId: string,
+    newProjectData: Partial<Project>
+  ): Promise<Project> {
     const sourceProject = await this.findById(sourceProjectId);
     if (!sourceProject) {
       throw new Error('來源專案不存在');
@@ -252,7 +277,7 @@ export class ProjectRepository extends BaseRepository<Project> {
 
     // 創建新專案，排除 id 和時間戳欄位
     const { id, created_at, updated_at, ...projectData } = sourceProject;
-    
+
     return this.create({
       ...projectData,
       ...newProjectData,
@@ -262,7 +287,10 @@ export class ProjectRepository extends BaseRepository<Project> {
   }
 
   // 自訂篩選條件處理
-  protected applyFilters(builder: QueryBuilder, filters: Record<string, any>): void {
+  protected applyFilters(
+    builder: QueryBuilder,
+    filters: Record<string, any>
+  ): void {
     super.applyFilters(builder, filters);
 
     // 處理狀態陣列篩選
@@ -313,12 +341,14 @@ export class ProjectRepository extends BaseRepository<Project> {
     // 逾期篩選
     if (filters.isOverdue) {
       builder.where('end_date < CURRENT_DATE');
-      builder.where('status IN (\'planning\', \'active\', \'on_hold\')');
+      builder.where("status IN ('planning', 'active', 'on_hold')");
     }
 
     // 即將到期篩選
     if (filters.upcomingDeadlineDays) {
-      builder.where(`end_date BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '${filters.upcomingDeadlineDays} days')`);
+      builder.where(
+        `end_date BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '${filters.upcomingDeadlineDays} days')`
+      );
     }
   }
 }

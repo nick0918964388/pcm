@@ -9,7 +9,7 @@ import {
   checkHttpMethod,
   handleOptionsRequest,
   logApiRequest,
-  unauthorizedResponse
+  unauthorizedResponse,
 } from '@/lib/utils/api-response';
 
 // GET /api/auth/me - 取得當前用戶資訊
@@ -36,11 +36,7 @@ export async function GET(request: NextRequest) {
     // 記錄請求日誌
     logApiRequest(request, null, user, startTime);
 
-    return successResponse(
-      { user: userProfile },
-      '取得用戶資訊成功'
-    );
-
+    return successResponse({ user: userProfile }, '取得用戶資訊成功');
   } catch (error: any) {
     logApiRequest(request, null, null, startTime);
     return handleKnownError(error);
@@ -81,11 +77,7 @@ export async function PUT(request: NextRequest) {
     // 記錄請求日誌
     logApiRequest(request, validation.data, user, startTime);
 
-    return successResponse(
-      { user: updatedUser },
-      '用戶資訊更新成功'
-    );
-
+    return successResponse({ user: updatedUser }, '用戶資訊更新成功');
   } catch (error: any) {
     logApiRequest(request, null, null, startTime);
     return handleKnownError(error);

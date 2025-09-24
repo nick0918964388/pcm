@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 
 // Database Integration Tests for Oracle Migration
 // 測試Oracle資料庫操作的整合功能
@@ -61,7 +69,9 @@ describe('Database Integration Tests - Oracle Environment', () => {
       const startTime = Date.now();
 
       try {
-        await dbConnection.query('BEGIN DBMS_LOCK.SLEEP(10); END;', [], { timeout: 1000 });
+        await dbConnection.query('BEGIN DBMS_LOCK.SLEEP(10); END;', [], {
+          timeout: 1000,
+        });
         expect(true).toBe(false); // Should not reach here
       } catch (error) {
         const duration = Date.now() - startTime;
@@ -107,16 +117,21 @@ describe('Database Integration Tests - Oracle Environment', () => {
         );
 
         // Verify data exists in transaction
-        const result = await transaction.query('SELECT COUNT(*) as count FROM test_table WHERE id = ?', [1]);
+        const result = await transaction.query(
+          'SELECT COUNT(*) as count FROM test_table WHERE id = ?',
+          [1]
+        );
         expect(result[0].count).toBe(1);
 
         // Commit transaction
         await transaction.commit();
 
         // Verify data persists after commit
-        const finalResult = await dbConnection.query('SELECT COUNT(*) as count FROM test_table WHERE id = ?', [1]);
+        const finalResult = await dbConnection.query(
+          'SELECT COUNT(*) as count FROM test_table WHERE id = ?',
+          [1]
+        );
         expect(finalResult[0].count).toBe(1);
-
       } catch (error) {
         await transaction.rollback();
         throw error;
@@ -137,16 +152,21 @@ describe('Database Integration Tests - Oracle Environment', () => {
         );
 
         // Verify data exists in transaction
-        const result = await transaction.query('SELECT COUNT(*) as count FROM test_table WHERE id = ?', [2]);
+        const result = await transaction.query(
+          'SELECT COUNT(*) as count FROM test_table WHERE id = ?',
+          [2]
+        );
         expect(result[0].count).toBe(1);
 
         // Rollback transaction
         await transaction.rollback();
 
         // Verify data does not persist after rollback
-        const finalResult = await dbConnection.query('SELECT COUNT(*) as count FROM test_table WHERE id = ?', [2]);
+        const finalResult = await dbConnection.query(
+          'SELECT COUNT(*) as count FROM test_table WHERE id = ?',
+          [2]
+        );
         expect(finalResult[0].count).toBe(0);
-
       } catch (error) {
         await transaction.rollback();
         throw error;
@@ -174,10 +194,7 @@ describe('Database Integration Tests - Oracle Environment', () => {
         );
 
         // Commit both transactions
-        await Promise.all([
-          transaction1.commit(),
-          transaction2.commit()
-        ]);
+        await Promise.all([transaction1.commit(), transaction2.commit()]);
 
         // Verify both inserts succeeded
         const result = await dbConnection.query(
@@ -185,11 +202,10 @@ describe('Database Integration Tests - Oracle Environment', () => {
           [3, 4]
         );
         expect(result[0].count).toBe(2);
-
       } catch (error) {
         await Promise.all([
           transaction1.rollback().catch(() => {}),
-          transaction2.rollback().catch(() => {})
+          transaction2.rollback().catch(() => {}),
         ]);
         throw error;
       }
@@ -202,13 +218,17 @@ describe('Database Integration Tests - Oracle Environment', () => {
       const dbConnection = connection.getConnection();
 
       // Test sequence generation
-      const result = await dbConnection.query('SELECT test_sequence.NEXTVAL as next_id FROM DUAL');
+      const result = await dbConnection.query(
+        'SELECT test_sequence.NEXTVAL as next_id FROM DUAL'
+      );
       expect(result[0].next_id).toBeDefined();
       expect(typeof result[0].next_id).toBe('number');
       expect(result[0].next_id).toBeGreaterThan(0);
 
       // Test that sequence increments
-      const result2 = await dbConnection.query('SELECT test_sequence.NEXTVAL as next_id FROM DUAL');
+      const result2 = await dbConnection.query(
+        'SELECT test_sequence.NEXTVAL as next_id FROM DUAL'
+      );
       expect(result2[0].next_id).toBe(result[0].next_id + 1);
     });
 
@@ -220,7 +240,7 @@ describe('Database Integration Tests - Oracle Environment', () => {
         name: 'test',
         value: 123,
         nested: { key: 'value' },
-        array: [1, 2, 3]
+        array: [1, 2, 3],
       };
 
       // Insert JSON data
@@ -231,14 +251,14 @@ describe('Database Integration Tests - Oracle Environment', () => {
 
       // Query using Oracle JSON_VALUE
       const nameResult = await dbConnection.query(
-        'SELECT JSON_VALUE(data, \'$.name\') as name FROM test_json_table WHERE id = ?',
+        "SELECT JSON_VALUE(data, '$.name') as name FROM test_json_table WHERE id = ?",
         [1]
       );
       expect(nameResult[0].name).toBe('test');
 
       // Query using Oracle JSON_QUERY
       const nestedResult = await dbConnection.query(
-        'SELECT JSON_QUERY(data, \'$.nested\') as nested FROM test_json_table WHERE id = ?',
+        "SELECT JSON_QUERY(data, '$.nested') as nested FROM test_json_table WHERE id = ?",
         [1]
       );
       expect(JSON.parse(nestedResult[0].nested)).toEqual({ key: 'value' });
@@ -463,8 +483,12 @@ describe('Database Integration Tests - Oracle Environment', () => {
 
       // Test ORA-00001: unique constraint violated
       try {
-        await dbConnection.query('INSERT INTO test_constraints_table (id, name) VALUES (1, \'duplicate\')');
-        await dbConnection.query('INSERT INTO test_constraints_table (id, name) VALUES (1, \'duplicate\')');
+        await dbConnection.query(
+          "INSERT INTO test_constraints_table (id, name) VALUES (1, 'duplicate')"
+        );
+        await dbConnection.query(
+          "INSERT INTO test_constraints_table (id, name) VALUES (1, 'duplicate')"
+        );
       } catch (error) {
         expect(error.code).toBe('ORA-00001');
         expect(error.message).toContain('unique constraint');
@@ -507,15 +531,18 @@ describe('Database Integration Tests - Oracle Environment', () => {
 
       try {
         // Setup potential deadlock scenario
-        await transaction1.query('UPDATE test_deadlock_table SET value = 1 WHERE id = 1');
-        await transaction2.query('UPDATE test_deadlock_table SET value = 2 WHERE id = 2');
+        await transaction1.query(
+          'UPDATE test_deadlock_table SET value = 1 WHERE id = 1'
+        );
+        await transaction2.query(
+          'UPDATE test_deadlock_table SET value = 2 WHERE id = 2'
+        );
 
         // This would potentially create a deadlock in a real scenario
         // Oracle should detect and resolve it automatically
 
         await transaction1.commit();
         await transaction2.commit();
-
       } catch (error) {
         if (error.message.includes('deadlock')) {
           // Oracle detected deadlock - this is expected behavior

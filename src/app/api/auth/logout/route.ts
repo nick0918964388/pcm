@@ -7,7 +7,7 @@ import {
   checkHttpMethod,
   handleOptionsRequest,
   logApiRequest,
-  unauthorizedResponse
+  unauthorizedResponse,
 } from '@/lib/utils/api-response';
 
 // POST /api/auth/logout - 用戶登出
@@ -43,11 +43,7 @@ export async function POST(request: NextRequest) {
     // 記錄請求日誌
     logApiRequest(request, null, user, startTime);
 
-    return successResponse(
-      null,
-      '登出成功'
-    );
-
+    return successResponse(null, '登出成功');
   } catch (error: any) {
     logApiRequest(request, null, null, startTime);
     return handleKnownError(error);

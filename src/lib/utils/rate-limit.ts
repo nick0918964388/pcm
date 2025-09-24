@@ -22,16 +22,16 @@ export function checkRateLimit(
   const entry = rateLimitStore.get(key);
 
   // If no entry exists or window has expired, create new entry
-  if (!entry || (now - entry.windowStart) >= windowMs) {
+  if (!entry || now - entry.windowStart >= windowMs) {
     rateLimitStore.set(key, {
       count: 1,
-      windowStart: now
+      windowStart: now,
     });
 
     return {
       allowed: true,
       remaining: maxRequests - 1,
-      resetTime: now + windowMs
+      resetTime: now + windowMs,
     };
   }
 
@@ -45,7 +45,7 @@ export function checkRateLimit(
   return {
     allowed,
     remaining,
-    resetTime
+    resetTime,
   };
 }
 
@@ -54,14 +54,14 @@ export function rateLimitResponse(message = 'Too Many Requests') {
     JSON.stringify({
       success: false,
       message,
-      errorCode: 'RATE_LIMIT_EXCEEDED'
+      errorCode: 'RATE_LIMIT_EXCEEDED',
     }),
     {
       status: 429,
       headers: {
         'Content-Type': 'application/json',
-        'Retry-After': '60'
-      }
+        'Retry-After': '60',
+      },
     }
   );
 }

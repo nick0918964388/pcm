@@ -149,7 +149,7 @@
 }
 
 .data-saver-mode .photo-thumbnail::after {
-  content: "數據節省";
+  content: '數據節省';
   position: absolute;
   bottom: 0.25rem;
   right: 0.25rem;

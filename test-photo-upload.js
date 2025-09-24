@@ -13,27 +13,79 @@ async function testPhotoUpload() {
   try {
     // 建立一個小的測試圖片檔案 (1x1 透明 PNG)
     const pngBuffer = Buffer.from([
-      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-      0x00, 0x00, 0x00, 0x0D, // IHDR chunk length
-      0x49, 0x48, 0x44, 0x52, // IHDR
-      0x00, 0x00, 0x00, 0x01, // width = 1
-      0x00, 0x00, 0x00, 0x01, // height = 1
-      0x08, 0x06, 0x00, 0x00, 0x00, // bit depth, color type, compression, filter, interlace
-      0x1F, 0x15, 0xC4, 0x89, // CRC
-      0x00, 0x00, 0x00, 0x0A, // IDAT chunk length
-      0x49, 0x44, 0x41, 0x54, // IDAT
-      0x78, 0x9C, 0x62, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, // compressed data
-      0xE2, 0x21, 0xBC, 0x33, // CRC
-      0x00, 0x00, 0x00, 0x00, // IEND chunk length
-      0x49, 0x45, 0x4E, 0x44, // IEND
-      0xAE, 0x42, 0x60, 0x82  // CRC
+      0x89,
+      0x50,
+      0x4e,
+      0x47,
+      0x0d,
+      0x0a,
+      0x1a,
+      0x0a, // PNG signature
+      0x00,
+      0x00,
+      0x00,
+      0x0d, // IHDR chunk length
+      0x49,
+      0x48,
+      0x44,
+      0x52, // IHDR
+      0x00,
+      0x00,
+      0x00,
+      0x01, // width = 1
+      0x00,
+      0x00,
+      0x00,
+      0x01, // height = 1
+      0x08,
+      0x06,
+      0x00,
+      0x00,
+      0x00, // bit depth, color type, compression, filter, interlace
+      0x1f,
+      0x15,
+      0xc4,
+      0x89, // CRC
+      0x00,
+      0x00,
+      0x00,
+      0x0a, // IDAT chunk length
+      0x49,
+      0x44,
+      0x41,
+      0x54, // IDAT
+      0x78,
+      0x9c,
+      0x62,
+      0x00,
+      0x00,
+      0x00,
+      0x02,
+      0x00,
+      0x01, // compressed data
+      0xe2,
+      0x21,
+      0xbc,
+      0x33, // CRC
+      0x00,
+      0x00,
+      0x00,
+      0x00, // IEND chunk length
+      0x49,
+      0x45,
+      0x4e,
+      0x44, // IEND
+      0xae,
+      0x42,
+      0x60,
+      0x82, // CRC
     ]);
 
     // 建立 FormData
     const form = new FormData();
     form.append('files', pngBuffer, {
       filename: 'test-photo.png',
-      contentType: 'image/png'
+      contentType: 'image/png',
     });
     form.append('album', 'test-album');
     form.append('description', '測試上傳照片');
@@ -51,7 +103,7 @@ async function testPhotoUpload() {
         headers: {
           ...form.getHeaders(),
         },
-        timeout: 30000
+        timeout: 30000,
       }
     );
 
@@ -71,7 +123,6 @@ async function testPhotoUpload() {
     } else {
       console.log('❌ 上傳失敗:', response.data.error);
     }
-
   } catch (error) {
     console.error('❌ 測試失敗:', error.message);
 
@@ -82,7 +133,9 @@ async function testPhotoUpload() {
   }
 
   console.log('');
-  console.log('💡 請檢查 Next.js 開發伺服器的終端機輸出，查看詳細的資料庫操作日誌：');
+  console.log(
+    '💡 請檢查 Next.js 開發伺服器的終端機輸出，查看詳細的資料庫操作日誌：'
+  );
   console.log('   - 應該看到 "⏳ 正在插入照片到資料庫"');
   console.log('   - 應該看到 "📊 SQL參數"');
   console.log('   - 應該看到 "📊 INSERT結果"');

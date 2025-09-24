@@ -11,6 +11,7 @@
 ## 前置需求
 
 ### 系統要求
+
 - Python 3.11+
 - Node.js 18+
 - PostgreSQL 14+
@@ -18,6 +19,7 @@
 - 至少 2GB 可用磁碟空間
 
 ### 開發工具
+
 - Docker Desktop (推薦用於本地開發)
 - Git
 - VS Code 或類似 IDE
@@ -26,6 +28,7 @@
 ## 環境設定
 
 ### 1. 取得專案程式碼
+
 ```bash
 git clone [repository-url]
 cd photo-management-system
@@ -33,7 +36,9 @@ git checkout 001-photo-management
 ```
 
 ### 2. 設定環境變數
+
 建立 `.env` 檔案：
+
 ```env
 # 資料庫設定
 DATABASE_URL=postgresql://username:password@localhost:5432/photo_db
@@ -55,6 +60,7 @@ THUMBNAIL_QUALITY=85
 ```
 
 ### 3. 啟動服務 (使用 Docker)
+
 ```bash
 # 啟動資料庫和 Redis
 docker-compose up -d postgres redis
@@ -70,6 +76,7 @@ docker-compose up -d
 ```
 
 ### 4. 驗證服務啟動
+
 ```bash
 # 檢查後端 API
 curl http://localhost:8000/health
@@ -85,6 +92,7 @@ curl http://localhost:3000
 **目標**: 驗證照片上傳、元資料處理和縮圖生成功能
 
 #### 1.1 準備測試資料
+
 ```bash
 # 建立測試專案
 curl -X POST http://localhost:8000/api/v1/projects \
@@ -100,6 +108,7 @@ export TEST_PROJECT_ID="[返回的專案ID]"
 ```
 
 #### 1.2 上傳測試照片
+
 ```bash
 # 上傳單張照片
 curl -X POST http://localhost:8000/api/v1/photos \
@@ -119,6 +128,7 @@ curl -X POST http://localhost:8000/api/v1/photos \
 ```
 
 #### 1.3 驗證上傳結果
+
 - ✅ 檢查 HTTP 回應碼為 201
 - ✅ 確認回傳的照片 ID 和元資料
 - ✅ 驗證縮圖檔案已生成 (thumb, small, medium)
@@ -129,6 +139,7 @@ curl -X POST http://localhost:8000/api/v1/photos \
 **目標**: 驗證照片列表、詳細檢視和不同尺寸的圖片顯示
 
 #### 2.1 取得照片列表
+
 ```bash
 # 取得專案的照片列表
 curl -X GET "http://localhost:8000/api/v1/photos?project_id=$TEST_PROJECT_ID&per_page=20" \
@@ -140,6 +151,7 @@ curl -X GET "http://localhost:8000/api/v1/photos?project_id=$TEST_PROJECT_ID&pag
 ```
 
 #### 2.2 檢視照片詳細資訊
+
 ```bash
 # 取得特定照片詳細資訊
 export PHOTO_ID="[從列表取得的照片ID]"
@@ -148,6 +160,7 @@ curl -X GET "http://localhost:8000/api/v1/photos/$PHOTO_ID" \
 ```
 
 #### 2.3 下載不同尺寸的照片
+
 ```bash
 # 下載原始尺寸
 curl -X GET "http://localhost:8000/api/v1/photos/$PHOTO_ID/download?size=original" \
@@ -161,7 +174,9 @@ curl -X GET "http://localhost:8000/api/v1/photos/$PHOTO_ID/download?size=thumb" 
 ```
 
 #### 2.4 前端介面測試
+
 開啟瀏覽器訪問 `http://localhost:3000`：
+
 - ✅ 檢查照片網格檢視載入正常
 - ✅ 點擊照片能開啟預覽模式
 - ✅ 預覽模式顯示完整資訊和標註
@@ -172,6 +187,7 @@ curl -X GET "http://localhost:8000/api/v1/photos/$PHOTO_ID/download?size=thumb" 
 **目標**: 驗證全文搜尋、日期篩選和複合查詢功能
 
 #### 3.1 關鍵字搜尋
+
 ```bash
 # 搜尋描述和標籤
 curl -X GET "http://localhost:8000/api/v1/search/photos?q=測試" \
@@ -183,6 +199,7 @@ curl -X GET "http://localhost:8000/api/v1/search/photos?q=台北" \
 ```
 
 #### 3.2 日期篩選
+
 ```bash
 # 快速日期篩選
 curl -X GET "http://localhost:8000/api/v1/photos?project_id=$TEST_PROJECT_ID&quick_filter=today" \
@@ -194,6 +211,7 @@ curl -X GET "http://localhost:8000/api/v1/photos?project_id=$TEST_PROJECT_ID&dat
 ```
 
 #### 3.3 複合搜尋
+
 ```bash
 # 結合關鍵字和日期篩選
 curl -X GET "http://localhost:8000/api/v1/search/photos?q=測試&project_id=$TEST_PROJECT_ID&date_from=2025-09-01" \
@@ -205,6 +223,7 @@ curl -X GET "http://localhost:8000/api/v1/search/photos?q=測試&project_id=$TES
 **目標**: 驗證相簿建立、照片組織和管理功能
 
 #### 4.1 建立相簿
+
 ```bash
 # 建立新相簿
 curl -X POST http://localhost:8000/api/v1/albums \
@@ -221,6 +240,7 @@ export ALBUM_ID="[返回的相簿ID]"
 ```
 
 #### 4.2 管理相簿照片
+
 ```bash
 # 新增照片到相簿
 curl -X POST "http://localhost:8000/api/v1/albums/$ALBUM_ID/photos" \
@@ -241,6 +261,7 @@ curl -X GET "http://localhost:8000/api/v1/albums/$ALBUM_ID?include_photos=true" 
 **目標**: 驗證多張照片的批次處理功能
 
 #### 5.1 批次新增到相簿
+
 ```bash
 # 取得多張照片 ID
 export PHOTO_IDS='["photo_id_1", "photo_id_2", "photo_id_3"]'
@@ -257,6 +278,7 @@ curl -X POST http://localhost:8000/api/v1/photos/batch \
 ```
 
 #### 5.2 批次刪除
+
 ```bash
 # 批次刪除照片
 curl -X POST http://localhost:8000/api/v1/photos/batch \
@@ -271,6 +293,7 @@ curl -X POST http://localhost:8000/api/v1/photos/batch \
 ## 效能測試
 
 ### 負載測試
+
 ```bash
 # 使用 Apache Bench 測試 API 效能
 ab -n 1000 -c 10 -H "Authorization: Bearer YOUR_TOKEN" \
@@ -283,6 +306,7 @@ ab -n 1000 -c 10 -H "Authorization: Bearer YOUR_TOKEN" \
 ```
 
 ### 檔案上傳測試
+
 ```bash
 # 測試大檔案上傳 (接近 10MB 限制)
 curl -X POST http://localhost:8000/api/v1/photos \
@@ -300,6 +324,7 @@ curl -X POST http://localhost:8000/api/v1/photos \
 ## 驗收標準
 
 ### 功能性需求
+
 - [ ] 所有 API 端點回應正確的狀態碼和資料格式
 - [ ] 照片上傳支援指定的檔案格式和大小限制
 - [ ] 縮圖自動生成且品質符合要求
@@ -308,18 +333,21 @@ curl -X POST http://localhost:8000/api/v1/photos \
 - [ ] 分頁功能正確載入和導航
 
 ### 效能需求
+
 - [ ] API 回應時間 < 200ms (不含檔案傳輸)
 - [ ] 支援 100 併發使用者
 - [ ] 圖片載入時間 < 2s
 - [ ] 記憶體使用 < 1GB (單一實例)
 
 ### 安全性需求
+
 - [ ] 檔案類型驗證防止惡意檔案上傳
 - [ ] JWT 認證正確保護 API 端點
 - [ ] 使用者只能存取有權限的照片和相簿
 - [ ] 檔案上傳路徑不可被遍歷
 
 ### 可用性需求
+
 - [ ] 前端介面響應式設計適配行動裝置
 - [ ] 載入狀態和錯誤訊息清楚顯示
 - [ ] 支援鍵盤導航和螢幕閱讀器
@@ -329,19 +357,16 @@ curl -X POST http://localhost:8000/api/v1/photos \
 
 ### 常見問題
 
-**Q: 照片上傳失敗，提示檔案過大**
-A: 檢查 `MAX_FILE_SIZE` 環境變數設定，預設為 10MB
+**Q: 照片上傳失敗，提示檔案過大** A: 檢查 `MAX_FILE_SIZE` 環境變數設定，預設為 10MB
 
-**Q: 縮圖生成失敗**
-A: 確認 Pillow 套件正確安裝，檢查 Celery 工作者是否正常運行
+**Q: 縮圖生成失敗** A: 確認 Pillow 套件正確安裝，檢查 Celery 工作者是否正常運行
 
-**Q: 搜尋功能無結果**
-A: 檢查 PostgreSQL 的全文搜尋設定，確認 GIN 索引已建立
+**Q: 搜尋功能無結果** A: 檢查 PostgreSQL 的全文搜尋設定，確認 GIN 索引已建立
 
-**Q: 前端無法載入照片**
-A: 檢查 CORS 設定，確認前端和後端的 URL 配置正確
+**Q: 前端無法載入照片** A: 檢查 CORS 設定，確認前端和後端的 URL 配置正確
 
 ### 除錯資訊
+
 ```bash
 # 檢查後端日誌
 docker-compose logs backend

@@ -1,18 +1,18 @@
 /**
  * Vitest Configuration for PCM Project
- * 
+ *
  * This configuration file sets up Vitest for testing the project store and other components.
  * It includes React support, TypeScript path mapping, and testing environment configuration.
- * 
+ *
  * @module VitestConfig
  * @version 1.0
  * @date 2025-08-30
  */
 
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -25,7 +25,7 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/.next/**',
-      '**/coverage/**'
+      '**/coverage/**',
     ],
     coverage: {
       provider: 'v8',
@@ -35,13 +35,13 @@ export default defineConfig({
         'src/test-setup.ts',
         '**/*.d.ts',
         '**/*.config.*',
-        'coverage/**'
-      ]
-    }
+        'coverage/**',
+      ],
+    },
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
-  }
-})
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+});

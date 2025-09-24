@@ -2,9 +2,12 @@
 
 ## 系統概述
 
-PCM（Project Control Management）是一個全面的專案控制管理系統，整合了人員認證管理、專案範疇管理和廠商排班管理三大核心功能模組。系統基於 Next.js 14、TypeScript 和 PostgreSQL 構建，提供企業級的專案管理解決方案。
+PCM（Project Control
+Management）是一個全面的專案控制管理系統，整合了人員認證管理、專案範疇管理和廠商排班管理三大核心功能模組。系統基於 Next.js
+14、TypeScript 和 PostgreSQL 構建，提供企業級的專案管理解決方案。
 
 ### 🎯 系統目標
+
 - ✅ 整合認證、專案範疇、排班三大模組
 - ✅ 企業級安全認證和權限控制
 - ✅ 完整的PostgreSQL資料庫整合
@@ -15,6 +18,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 ## 🏗️ 系統架構
 
 ### 1. 整體架構圖
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    PCM 專案控制管理系統                        │
@@ -48,6 +52,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 ### 2. 技術堆疊總覽
 
 #### 前端技術
+
 - **框架**: Next.js 14 (App Router)
 - **語言**: TypeScript 5.0+
 - **UI 組件**: shadcn/ui + Radix UI
@@ -56,6 +61,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 - **表單處理**: React Hook Form + Zod
 
 #### 後端技術
+
 - **API**: Next.js API Routes
 - **資料庫**: PostgreSQL 15+
 - **ORM**: Prisma / node-postgres
@@ -63,6 +69,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 - **驗證**: Zod Schema
 
 #### DevOps 技術
+
 - **容器化**: Docker + Docker Compose
 - **版本控制**: Git + GitHub
 - **CI/CD**: GitHub Actions
@@ -74,6 +81,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 ### 1. 人員認證管理模組 (Authentication Management)
 
 #### 1.1 功能特性
+
 - JWT Token 認證機制
 - 角色權限控制 (RBAC)
 - 登入登出記錄
@@ -81,6 +89,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 - 安全審計記錄
 
 #### 1.2 主要組件
+
 - **認證中間件**: 驗證 JWT Token 和用戶權限
 - **用戶管理**: 用戶 CRUD 操作和權限分配
 - **角色管理**: 動態角色和權限配置
@@ -88,6 +97,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 - **安全監控**: 登入異常和操作審計
 
 #### 1.3 API 端點
+
 ```
 /api/auth/login         POST    用戶登入
 /api/auth/logout        POST    用戶登出
@@ -103,6 +113,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 ### 2. 專案範疇管理模組 (Project Scope Management)
 
 #### 2.1 功能特性
+
 - 專案生命週期管理
 - WBS (工作分解結構) 管理
 - 專案成員權限控制
@@ -110,6 +121,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 - 專案報表和儀表板
 
 #### 2.2 主要組件
+
 - **專案管理**: 專案創建、更新和生命週期控制
 - **WBS 管理**: 階層式工作分解和任務追蹤
 - **成員管理**: 專案成員角色和權限配置
@@ -117,6 +129,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 - **報表系統**: 專案進度和效能分析
 
 #### 2.3 API 端點
+
 ```
 /api/projects           GET     專案列表
 /api/projects           POST    新增專案
@@ -130,6 +143,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 ### 3. 廠商排班管理模組 (Vendor Duty Schedule Management)
 
 #### 3.1 功能特性
+
 - 廠商資料管理
 - 排班計劃制定
 - 值班記錄追蹤
@@ -137,6 +151,7 @@ PCM（Project Control Management）是一個全面的專案控制管理系統，
 - 報表和統計分析
 
 #### 3.2 主要組件
+
 - **廠商管理**: 廠商基本資料和能力評估
 - **排班規劃**: 智能排班和衝突避免
 - **值班追蹤**: 實時值班狀態監控
@@ -160,6 +175,7 @@ audit_logs (審計記錄)                       └── duty_schedules (排班
 ```
 
 ### 資料表設計規範
+
 - 使用 UUID 作為主鍵確保全域唯一性
 - JSONB 欄位存儲複雜配置和元數據
 - 軟刪除機制保護重要資料
@@ -169,6 +185,7 @@ audit_logs (審計記錄)                       └── duty_schedules (排班
 ### 詳細資料表設計
 
 #### 1.1 用戶認證表 (users)
+
 ```sql
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -188,6 +205,7 @@ CREATE TABLE users (
 ```
 
 #### 1.2 專案表 (projects)
+
 ```sql
 CREATE TABLE projects (
     id VARCHAR(20) PRIMARY KEY,
@@ -210,6 +228,7 @@ CREATE TABLE projects (
 ```
 
 #### 1.3 WBS項目表 (wbs_items)
+
 ```sql
 CREATE TABLE wbs_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -237,6 +256,7 @@ CREATE TABLE wbs_items (
 ```
 
 ### 2. 索引策略
+
 ```sql
 -- 主要查詢索引
 CREATE INDEX idx_duty_schedules_project_date ON duty_schedules(project_id, duty_date);
@@ -249,10 +269,11 @@ CREATE INDEX idx_vendors_name_gin ON vendors USING gin(to_tsvector('simple', nam
 ```
 
 ### 3. 觸發器和審計
+
 ```sql
 -- 自動更新時間戳
-CREATE TRIGGER update_duty_schedules_updated_at 
-    BEFORE UPDATE ON duty_schedules 
+CREATE TRIGGER update_duty_schedules_updated_at
+    BEFORE UPDATE ON duty_schedules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- 審計日誌
@@ -264,6 +285,7 @@ CREATE TRIGGER duty_schedules_audit_trigger
 ## 安全架構設計
 
 ### 認證流程
+
 ```
 1. 用戶登入 → 驗證憑證
 2. 生成 JWT Access Token (15分鐘)
@@ -273,12 +295,14 @@ CREATE TRIGGER duty_schedules_audit_trigger
 ```
 
 ### 權限控制
+
 - **角色層級**: 系統管理員、專案經理、一般用戶
 - **資源權限**: 專案層級的讀寫權限控制
 - **功能權限**: 模組功能的細粒度權限控制
 - **資料權限**: 基於組織架構的資料存取限制
 
 ### 安全措施
+
 - JWT Token 機制
 - 會話併發限制
 - 密碼複雜度要求
@@ -290,12 +314,14 @@ CREATE TRIGGER duty_schedules_audit_trigger
 ## 🔌 API 設計原則
 
 ### RESTful 規範
+
 - HTTP 動詞對應 CRUD 操作
 - 資源導向的 URL 結構
 - 統一的錯誤回應格式
 - 版本控制策略
 
 ### 錯誤處理
+
 ```typescript
 interface ApiError {
   code: string;
@@ -315,6 +341,7 @@ interface ApiError {
 ```
 
 ### 分頁和查詢
+
 ```typescript
 // 查詢參數標準化
 interface QueryParams {
@@ -329,6 +356,7 @@ interface QueryParams {
 ## API 端點設計
 
 ### 1. 認證管理 API
+
 ```
 /api/auth/login         POST    用戶登入
 /api/auth/logout        POST    用戶登出
@@ -344,6 +372,7 @@ interface QueryParams {
 ```
 
 ### 2. 專案管理 API
+
 ```
 /api/projects           GET     專案列表
 /api/projects           POST    新增專案
@@ -358,6 +387,7 @@ interface QueryParams {
 ```
 
 ### 3. 廠商排班管理 API
+
 ```
 /api/projects/{id}/duty-schedules GET  排班列表
 /api/projects/{id}/duty-schedules POST 新增排班
@@ -371,33 +401,35 @@ interface QueryParams {
 ```
 
 ### 4. 查詢參數範例
+
 ```typescript
 interface DutyScheduleQueryParams {
   // 分頁
-  page?: number;              // 頁數 (預設: 1)
-  pageSize?: number;          // 每頁筆數 (預設: 20, 最大: 100)
-  
+  page?: number; // 頁數 (預設: 1)
+  pageSize?: number; // 每頁筆數 (預設: 20, 最大: 100)
+
   // 排序
   sortBy?: 'dutyDate' | 'personName' | 'vendorName' | 'status';
   sortOrder?: 'asc' | 'desc';
-  
+
   // 篩選
-  search?: string;            // 姓名/廠商名稱關鍵字
-  dateFrom?: string;          // 開始日期 (YYYY-MM-DD)
-  dateTo?: string;            // 結束日期 (YYYY-MM-DD)
-  specificDate?: string;      // 特定日期 (YYYY-MM-DD)
-  vendorIds?: string;         // 廠商ID (逗號分隔)
-  vendorTypes?: string;       // 廠商類型 (逗號分隔)
-  shiftTypes?: string;        // 班別 (逗號分隔)
-  statuses?: string;          // 狀態 (逗號分隔)
-  workAreas?: string;         // 工作區域 (逗號分隔)
-  urgencyLevels?: string;     // 緊急程度 (逗號分隔)
-  currentOnly?: boolean;      // 只顯示當前值班
+  search?: string; // 姓名/廠商名稱關鍵字
+  dateFrom?: string; // 開始日期 (YYYY-MM-DD)
+  dateTo?: string; // 結束日期 (YYYY-MM-DD)
+  specificDate?: string; // 特定日期 (YYYY-MM-DD)
+  vendorIds?: string; // 廠商ID (逗號分隔)
+  vendorTypes?: string; // 廠商類型 (逗號分隔)
+  shiftTypes?: string; // 班別 (逗號分隔)
+  statuses?: string; // 狀態 (逗號分隔)
+  workAreas?: string; // 工作區域 (逗號分隔)
+  urgencyLevels?: string; // 緊急程度 (逗號分隔)
+  currentOnly?: boolean; // 只顯示當前值班
   includeReplacements?: boolean; // 包含代班記錄
 }
 ```
 
 ### 2. 回應格式標準
+
 ```typescript
 interface ApiResponse<T> {
   success: boolean;
@@ -442,6 +474,7 @@ interface ApiResponse<T> {
 ## 前端架構設計
 
 ### 組件架構
+
 ```
 components/
 ├── ui/                 # shadcn/ui 基礎組件
@@ -453,12 +486,14 @@ components/
 ```
 
 ### 狀態管理
+
 - **全域狀態**: Zustand 管理用戶認證和應用配置
 - **伺服器狀態**: TanStack Query 管理 API 資料
 - **表單狀態**: React Hook Form 管理表單驗證
 - **UI 狀態**: 組件內部 useState 管理
 
 ### 路由設計
+
 ```
 /login                 # 登入頁面
 /dashboard             # 系統儀表板
@@ -473,19 +508,22 @@ components/
 ## 部署架構設計
 
 ### 環境配置
+
 - **開發環境**: 本地 PostgreSQL + Next.js Dev Server
 - **測試環境**: Docker Compose + 自動化測試
 - **生產環境**: Kubernetes + PostgreSQL Cluster
 
 ### CI/CD 流程
+
 ```
-Code Push → GitHub Actions → 
-Build & Test → Docker Image → 
-Deploy to Staging → Integration Test → 
+Code Push → GitHub Actions →
+Build & Test → Docker Image →
+Deploy to Staging → Integration Test →
 Deploy to Production
 ```
 
 ### 監控和日誌
+
 - **應用監控**: 效能指標和錯誤追蹤
 - **資料庫監控**: 查詢效能和連接狀況
 - **安全監控**: 異常登入和權限操作
@@ -494,6 +532,7 @@ Deploy to Production
 ## 開發流程規範
 
 ### Git 工作流程
+
 ```
 main (生產分支)
 ├── develop (開發分支)
@@ -503,12 +542,14 @@ main (生產分支)
 ```
 
 ### 程式碼規範
+
 - ESLint + Prettier 程式碼格式化
 - Husky + lint-staged Git Hook
 - 元件設計原則 (單一職責、可重用)
 - TypeScript 嚴格模式
 
 ### 測試策略
+
 - **單元測試**: Jest + Testing Library
 - **整合測試**: Playwright 端對端測試
 - **API 測試**: Supertest HTTP 測試
@@ -517,18 +558,21 @@ main (生產分支)
 ## 效能最佳化策略
 
 ### 前端效能
+
 - Next.js Image 優化
 - 程式碼分割和懶載入
 - React 效能優化 (memo, useMemo)
 - PWA 離線支援
 
 ### 資料庫效能
+
 - 索引優化策略
 - 查詢效能分析
 - 連接池管理
 - 快取策略 (Redis)
 
 ### API 效能
+
 - 回應快取機制
 - 分頁和查詢最佳化
 - 併發請求控制
@@ -537,6 +581,7 @@ main (生產分支)
 ## 💻 資料存取層設計
 
 ### 1. Repository 模式實作
+
 ```typescript
 // src/lib/database/connection.ts
 class DatabaseConnection {
@@ -549,8 +594,8 @@ class DatabaseConnection {
       user: process.env.USERNAME!,
       password: process.env.PASSWORD!,
       port: 5432,
-      max: 20,        // 最大連線數
-      min: 5,         // 最小連線數
+      max: 20, // 最大連線數
+      min: 5, // 最小連線數
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 5000,
     });
@@ -569,6 +614,7 @@ class DatabaseConnection {
 ```
 
 ### 2. Service 層業務邏輯
+
 ```typescript
 // src/lib/repositories/duty-schedule-repository.ts
 export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
@@ -585,7 +631,7 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
       .leftJoin('vendors v', 'dp.vendor_id = v.id');
 
     this.applyFilters(builder, filters);
-    
+
     const { query, params } = builder.build();
     const rows = await this.db.query(query, params);
     return rows.map(row => this.mapFromDB(row));
@@ -607,6 +653,7 @@ export class DutyScheduleRepository extends BaseRepository<DutySchedule> {
 ```
 
 ### 3. 連接池管理
+
 ```typescript
 // src/lib/services/duty-schedule-service.ts
 export class DutyScheduleService {
@@ -648,9 +695,12 @@ export class DutyScheduleService {
     shiftType: string
   ): Promise<void> {
     const conflicts = await this.repository.findAll({
-      projectId, personId, specificDate: dutyDate, shiftType
+      projectId,
+      personId,
+      specificDate: dutyDate,
+      shiftType,
     });
-    
+
     if (conflicts.some(s => s.status !== '取消')) {
       throw new Error('該時段已有其他值班排程');
     }
@@ -673,6 +723,7 @@ PCM 系統透過統一的 API Gateway 和共享的資料存取層，實現三個
 ### 第一階段：基礎架構建立 (第1-2週)
 
 #### 1. 環境準備
+
 ```bash
 # 安裝核心依賴
 npm install @prisma/client prisma
@@ -695,6 +746,7 @@ mkdir -p src/components/{auth,projects,wbs,duty-schedule}
 ```
 
 #### 2. 資料庫建立
+
 ```sql
 -- 執行認證模組 Schema
 CREATE SCHEMA auth;
@@ -717,6 +769,7 @@ CREATE TABLE duty.schedules (...);
 ### 第二階段：核心功能開發 (第3-4週)
 
 #### 3. 認證模組實作
+
 ```bash
 # 實作順序:
 # 1. src/lib/auth/jwt.ts - JWT Token 管理
@@ -727,6 +780,7 @@ CREATE TABLE duty.schedules (...);
 ```
 
 #### 4. 專案範疇模組實作
+
 ```bash
 # 實作順序:
 # 1. src/lib/repositories/project-repository.ts - 專案資料存取
@@ -737,6 +791,7 @@ CREATE TABLE duty.schedules (...);
 ```
 
 #### 5. 排班管理模組實作
+
 ```bash
 # 實作順序:
 # 1. src/lib/repositories/vendor-repository.ts - 廠商資料存取
@@ -749,6 +804,7 @@ CREATE TABLE duty.schedules (...);
 ### 第三階段：整合與測試 (第5-6週)
 
 #### 6. 系統整合測試
+
 ```bash
 # 整合測試:
 # 1. 認證流程測試 - 登入、登出、Token 刷新
@@ -761,6 +817,7 @@ CREATE TABLE duty.schedules (...);
 ## 🧪 測試策略
 
 ### 1. 單元測試
+
 ```typescript
 // 測試 Repository 層
 describe('DutyScheduleRepository', () => {
@@ -772,7 +829,7 @@ describe('DutyScheduleRepository', () => {
       shiftType: '日班',
       personId: 'person-id',
       workArea: '主工區',
-      createdBy: 'test-user'
+      createdBy: 'test-user',
     });
     expect(schedule.id).toBeDefined();
   });
@@ -782,13 +839,13 @@ describe('DutyScheduleRepository', () => {
 describe('DutyScheduleService', () => {
   test('should prevent schedule conflicts', async () => {
     const service = new DutyScheduleService(mockRepository, mockPersonRepo);
-    await expect(service.createSchedule(conflictingData))
-      .rejects.toThrow('該時段已有其他值班排程');
+    await expect(service.createSchedule(conflictingData)).rejects.toThrow('該時段已有其他值班排程');
   });
 });
 ```
 
 ### 2. 整合測試
+
 ```typescript
 // 測試 API 端點
 describe('Duty Schedule API', () => {
@@ -802,6 +859,7 @@ describe('Duty Schedule API', () => {
 ```
 
 ### 3. 效能測試
+
 ```bash
 # 使用工具進行負載測試
 npm install --save-dev artillery
@@ -811,6 +869,7 @@ artillery run load-test.yml
 ## 🔒 安全性考量
 
 ### 1. SQL 注入防護
+
 ```typescript
 // ✅ 使用參數化查詢
 const query = 'SELECT * FROM duty_schedules WHERE project_id = $1';
@@ -821,6 +880,7 @@ const badQuery = `SELECT * FROM duty_schedules WHERE project_id = '${projectId}'
 ```
 
 ### 2. 資料驗證
+
 ```typescript
 // 使用 Zod 進行嚴格驗證
 const CreateDutyScheduleSchema = z.object({
@@ -832,6 +892,7 @@ const CreateDutyScheduleSchema = z.object({
 ```
 
 ### 3. 權限控制
+
 ```typescript
 // API 路由中的權限檢查
 export async function GET(request: NextRequest, { params }) {
@@ -847,6 +908,7 @@ export async function GET(request: NextRequest, { params }) {
 ## 📊 監控和維護
 
 ### 1. 效能監控
+
 ```typescript
 // API 效能監控
 const startTime = Date.now();
@@ -861,6 +923,7 @@ if (duration > 1000) {
 ```
 
 ### 2. 健康檢查
+
 ```typescript
 // /api/health 端點
 export async function GET() {
@@ -874,36 +937,43 @@ export async function GET() {
 ```
 
 ### 3. 日誌管理
+
 ```typescript
 // 結構化日誌
 const logger = {
   info: (message: string, meta?: any) => {
-    console.log(JSON.stringify({
-      level: 'info',
-      message,
-      timestamp: new Date().toISOString(),
-      ...meta
-    }));
-  }
+    console.log(
+      JSON.stringify({
+        level: 'info',
+        message,
+        timestamp: new Date().toISOString(),
+        ...meta,
+      })
+    );
+  },
 };
 ```
 
 ## 📈 擴展考量
 
 ### 1. 資料庫優化
+
 - **分區策略**: 大量資料時按年份分區
 - **讀寫分離**: 使用讀副本分散查詢負載
 - **快取策略**: Redis 快取熱點資料
 
 ### 2. API 優化
+
 - **GraphQL**: 靈活的資料查詢
 - **分頁優化**: 遊標分頁處理大量資料
 - **批次操作**: 支援批次建立/更新
 
 ### 3. 微服務拆分
+
 未來可考慮拆分為以下微服務：
+
 - 廠商管理服務
-- 人員管理服務  
+- 人員管理服務
 - 值班排程服務
 - 通知服務
 
@@ -912,18 +982,21 @@ const logger = {
 ## 未來擴展規劃
 
 ### 短期目標 (3個月)
+
 - 完成三大核心模組開發
 - 實現基本的權限控制
 - 部署測試環境
 - 整合即時通知功能
 
 ### 中期目標 (6個月)
+
 - 新增行動應用支援
 - 實現即時協作功能
 - 整合第三方系統 API
 - 建立資料分析儀表板
 
 ### 長期目標 (1年)
+
 - AI 輔助排班優化
 - 機器學習預測分析
 - 多租戶架構支援
@@ -938,12 +1011,12 @@ PCM 專案控制管理系統整合了人員認證、專案範疇和廠商排班�
 ✅ **可擴展性**: 微服務架構設計，支援橫向擴展  
 ✅ **可維護性**: 清晰的分層架構，標準化設計模式  
 ✅ **效能優化**: 資料庫索引策略，快取機制支援  
-✅ **現代化**: 採用最新技術棧，響應式設計  
+✅ **現代化**: 採用最新技術棧，響應式設計
 
 系統設計遵循業界最佳實踐，結合現代化開發理念，為企業提供高效、安全、可靠的專案管理平台。
 
 ---
 
-*本文件版本: 1.0*  
-*最後更新: 2024-01-15*  
-*文件狀態: 設計完成*
+_本文件版本: 1.0_  
+_最後更新: 2024-01-15_  
+_文件狀態: 設計完成_

@@ -44,7 +44,12 @@ export interface UserSession {
 }
 
 // 專案管理相關類型
-export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
+export type ProjectStatus =
+  | 'planning'
+  | 'active'
+  | 'on_hold'
+  | 'completed'
+  | 'cancelled';
 export type ProjectType = 'internal' | 'external' | 'maintenance' | 'research';
 
 export interface Project extends BaseEntity {
@@ -73,7 +78,12 @@ export interface ProjectMember {
   is_active: boolean;
 }
 
-export type WBSStatus = 'not_started' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
+export type WBSStatus =
+  | 'not_started'
+  | 'in_progress'
+  | 'on_hold'
+  | 'completed'
+  | 'cancelled';
 export type WBSPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface WBSItem extends BaseEntity {
@@ -107,7 +117,13 @@ export interface ProjectMilestone extends BaseEntity {
 }
 
 // 廠商排班相關類型
-export type VendorType = 'security' | 'cleaning' | 'maintenance' | 'catering' | 'it_support' | 'other';
+export type VendorType =
+  | 'security'
+  | 'cleaning'
+  | 'maintenance'
+  | 'catering'
+  | 'it_support'
+  | 'other';
 export type VendorStatus = 'active' | 'inactive' | 'suspended' | 'terminated';
 
 export interface Vendor extends BaseEntity {
@@ -138,7 +154,13 @@ export interface DutyPerson extends BaseEntity {
 }
 
 export type ShiftType = '日班' | '夜班' | '全日' | '緊急' | '加班';
-export type DutyStatus = '已排班' | '值班中' | '已完成' | '取消' | '請假' | '代班';
+export type DutyStatus =
+  | '已排班'
+  | '值班中'
+  | '已完成'
+  | '取消'
+  | '請假'
+  | '代班';
 export type UrgencyLevel = '一般' | '重要' | '緊急' | '危急';
 
 export interface DutySchedule extends BaseEntity {

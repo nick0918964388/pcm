@@ -1,16 +1,16 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import * as React from 'react';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ToastProps {
-  title?: string
-  description?: string
-  variant?: 'default' | 'destructive' | 'warning' | 'success'
-  onClose?: () => void
-  className?: string
-  children?: React.ReactNode
+  title?: string;
+  description?: string;
+  variant?: 'default' | 'destructive' | 'warning' | 'success';
+  onClose?: () => void;
+  className?: string;
+  children?: React.ReactNode;
 }
 
 export function Toast({
@@ -22,23 +22,23 @@ export function Toast({
   children,
   ...props
 }: ToastProps) {
-  const [isVisible, setIsVisible] = React.useState(true)
+  const [isVisible, setIsVisible] = React.useState(true);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      setIsVisible(false)
-      onClose?.()
-    }, 5000)
+      setIsVisible(false);
+      onClose?.();
+    }, 5000);
 
-    return () => clearTimeout(timer)
-  }, [onClose])
+    return () => clearTimeout(timer);
+  }, [onClose]);
 
   const handleClose = () => {
-    setIsVisible(false)
-    onClose?.()
-  }
+    setIsVisible(false);
+    onClose?.();
+  };
 
-  if (!isVisible) return null
+  if (!isVisible) return null;
 
   return (
     <div
@@ -47,54 +47,57 @@ export function Toast({
         {
           'border-gray-200 text-gray-900': variant === 'default',
           'border-red-200 bg-red-50 text-red-900': variant === 'destructive',
-          'border-orange-200 bg-orange-50 text-orange-900': variant === 'warning',
+          'border-orange-200 bg-orange-50 text-orange-900':
+            variant === 'warning',
           'border-green-200 bg-green-50 text-green-900': variant === 'success',
         },
         className
       )}
       {...props}
     >
-      <div className="flex items-start space-x-3">
-        <div className="flex-1">
-          {title && (
-            <div className="font-semibold mb-1">{title}</div>
-          )}
+      <div className='flex items-start space-x-3'>
+        <div className='flex-1'>
+          {title && <div className='font-semibold mb-1'>{title}</div>}
           {description && (
-            <div className="text-sm opacity-90">{description}</div>
+            <div className='text-sm opacity-90'>{description}</div>
           )}
           {children}
         </div>
         <button
           onClick={handleClose}
-          className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+          className='flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors'
         >
-          <X className="h-4 w-4" />
+          <X className='h-4 w-4' />
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 interface ToastContextValue {
-  showToast: (props: Omit<ToastProps, 'onClose'>) => void
+  showToast: (props: Omit<ToastProps, 'onClose'>) => void;
 }
 
-const ToastContext = React.createContext<ToastContextValue | undefined>(undefined)
+const ToastContext = React.createContext<ToastContextValue | undefined>(
+  undefined
+);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = React.useState<(ToastProps & { id: string })[]>([])
+  const [toasts, setToasts] = React.useState<(ToastProps & { id: string })[]>(
+    []
+  );
 
   const showToast = React.useCallback((props: Omit<ToastProps, 'onClose'>) => {
-    const id = Math.random().toString(36).substr(2, 9)
+    const id = Math.random().toString(36).substr(2, 9);
     const toast = {
       ...props,
       id,
       onClose: () => {
-        setToasts(prev => prev.filter(t => t.id !== id))
-      }
-    }
-    setToasts(prev => [...prev, toast])
-  }, [])
+        setToasts(prev => prev.filter(t => t.id !== id));
+      },
+    };
+    setToasts(prev => [...prev, toast]);
+  }, []);
 
   return (
     <ToastContext.Provider value={{ showToast }}>
@@ -103,13 +106,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         <Toast key={toast.id} {...toast} />
       ))}
     </ToastContext.Provider>
-  )
+  );
 }
 
 export function useToast() {
-  const context = React.useContext(ToastContext)
+  const context = React.useContext(ToastContext);
   if (context === undefined) {
-    throw new Error('useToast must be used within a ToastProvider')
+    throw new Error('useToast must be used within a ToastProvider');
   }
-  return context
+  return context;
 }

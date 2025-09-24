@@ -42,7 +42,7 @@ export class MockRequestBuilder {
   private method: string;
   private url: string;
   private headers: Record<string, string> = {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   };
   private body?: any;
 
@@ -67,11 +67,13 @@ export class MockRequestBuilder {
   }
 
   build(): NextRequest {
-    const fullUrl = this.url.startsWith('http') ? this.url : `http://localhost:3000${this.url}`;
+    const fullUrl = this.url.startsWith('http')
+      ? this.url
+      : `http://localhost:3000${this.url}`;
 
     const requestInit: RequestInit = {
       method: this.method,
-      headers: this.headers
+      headers: this.headers,
     };
 
     if (this.body) {
@@ -84,7 +86,9 @@ export class MockRequestBuilder {
 
 // Test Data Generators
 export class TestDataGenerator {
-  static generateUser(overrides?: Partial<TestUser>): Omit<TestUser, 'id'> & { password: string } {
+  static generateUser(
+    overrides?: Partial<TestUser>
+  ): Omit<TestUser, 'id'> & { password: string } {
     const timestamp = Date.now();
     return {
       username: `testuser_${timestamp}`,
@@ -92,11 +96,14 @@ export class TestDataGenerator {
       password: 'TestPassword123!',
       firstName: 'Test',
       lastName: 'User',
-      ...overrides
+      ...overrides,
     };
   }
 
-  static generateProject(managerId: string, overrides?: Partial<TestProject>): Omit<TestProject, 'id'> {
+  static generateProject(
+    managerId: string,
+    overrides?: Partial<TestProject>
+  ): Omit<TestProject, 'id'> {
     const timestamp = Date.now();
     return {
       name: `Test Project ${timestamp}`,
@@ -104,11 +111,13 @@ export class TestDataGenerator {
       type: 'internal',
       status: 'planning',
       managerId,
-      ...overrides
+      ...overrides,
     };
   }
 
-  static generateVendor(overrides?: Partial<TestVendor>): Omit<TestVendor, 'id'> {
+  static generateVendor(
+    overrides?: Partial<TestVendor>
+  ): Omit<TestVendor, 'id'> {
     const timestamp = Date.now();
     return {
       name: `Test Vendor ${timestamp}`,
@@ -117,11 +126,15 @@ export class TestDataGenerator {
       contactPerson: 'John Doe',
       phone: '+1234567890',
       email: `vendor_${timestamp}@example.com`,
-      ...overrides
+      ...overrides,
     };
   }
 
-  static generateDutySchedule(projectId: string, personId: string, overrides?: any): any {
+  static generateDutySchedule(
+    projectId: string,
+    personId: string,
+    overrides?: any
+  ): any {
     return {
       projectId,
       personId,
@@ -131,18 +144,24 @@ export class TestDataGenerator {
       status: '已排班',
       urgencyLevel: '一般',
       notes: 'Test duty schedule',
-      ...overrides
+      ...overrides,
     };
   }
 }
 
 // Response Validators
 export class ResponseValidator {
-  static validateSuccessResponse(response: Response, expectedStatus = 200): void {
+  static validateSuccessResponse(
+    response: Response,
+    expectedStatus = 200
+  ): void {
     expect(response.status).toBe(expectedStatus);
   }
 
-  static async validateSuccessData(response: Response, expectedStatus = 200): Promise<any> {
+  static async validateSuccessData(
+    response: Response,
+    expectedStatus = 200
+  ): Promise<any> {
     this.validateSuccessResponse(response, expectedStatus);
     const data = await response.json();
     expect(data.success).toBe(true);
@@ -150,7 +169,11 @@ export class ResponseValidator {
     return data;
   }
 
-  static async validateErrorResponse(response: Response, expectedStatus: number, expectedMessage?: string): Promise<any> {
+  static async validateErrorResponse(
+    response: Response,
+    expectedStatus: number,
+    expectedMessage?: string
+  ): Promise<any> {
     expect(response.status).toBe(expectedStatus);
     const data = await response.json();
     expect(data.success).toBe(false);
@@ -171,11 +194,17 @@ export class ResponseValidator {
     if (data.createdAt || data.created_at) {
       // Oracle date format validation
       const dateField = data.createdAt || data.created_at;
-      expect(new Date(dateField).toISOString()).toBe(new Date(dateField).toISOString());
+      expect(new Date(dateField).toISOString()).toBe(
+        new Date(dateField).toISOString()
+      );
     }
   }
 
-  static validatePagination(data: any, expectedPage?: number, expectedPageSize?: number): void {
+  static validatePagination(
+    data: any,
+    expectedPage?: number,
+    expectedPageSize?: number
+  ): void {
     expect(data.meta).toBeDefined();
     expect(data.meta.pagination).toBeDefined();
 
@@ -213,7 +242,7 @@ export class DatabaseTestUtils {
     // Setup test environment with clean Oracle database state
     return {
       databaseType: 'oracle',
-      baseUrl: 'http://localhost:3000'
+      baseUrl: 'http://localhost:3000',
     };
   }
 
@@ -223,7 +252,10 @@ export class DatabaseTestUtils {
     console.log('Cleaning up test data...', environment);
   }
 
-  static async executeOracleQuery(query: string, params?: any[]): Promise<any[]> {
+  static async executeOracleQuery(
+    query: string,
+    params?: any[]
+  ): Promise<any[]> {
     // Execute raw Oracle query for test verification
     // This would use the Oracle connection layer
     console.log('Executing Oracle query:', query, params);
@@ -233,9 +265,9 @@ export class DatabaseTestUtils {
   static async verifyDataIntegrity(): Promise<boolean> {
     // Verify Oracle database constraints and data integrity
     const queries = [
-      'SELECT COUNT(*) as count FROM user_constraints WHERE status = \'ENABLED\'',
-      'SELECT COUNT(*) as count FROM user_indexes WHERE status = \'VALID\'',
-      'SELECT COUNT(*) as count FROM user_triggers WHERE status = \'ENABLED\''
+      "SELECT COUNT(*) as count FROM user_constraints WHERE status = 'ENABLED'",
+      "SELECT COUNT(*) as count FROM user_indexes WHERE status = 'VALID'",
+      "SELECT COUNT(*) as count FROM user_triggers WHERE status = 'ENABLED'",
     ];
 
     try {
@@ -255,7 +287,9 @@ export class DatabaseTestUtils {
 
 // Performance Test Utilities
 export class PerformanceTestUtils {
-  static async measureResponseTime(testFunction: () => Promise<Response>): Promise<{
+  static async measureResponseTime(
+    testFunction: () => Promise<Response>
+  ): Promise<{
     response: Response;
     duration: number;
   }> {
@@ -265,7 +299,7 @@ export class PerformanceTestUtils {
 
     return {
       response,
-      duration: endTime - startTime
+      duration: endTime - startTime,
     };
   }
 
@@ -320,9 +354,10 @@ export class PerformanceTestUtils {
       totalRequests,
       successfulRequests,
       failedRequests,
-      averageResponseTime: results.reduce((a, b) => a + b, 0) / results.length || 0,
+      averageResponseTime:
+        results.reduce((a, b) => a + b, 0) / results.length || 0,
       minResponseTime: Math.min(...results) || 0,
-      maxResponseTime: Math.max(...results) || 0
+      maxResponseTime: Math.max(...results) || 0,
     };
   }
 }
@@ -340,17 +375,23 @@ export class OracleMigrationTestUtils {
     differences: string[];
   }> {
     // Compare results between Oracle and PostgreSQL for migration validation
-    const oracleResults = await DatabaseTestUtils.executeOracleQuery(oracleQuery, params);
+    const oracleResults = await DatabaseTestUtils.executeOracleQuery(
+      oracleQuery,
+      params
+    );
     // This would also query PostgreSQL for comparison
     const postgresResults: any[] = []; // Placeholder
 
-    const isMatch = JSON.stringify(oracleResults) === JSON.stringify(postgresResults);
+    const isMatch =
+      JSON.stringify(oracleResults) === JSON.stringify(postgresResults);
     const differences: string[] = [];
 
     if (!isMatch) {
       differences.push('Result sets do not match');
       if (oracleResults.length !== postgresResults.length) {
-        differences.push(`Row count differs: Oracle=${oracleResults.length}, PostgreSQL=${postgresResults.length}`);
+        differences.push(
+          `Row count differs: Oracle=${oracleResults.length}, PostgreSQL=${postgresResults.length}`
+        );
       }
     }
 
@@ -358,7 +399,7 @@ export class OracleMigrationTestUtils {
       oracleResults,
       postgresResults,
       isMatch,
-      differences
+      differences,
     };
   }
 
@@ -370,8 +411,14 @@ export class OracleMigrationTestUtils {
 
     // Check that all required tables exist
     const requiredTables = [
-      'users', 'projects', 'project_members', 'wbs_items',
-      'vendors', 'duty_schedules', 'audit_log', 'login_log'
+      'users',
+      'projects',
+      'project_members',
+      'wbs_items',
+      'vendors',
+      'duty_schedules',
+      'audit_log',
+      'login_log',
     ];
 
     for (const table of requiredTables) {
@@ -390,7 +437,7 @@ export class OracleMigrationTestUtils {
 
     return {
       isValid: issues.length === 0,
-      issues
+      issues,
     };
   }
 }

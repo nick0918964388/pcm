@@ -1,5 +1,10 @@
 import { BaseRepository, FindOptions } from '../database/base-repository';
-import { Vendor, VendorType, VendorStatus, DutyPerson } from '../types/database';
+import {
+  Vendor,
+  VendorType,
+  VendorStatus,
+  DutyPerson,
+} from '../types/database';
 import { QueryBuilder } from '../database/query-builder';
 import { db } from '../database/connection';
 
@@ -13,7 +18,10 @@ export class VendorRepository extends BaseRepository<Vendor> {
     return {
       id: row.ID || row.id,
       name: row.NAME || row.name,
-      type: (row.VENDOR_TYPE || row.vendor_type || row.TYPE || row.type) as VendorType,
+      type: (row.VENDOR_TYPE ||
+        row.vendor_type ||
+        row.TYPE ||
+        row.type) as VendorType,
       status: (row.STATUS || row.status) as VendorStatus,
       contact_person: row.CONTACT_PERSON || row.contact_person,
       phone: row.PHONE || row.phone,
@@ -22,7 +30,10 @@ export class VendorRepository extends BaseRepository<Vendor> {
       contract_start: row.CONTRACT_START || row.contract_start,
       contract_end: row.CONTRACT_END || row.contract_end,
       rating: parseFloat(row.RATING || row.rating) || 0,
-      metadata: (row.METADATA || row.metadata) ? JSON.parse(row.METADATA || row.metadata) : null,
+      metadata:
+        row.METADATA || row.metadata
+          ? JSON.parse(row.METADATA || row.metadata)
+          : null,
       is_active: row.IS_ACTIVE !== undefined ? row.IS_ACTIVE : row.is_active,
       created_at: row.CREATED_AT || row.created_at,
       updated_at: row.UPDATED_AT || row.updated_at,
@@ -31,16 +42,19 @@ export class VendorRepository extends BaseRepository<Vendor> {
 
   mapToDB(entity: Partial<Vendor>): Record<string, any> {
     const mapped: Record<string, any> = {};
-    
+
     if (entity.name !== undefined) mapped.name = entity.name;
     if (entity.type !== undefined) mapped.type = entity.type;
     if (entity.status !== undefined) mapped.status = entity.status;
-    if (entity.contact_person !== undefined) mapped.contact_person = entity.contact_person;
+    if (entity.contact_person !== undefined)
+      mapped.contact_person = entity.contact_person;
     if (entity.phone !== undefined) mapped.phone = entity.phone;
     if (entity.email !== undefined) mapped.email = entity.email;
     if (entity.address !== undefined) mapped.address = entity.address;
-    if (entity.contract_start !== undefined) mapped.contract_start = entity.contract_start;
-    if (entity.contract_end !== undefined) mapped.contract_end = entity.contract_end;
+    if (entity.contract_start !== undefined)
+      mapped.contract_start = entity.contract_start;
+    if (entity.contract_end !== undefined)
+      mapped.contract_end = entity.contract_end;
     if (entity.rating !== undefined) mapped.rating = entity.rating;
     if (entity.metadata !== undefined) {
       mapped.metadata = JSON.stringify(entity.metadata);
@@ -51,14 +65,20 @@ export class VendorRepository extends BaseRepository<Vendor> {
   }
 
   // 根據類型查找廠商
-  async findByType(type: VendorType, options: FindOptions = {}): Promise<Vendor[]> {
+  async findByType(
+    type: VendorType,
+    options: FindOptions = {}
+  ): Promise<Vendor[]> {
     const filters = { type, ...(options.filters || {}) };
     const result = await this.findAll({ ...options, filters });
     return result.data;
   }
 
   // 根據狀態查找廠商
-  async findByStatus(status: VendorStatus, options: FindOptions = {}): Promise<Vendor[]> {
+  async findByStatus(
+    status: VendorStatus,
+    options: FindOptions = {}
+  ): Promise<Vendor[]> {
     const filters = { status, ...(options.filters || {}) };
     const result = await this.findAll({ ...options, filters });
     return result.data;
@@ -98,7 +118,10 @@ export class VendorRepository extends BaseRepository<Vendor> {
   }
 
   // 根據評分範圍查找廠商
-  async findByRatingRange(minRating: number, maxRating: number): Promise<Vendor[]> {
+  async findByRatingRange(
+    minRating: number,
+    maxRating: number
+  ): Promise<Vendor[]> {
     const query = `
       SELECT * FROM vendors 
       WHERE rating BETWEEN $1 AND $2
@@ -155,37 +178,37 @@ export class VendorRepository extends BaseRepository<Vendor> {
     averageRating: number;
     vendorsByType: Record<VendorType, number>;
     vendorsByStatus: Record<VendorStatus, number>;
-    topRatedVendors: Array<{ id: string; name: string; rating: number; }>;
+    topRatedVendors: Array<{ id: string; name: string; rating: number }>;
   }> {
     const queries = [
       // 總廠商數
       'SELECT COUNT(*) as total FROM vendors WHERE is_active = true',
-      
+
       // 活躍廠商數
-      'SELECT COUNT(*) as active FROM vendors WHERE is_active = true AND status = \'active\'',
-      
+      "SELECT COUNT(*) as active FROM vendors WHERE is_active = true AND status = 'active'",
+
       // 暫停廠商數
-      'SELECT COUNT(*) as suspended FROM vendors WHERE is_active = true AND status = \'suspended\'',
-      
+      "SELECT COUNT(*) as suspended FROM vendors WHERE is_active = true AND status = 'suspended'",
+
       // 已過期合約數
       'SELECT COUNT(*) as expired FROM vendors WHERE is_active = true AND contract_end < CURRENT_DATE',
-      
+
       // 即將到期合約數 (30天內)
       `SELECT COUNT(*) as expiring FROM vendors 
        WHERE is_active = true 
        AND contract_end BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '30 days')`,
-      
+
       // 平均評分
       'SELECT AVG(rating) as avg_rating FROM vendors WHERE is_active = true AND rating IS NOT NULL',
-      
+
       // 按類型分組
       'SELECT type, COUNT(*) as count FROM vendors WHERE is_active = true GROUP BY type',
-      
+
       // 按狀態分組
       'SELECT status, COUNT(*) as count FROM vendors WHERE is_active = true GROUP BY status',
-      
+
       // 評分最高的廠商
-      'SELECT id, name, rating FROM vendors WHERE is_active = true AND rating IS NOT NULL ORDER BY rating DESC LIMIT 5'
+      'SELECT id, name, rating FROM vendors WHERE is_active = true AND rating IS NOT NULL ORDER BY rating DESC LIMIT 5',
     ];
 
     const [
@@ -197,7 +220,7 @@ export class VendorRepository extends BaseRepository<Vendor> {
       avgRatingResult,
       typeResults,
       statusResults,
-      topRatedResults
+      topRatedResults,
     ] = await Promise.all([
       db.queryOne<{ total: number }>(queries[0]),
       db.queryOne<{ active: number }>(queries[1]),
@@ -207,7 +230,7 @@ export class VendorRepository extends BaseRepository<Vendor> {
       db.queryOne<{ avg_rating: number }>(queries[5]),
       db.query<{ type: VendorType; count: number }>(queries[6]),
       db.query<{ status: VendorStatus; count: number }>(queries[7]),
-      db.query<{ id: string; name: string; rating: number }>(queries[8])
+      db.query<{ id: string; name: string; rating: number }>(queries[8]),
     ]);
 
     const vendorsByType = {} as Record<VendorType, number>;
@@ -229,7 +252,7 @@ export class VendorRepository extends BaseRepository<Vendor> {
       averageRating: avgRatingResult?.avg_rating || 0,
       vendorsByType,
       vendorsByStatus,
-      topRatedVendors: topRatedResults
+      topRatedVendors: topRatedResults,
     };
   }
 
@@ -248,7 +271,10 @@ export class VendorRepository extends BaseRepository<Vendor> {
   }
 
   // 檢查信箱是否重複
-  async isEmailExists(email: string, excludeVendorId?: string): Promise<boolean> {
+  async isEmailExists(
+    email: string,
+    excludeVendorId?: string
+  ): Promise<boolean> {
     let query = `SELECT 1 FROM vendors WHERE email = $1 AND is_active = true`;
     const params = [email];
 
@@ -273,7 +299,11 @@ export class VendorRepository extends BaseRepository<Vendor> {
   }
 
   // 獲取廠商的排班統計
-  async getVendorScheduleStats(vendorId: string, dateFrom?: Date, dateTo?: Date): Promise<{
+  async getVendorScheduleStats(
+    vendorId: string,
+    dateFrom?: Date,
+    dateTo?: Date
+  ): Promise<{
     totalSchedules: number;
     completedSchedules: number;
     ongoingSchedules: number;
@@ -296,35 +326,40 @@ export class VendorRepository extends BaseRepository<Vendor> {
       `SELECT COUNT(*) as total FROM duty_schedules ds 
        INNER JOIN duty_persons dp ON ds.person_id = dp.id 
        WHERE ${whereClause}`,
-      
+
       `SELECT COUNT(*) as completed FROM duty_schedules ds 
        INNER JOIN duty_persons dp ON ds.person_id = dp.id 
        WHERE ${whereClause} AND ds.status = '已完成'`,
-      
+
       `SELECT COUNT(*) as ongoing FROM duty_schedules ds 
        INNER JOIN duty_persons dp ON ds.person_id = dp.id 
        WHERE ${whereClause} AND ds.status IN ('已排班', '值班中')`,
-      
+
       `SELECT COUNT(*) as cancelled FROM duty_schedules ds 
        INNER JOIN duty_persons dp ON ds.person_id = dp.id 
-       WHERE ${whereClause} AND ds.status IN ('取消', '請假')`
+       WHERE ${whereClause} AND ds.status IN ('取消', '請假')`,
     ];
 
-    const [totalResult, completedResult, ongoingResult, cancelledResult] = 
+    const [totalResult, completedResult, ongoingResult, cancelledResult] =
       await Promise.all(
-        queries.map(query => db.queryOne<{ [key: string]: number }>(query, params))
+        queries.map(query =>
+          db.queryOne<{ [key: string]: number }>(query, params)
+        )
       );
 
     return {
       totalSchedules: totalResult?.total || 0,
       completedSchedules: completedResult?.completed || 0,
       ongoingSchedules: ongoingResult?.ongoing || 0,
-      cancelledSchedules: cancelledResult?.cancelled || 0
+      cancelledSchedules: cancelledResult?.cancelled || 0,
     };
   }
 
   // 自訂篩選條件處理
-  protected applyFilters(builder: QueryBuilder, filters: Record<string, any>): void {
+  protected applyFilters(
+    builder: QueryBuilder,
+    filters: Record<string, any>
+  ): void {
     super.applyFilters(builder, filters);
 
     // 處理類型陣列篩選
@@ -366,7 +401,9 @@ export class VendorRepository extends BaseRepository<Vendor> {
 
     if (filters.isExpiring) {
       const days = filters.expiringDays || 30;
-      builder.where(`contract_end BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '${days} days')`);
+      builder.where(
+        `contract_end BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '${days} days')`
+      );
     }
 
     if (filters.hasRating) {

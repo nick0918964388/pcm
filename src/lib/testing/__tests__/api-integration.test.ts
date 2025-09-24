@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import { NextRequest } from 'next/server';
 
 // API Integration Tests for Oracle Migration
@@ -13,7 +21,11 @@ interface TestContext {
 }
 
 // Mock Next.js request/response for testing
-function createMockRequest(method: string, url: string, body?: any): NextRequest {
+function createMockRequest(
+  method: string,
+  url: string,
+  body?: any
+): NextRequest {
   const fullUrl = new URL(url, 'http://localhost:3000');
 
   const requestInit: RequestInit = {
@@ -56,12 +68,16 @@ describe('API Integration Tests - Oracle Environment', () => {
         email: `test_${Date.now()}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Test',
-        lastName: 'User'
+        lastName: 'User',
       };
 
       // This will fail until we implement Oracle-compatible auth endpoints
       const { POST } = await import('../../../app/api/auth/register/route');
-      const request = createMockRequest('POST', '/api/auth/register', registerData);
+      const request = createMockRequest(
+        'POST',
+        '/api/auth/register',
+        registerData
+      );
 
       const response = await POST(request);
       const data = await response.json();
@@ -80,7 +96,7 @@ describe('API Integration Tests - Oracle Environment', () => {
       // Requires a registered user from previous test
       const loginData = {
         username: `testuser_${Date.now()}`,
-        password: 'TestPassword123!'
+        password: 'TestPassword123!',
       };
 
       const { POST } = await import('../../../app/api/auth/login/route');
@@ -100,11 +116,15 @@ describe('API Integration Tests - Oracle Environment', () => {
     it('should reject invalid credentials', async () => {
       const invalidLoginData = {
         username: 'nonexistent',
-        password: 'wrongpassword'
+        password: 'wrongpassword',
       };
 
       const { POST } = await import('../../../app/api/auth/login/route');
-      const request = createMockRequest('POST', '/api/auth/login', invalidLoginData);
+      const request = createMockRequest(
+        'POST',
+        '/api/auth/login',
+        invalidLoginData
+      );
 
       const response = await POST(request);
       const data = await response.json();
@@ -153,7 +173,7 @@ describe('API Integration Tests - Oracle Environment', () => {
         description: 'A test project for API testing',
         type: 'internal',
         priority: 3,
-        status: 'planning'
+        status: 'planning',
       };
 
       const { POST } = await import('../../../app/api/projects/route');
@@ -188,12 +208,19 @@ describe('API Integration Tests - Oracle Environment', () => {
     });
 
     it('should get project by ID', async () => {
-      const { GET } = await import('../../../app/api/projects/[projectId]/route');
-      const request = createMockRequest('GET', `/api/projects/${testContext.testProjectId}`);
+      const { GET } = await import(
+        '../../../app/api/projects/[projectId]/route'
+      );
+      const request = createMockRequest(
+        'GET',
+        `/api/projects/${testContext.testProjectId}`
+      );
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
-      const response = await GET(request, { params: { projectId: testContext.testProjectId } });
+      const response = await GET(request, {
+        params: { projectId: testContext.testProjectId },
+      });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -204,15 +231,23 @@ describe('API Integration Tests - Oracle Environment', () => {
     it('should update project', async () => {
       const updateData = {
         name: `Updated Test Project ${Date.now()}`,
-        status: 'active'
+        status: 'active',
       };
 
-      const { PUT } = await import('../../../app/api/projects/[projectId]/route');
-      const request = createMockRequest('PUT', `/api/projects/${testContext.testProjectId}`, updateData);
+      const { PUT } = await import(
+        '../../../app/api/projects/[projectId]/route'
+      );
+      const request = createMockRequest(
+        'PUT',
+        `/api/projects/${testContext.testProjectId}`,
+        updateData
+      );
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
-      const response = await PUT(request, { params: { projectId: testContext.testProjectId } });
+      const response = await PUT(request, {
+        params: { projectId: testContext.testProjectId },
+      });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -230,7 +265,7 @@ describe('API Integration Tests - Oracle Environment', () => {
         status: 'active',
         contactPerson: 'John Doe',
         phone: '+1234567890',
-        email: 'john@testvendor.com'
+        email: 'john@testvendor.com',
       };
 
       const { POST } = await import('../../../app/api/vendors/route');
@@ -281,12 +316,20 @@ describe('API Integration Tests - Oracle Environment', () => {
     it('should update vendor rating', async () => {
       const ratingData = { rating: 4.5 };
 
-      const { PUT } = await import('../../../app/api/vendors/[vendorId]/rating/route');
-      const request = createMockRequest('PUT', `/api/vendors/${testContext.testVendorId}/rating`, ratingData);
+      const { PUT } = await import(
+        '../../../app/api/vendors/[vendorId]/rating/route'
+      );
+      const request = createMockRequest(
+        'PUT',
+        `/api/vendors/${testContext.testVendorId}/rating`,
+        ratingData
+      );
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
-      const response = await PUT(request, { params: { vendorId: testContext.testVendorId } });
+      const response = await PUT(request, {
+        params: { vendorId: testContext.testVendorId },
+      });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -303,15 +346,23 @@ describe('API Integration Tests - Oracle Environment', () => {
         shiftType: '日班',
         workArea: 'A區',
         status: '已排班',
-        urgencyLevel: '一般'
+        urgencyLevel: '一般',
       };
 
-      const { POST } = await import('../../../app/api/projects/[projectId]/duty-schedules/route');
-      const request = createMockRequest('POST', `/api/projects/${testContext.testProjectId}/duty-schedules`, scheduleData);
+      const { POST } = await import(
+        '../../../app/api/projects/[projectId]/duty-schedules/route'
+      );
+      const request = createMockRequest(
+        'POST',
+        `/api/projects/${testContext.testProjectId}/duty-schedules`,
+        scheduleData
+      );
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
-      const response = await POST(request, { params: { projectId: testContext.testProjectId } });
+      const response = await POST(request, {
+        params: { projectId: testContext.testProjectId },
+      });
       const data = await response.json();
 
       expect(response.status).toBe(201);
@@ -323,12 +374,19 @@ describe('API Integration Tests - Oracle Environment', () => {
     });
 
     it('should get current duty schedules', async () => {
-      const { GET } = await import('../../../app/api/projects/[projectId]/duty-schedules/current/route');
-      const request = createMockRequest('GET', `/api/projects/${testContext.testProjectId}/duty-schedules/current`);
+      const { GET } = await import(
+        '../../../app/api/projects/[projectId]/duty-schedules/current/route'
+      );
+      const request = createMockRequest(
+        'GET',
+        `/api/projects/${testContext.testProjectId}/duty-schedules/current`
+      );
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
-      const response = await GET(request, { params: { projectId: testContext.testProjectId } });
+      const response = await GET(request, {
+        params: { projectId: testContext.testProjectId },
+      });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -339,19 +397,25 @@ describe('API Integration Tests - Oracle Environment', () => {
     it('should perform check-in', async () => {
       const checkinData = {
         checkInTime: new Date().toISOString(),
-        notes: 'On time arrival'
+        notes: 'On time arrival',
       };
 
-      const { POST } = await import('../../../app/api/projects/[projectId]/duty-schedules/[scheduleId]/checkin/route');
-      const request = createMockRequest('POST', `/api/projects/${testContext.testProjectId}/duty-schedules/${testContext.testScheduleId}/checkin`, checkinData);
+      const { POST } = await import(
+        '../../../app/api/projects/[projectId]/duty-schedules/[scheduleId]/checkin/route'
+      );
+      const request = createMockRequest(
+        'POST',
+        `/api/projects/${testContext.testProjectId}/duty-schedules/${testContext.testScheduleId}/checkin`,
+        checkinData
+      );
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
       const response = await POST(request, {
         params: {
           projectId: testContext.testProjectId,
-          scheduleId: testContext.testScheduleId
-        }
+          scheduleId: testContext.testScheduleId,
+        },
       });
       const data = await response.json();
 
@@ -402,7 +466,7 @@ describe('API Integration Tests - Oracle Environment', () => {
       const request = new NextRequest('http://localhost:3000/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: '{ invalid json }'
+        body: '{ invalid json }',
       });
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
@@ -429,12 +493,16 @@ describe('API Integration Tests - Oracle Environment', () => {
     });
 
     it('should handle invalid resource IDs', async () => {
-      const { GET } = await import('../../../app/api/projects/[projectId]/route');
+      const { GET } = await import(
+        '../../../app/api/projects/[projectId]/route'
+      );
       const request = createMockRequest('GET', '/api/projects/invalid-id');
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
-      const response = await GET(request, { params: { projectId: 'invalid-id' } });
+      const response = await GET(request, {
+        params: { projectId: 'invalid-id' },
+      });
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -455,7 +523,7 @@ describe('API Integration Tests - Oracle Environment', () => {
       const projectData = {
         name: `Oracle Sequence Test ${Date.now()}`,
         description: 'Testing Oracle sequence generation',
-        type: 'internal'
+        type: 'internal',
       };
 
       const { POST } = await import('../../../app/api/projects/route');
@@ -482,12 +550,16 @@ describe('API Integration Tests - Oracle Environment', () => {
         metadata: {
           customField1: 'value1',
           customField2: { nested: 'value2' },
-          tags: ['tag1', 'tag2']
-        }
+          tags: ['tag1', 'tag2'],
+        },
       };
 
       const { POST } = await import('../../../app/api/projects/route');
-      const request = createMockRequest('POST', '/api/projects', projectWithMetadata);
+      const request = createMockRequest(
+        'POST',
+        '/api/projects',
+        projectWithMetadata
+      );
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
@@ -501,7 +573,10 @@ describe('API Integration Tests - Oracle Environment', () => {
     it('should handle Oracle pagination with OFFSET FETCH', async () => {
       // Test Oracle pagination implementation
       const { GET } = await import('../../../app/api/projects/route');
-      const request = createMockRequest('GET', '/api/projects?page=1&pageSize=5');
+      const request = createMockRequest(
+        'GET',
+        '/api/projects?page=1&pageSize=5'
+      );
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
@@ -525,15 +600,23 @@ describe('API Integration Tests - Oracle Environment', () => {
         shiftType: '夜班',
         workArea: 'B區',
         status: '已排班',
-        urgencyLevel: '重要'
+        urgencyLevel: '重要',
       };
 
-      const { POST } = await import('../../../app/api/projects/[projectId]/duty-schedules/route');
-      const request = createMockRequest('POST', `/api/projects/${testContext.testProjectId}/duty-schedules`, scheduleData);
+      const { POST } = await import(
+        '../../../app/api/projects/[projectId]/duty-schedules/route'
+      );
+      const request = createMockRequest(
+        'POST',
+        `/api/projects/${testContext.testProjectId}/duty-schedules`,
+        scheduleData
+      );
 
       request.headers.set('Authorization', `Bearer ${testContext.authToken}`);
 
-      const response = await POST(request, { params: { projectId: testContext.testProjectId } });
+      const response = await POST(request, {
+        params: { projectId: testContext.testProjectId },
+      });
       const data = await response.json();
 
       expect(response.status).toBe(201);

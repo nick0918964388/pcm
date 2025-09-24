@@ -92,7 +92,10 @@ export interface ValueConversionResult {
 export interface ConversionRule {
   postgresqlType: PostgreSQLType;
   oracleType: OracleType;
-  conversionLogic: (value: any, options?: ConversionOptions) => ValueConversionResult;
+  conversionLogic: (
+    value: any,
+    options?: ConversionOptions
+  ) => ValueConversionResult;
   validationRule?: (value: any) => boolean;
   reversible: boolean;
   constraints?: string[];

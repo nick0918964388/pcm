@@ -8,12 +8,12 @@ const dbConfig = {
   database: 'app_db',
   user: 'admin',
   password: 'XcW04ByX6GbVdt1gw4EJ5XRY',
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 };
 
 async function checkDbStructure() {
   const client = new Client(dbConfig);
-  
+
   try {
     console.log('🔌 連接資料庫...');
     await client.connect();
@@ -27,12 +27,14 @@ async function checkDbStructure() {
       WHERE table_name = 'vendors' 
       ORDER BY ordinal_position
     `);
-    
+
     if (vendorsColumns.rows.length === 0) {
       console.log('❌ vendors 表不存在');
     } else {
       vendorsColumns.rows.forEach(row => {
-        console.log(`   - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`);
+        console.log(
+          `   - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`
+        );
       });
     }
 
@@ -44,12 +46,14 @@ async function checkDbStructure() {
       WHERE table_name = 'vendor_contacts' 
       ORDER BY ordinal_position
     `);
-    
+
     if (contactsColumns.rows.length === 0) {
       console.log('❌ vendor_contacts 表不存在');
     } else {
       contactsColumns.rows.forEach(row => {
-        console.log(`   - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`);
+        console.log(
+          `   - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`
+        );
       });
     }
 
@@ -61,11 +65,10 @@ async function checkDbStructure() {
       WHERE table_schema = 'public' 
       ORDER BY table_name
     `);
-    
+
     allTables.rows.forEach(row => {
       console.log(`   - ${row.table_name}`);
     });
-
   } catch (error) {
     console.error('❌ 錯誤:', error.message);
     process.exit(1);

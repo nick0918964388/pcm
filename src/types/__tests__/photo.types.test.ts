@@ -3,7 +3,7 @@
  * TDD - RED Phase: 失敗的測試案例
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vitest';
 import {
   Photo,
   Album,
@@ -11,8 +11,8 @@ import {
   PhotoFilters,
   PhotoMetadata,
   UploadResult,
-  ApiResponse
-} from '../photo.types'
+  ApiResponse,
+} from '../photo.types';
 
 describe('Photo Types', () => {
   describe('Photo interface', () => {
@@ -32,16 +32,16 @@ describe('Photo Types', () => {
         uploadedAt: new Date('2024-01-01'),
         metadata: {
           capturedAt: new Date('2024-01-01'),
-          description: 'Test photo'
-        }
-      }
+          description: 'Test photo',
+        },
+      };
 
-      expect(photo.id).toBe('test-photo-1')
-      expect(photo.projectId).toBe('proj001')
-      expect(photo.fileSize).toBe(1024000)
-      expect(photo.metadata.description).toBe('Test photo')
-    })
-  })
+      expect(photo.id).toBe('test-photo-1');
+      expect(photo.projectId).toBe('proj001');
+      expect(photo.fileSize).toBe(1024000);
+      expect(photo.metadata.description).toBe('Test photo');
+    });
+  });
 
   describe('Album interface', () => {
     it('should create valid album object', () => {
@@ -51,18 +51,18 @@ describe('Photo Types', () => {
         name: 'Test Album',
         photoCount: 0,
         createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01')
-      }
+        updatedAt: new Date('2024-01-01'),
+      };
 
-      expect(album.id).toBe('album-1')
-      expect(album.projectId).toBe('proj001')
-      expect(album.photoCount).toBe(0)
-    })
-  })
+      expect(album.id).toBe('album-1');
+      expect(album.projectId).toBe('proj001');
+      expect(album.photoCount).toBe(0);
+    });
+  });
 
   describe('UploadFile interface', () => {
     it('should create valid upload file object', () => {
-      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
+      const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
 
       const uploadFile: UploadFile = {
         id: 'upload-1',
@@ -70,14 +70,14 @@ describe('Photo Types', () => {
         projectId: 'proj001',
         metadata: {},
         progress: 0,
-        status: 'pending'
-      }
+        status: 'pending',
+      };
 
-      expect(uploadFile.id).toBe('upload-1')
-      expect(uploadFile.file.name).toBe('test.jpg')
-      expect(uploadFile.status).toBe('pending')
-    })
-  })
+      expect(uploadFile.id).toBe('upload-1');
+      expect(uploadFile.file.name).toBe('test.jpg');
+      expect(uploadFile.status).toBe('pending');
+    });
+  });
 
   describe('PhotoFilters interface', () => {
     it('should create valid photo filters object', () => {
@@ -85,17 +85,17 @@ describe('Photo Types', () => {
         searchQuery: 'test',
         dateRange: {
           start: new Date('2024-01-01'),
-          end: new Date('2024-12-31')
+          end: new Date('2024-12-31'),
         },
         tags: ['construction', 'progress'],
-        albumId: 'album-1'
-      }
+        albumId: 'album-1',
+      };
 
-      expect(filters.searchQuery).toBe('test')
-      expect(filters.tags).toContain('construction')
-      expect(filters.dateRange?.start).toEqual(new Date('2024-01-01'))
-    })
-  })
+      expect(filters.searchQuery).toBe('test');
+      expect(filters.tags).toContain('construction');
+      expect(filters.dateRange?.start).toEqual(new Date('2024-01-01'));
+    });
+  });
 
   describe('UploadResult interface', () => {
     it('should create valid upload result object for success', () => {
@@ -105,14 +105,14 @@ describe('Photo Types', () => {
         thumbnailUrl: '/thumbnails/photo-1.jpg',
         originalUrl: '/photos/photo-1.jpg',
         metadata: {
-          capturedAt: new Date('2024-01-01')
-        }
-      }
+          capturedAt: new Date('2024-01-01'),
+        },
+      };
 
-      expect(result.success).toBe(true)
-      expect(result.photoId).toBe('photo-1')
-      expect(result.errors).toBeUndefined()
-    })
+      expect(result.success).toBe(true);
+      expect(result.photoId).toBe('photo-1');
+      expect(result.errors).toBeUndefined();
+    });
 
     it('should create valid upload result object for failure', () => {
       const result: UploadResult = {
@@ -121,14 +121,14 @@ describe('Photo Types', () => {
         thumbnailUrl: '',
         originalUrl: '',
         metadata: {},
-        errors: ['File too large', 'Invalid format']
-      }
+        errors: ['File too large', 'Invalid format'],
+      };
 
-      expect(result.success).toBe(false)
-      expect(result.errors).toHaveLength(2)
-      expect(result.errors).toContain('File too large')
-    })
-  })
+      expect(result.success).toBe(false);
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors).toContain('File too large');
+    });
+  });
 
   describe('ApiResponse interface', () => {
     it('should create valid API response for photos list', () => {
@@ -146,9 +146,9 @@ describe('Photo Types', () => {
           originalUrl: '/photos/test1.jpg',
           uploadedBy: 'user-1',
           uploadedAt: new Date('2024-01-01'),
-          metadata: {}
-        }
-      ]
+          metadata: {},
+        },
+      ];
 
       const response: ApiResponse<Photo[]> = {
         success: true,
@@ -157,13 +157,13 @@ describe('Photo Types', () => {
         meta: {
           total: 1,
           page: 1,
-          limit: 20
-        }
-      }
+          limit: 20,
+        },
+      };
 
-      expect(response.success).toBe(true)
-      expect(response.data).toHaveLength(1)
-      expect(response.meta?.total).toBe(1)
-    })
-  })
-})
+      expect(response.success).toBe(true);
+      expect(response.data).toHaveLength(1);
+      expect(response.meta?.total).toBe(1);
+    });
+  });
+});

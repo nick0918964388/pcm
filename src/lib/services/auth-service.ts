@@ -47,7 +47,8 @@ export class AuthService {
     this.userRepository = new UserRepository();
     this.roleRepository = new RoleRepository();
     this.jwtSecret = process.env.JWT_SECRET || 'your-jwt-secret';
-    this.refreshSecret = process.env.JWT_REFRESH_SECRET || 'your-refresh-secret';
+    this.refreshSecret =
+      process.env.JWT_REFRESH_SECRET || 'your-refresh-secret';
     this.tokenExpiry = process.env.JWT_EXPIRY || '15m';
     this.refreshExpiry = process.env.JWT_REFRESH_EXPIRY || '7d';
   }
@@ -60,7 +61,8 @@ export class AuthService {
     const { usernameOrEmail, password } = credentials;
 
     // 查找用戶
-    const user = await this.userRepository.findByUsernameOrEmail(usernameOrEmail);
+    const user =
+      await this.userRepository.findByUsernameOrEmail(usernameOrEmail);
     if (!user) {
       throw new Error('用戶不存在或密碼錯誤');
     }
@@ -75,13 +77,13 @@ export class AuthService {
     if (!isPasswordValid) {
       // 增加失敗次數
       await this.userRepository.incrementFailedLoginAttempts(user.id);
-      
+
       // 檢查是否需要鎖定帳號
       if (user.failed_login_attempts + 1 >= 5) {
         await this.userRepository.lockUser(user.id, 30); // 鎖定 30 分鐘
         throw new Error('密碼錯誤次數過多，帳號已被鎖定 30 分鐘');
       }
-      
+
       throw new Error('用戶不存在或密碼錯誤');
     }
 
@@ -104,12 +106,12 @@ export class AuthService {
       lastName: user.last_name,
       isVerified: user.is_verified,
       roles: roles.map(role => role.name),
-      permissions
+      permissions,
     };
 
     return {
       user: authUser,
-      tokens
+      tokens,
     };
   }
 
@@ -141,13 +143,17 @@ export class AuthService {
       first_name: firstName,
       last_name: lastName,
       is_verified: false,
-      failed_login_attempts: 0
+      failed_login_attempts: 0,
     });
 
     // 分配預設角色 (一般用戶)
     const defaultRole = await this.roleRepository.findByName('user');
     if (defaultRole) {
-      await this.roleRepository.assignRoleToUser(user.id, defaultRole.id, 'system');
+      await this.roleRepository.assignRoleToUser(
+        user.id,
+        defaultRole.id,
+        'system'
+      );
     }
 
     return user;
@@ -158,7 +164,7 @@ export class AuthService {
     try {
       // 驗證 refresh token
       const payload = jwt.verify(refreshToken, this.refreshSecret) as any;
-      
+
       // 查找用戶
       const user = await this.userRepository.findById(payload.userId);
       if (!user || !user.is_active) {
@@ -177,7 +183,7 @@ export class AuthService {
     try {
       // 驗證 JWT
       const payload = jwt.verify(token, this.jwtSecret) as any;
-      
+
       // 查找用戶
       const user = await this.userRepository.findById(payload.userId);
       if (!user || !user.is_active) {
@@ -196,7 +202,7 @@ export class AuthService {
         lastName: user.last_name,
         isVerified: user.is_verified,
         roles: roles.map(role => role.name),
-        permissions
+        permissions,
       };
     } catch (error) {
       throw new Error('無效的 access token');
@@ -204,7 +210,11 @@ export class AuthService {
   }
 
   // 修改密碼
-  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string
+  ): Promise<void> {
     // 查找用戶
     const user = await this.userRepository.findById(userId);
     if (!user) {
@@ -212,7 +222,10 @@ export class AuthService {
     }
 
     // 驗證舊密碼
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password_hash);
+    const isOldPasswordValid = await bcrypt.compare(
+      oldPassword,
+      user.password_hash
+    );
     if (!isOldPasswordValid) {
       throw new Error('舊密碼錯誤');
     }
@@ -221,7 +234,10 @@ export class AuthService {
     this.validatePassword(newPassword);
 
     // 檢查新密碼與舊密碼不能相同
-    const isSamePassword = await bcrypt.compare(newPassword, user.password_hash);
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      user.password_hash
+    );
     if (isSamePassword) {
       throw new Error('新密碼不能與舊密碼相同');
     }
@@ -229,15 +245,19 @@ export class AuthService {
     // 加密新密碼並更新
     const newPasswordHash = await bcrypt.hash(newPassword, 12);
     await this.userRepository.update(userId, {
-      password_hash: newPasswordHash
+      password_hash: newPasswordHash,
     });
   }
 
   // 重設密碼 (忘記密碼)
-  async resetPassword(email: string, newPassword: string, resetToken: string): Promise<void> {
+  async resetPassword(
+    email: string,
+    newPassword: string,
+    resetToken: string
+  ): Promise<void> {
     // 這裡應該驗證重設密碼的 token
     // 實際應用中需要實作 token 生成和驗證機制
-    
+
     // 查找用戶
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
@@ -252,7 +272,7 @@ export class AuthService {
     await this.userRepository.update(user.id, {
       password_hash: passwordHash,
       failed_login_attempts: 0, // 重設失敗次數
-      locked_until: undefined   // 解鎖帳號
+      locked_until: undefined, // 解鎖帳號
     });
   }
 
@@ -289,7 +309,7 @@ export class AuthService {
       lastName: user.last_name,
       isVerified: user.is_verified,
       roles: roles.map(role => role.name),
-      permissions
+      permissions,
     };
   }
 
@@ -298,30 +318,26 @@ export class AuthService {
     const payload = {
       userId: user.id,
       username: user.username,
-      email: user.email
+      email: user.email,
     };
 
     const accessToken = jwt.sign(payload, this.jwtSecret, {
       expiresIn: this.tokenExpiry,
       issuer: 'pcm-system',
-      audience: 'pcm-users'
+      audience: 'pcm-users',
     });
 
-    const refreshToken = jwt.sign(
-      { userId: user.id },
-      this.refreshSecret,
-      {
-        expiresIn: this.refreshExpiry,
-        issuer: 'pcm-system',
-        audience: 'pcm-users'
-      }
-    );
+    const refreshToken = jwt.sign({ userId: user.id }, this.refreshSecret, {
+      expiresIn: this.refreshExpiry,
+      issuer: 'pcm-system',
+      audience: 'pcm-users',
+    });
 
     return {
       accessToken,
       refreshToken,
       expiresIn: this.parseExpiryToSeconds(this.tokenExpiry),
-      tokenType: 'Bearer'
+      tokenType: 'Bearer',
     };
   }
 
@@ -354,11 +370,16 @@ export class AuthService {
     const value = parseInt(expiry.slice(0, -1));
 
     switch (unit) {
-      case 's': return value;
-      case 'm': return value * 60;
-      case 'h': return value * 3600;
-      case 'd': return value * 86400;
-      default: return 900; // 預設 15 分鐘
+      case 's':
+        return value;
+      case 'm':
+        return value * 60;
+      case 'h':
+        return value * 3600;
+      case 'd':
+        return value * 86400;
+      default:
+        return 900; // 預設 15 分鐘
     }
   }
 
@@ -372,14 +393,18 @@ export class AuthService {
   // 批量鎖定用戶
   async lockUsers(userIds: string[], lockDurationMinutes = 30): Promise<void> {
     await Promise.all(
-      userIds.map(userId => this.userRepository.lockUser(userId, lockDurationMinutes))
+      userIds.map(userId =>
+        this.userRepository.lockUser(userId, lockDurationMinutes)
+      )
     );
   }
 
   // 批量解鎖用戶
   async unlockUsers(userIds: string[]): Promise<void> {
     await Promise.all(
-      userIds.map(userId => this.userRepository.resetFailedLoginAttempts(userId))
+      userIds.map(userId =>
+        this.userRepository.resetFailedLoginAttempts(userId)
+      )
     );
   }
 }

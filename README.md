@@ -5,6 +5,7 @@
 ## 🏗️ 技術架構
 
 ### 後端技術棧
+
 - **Framework**: Python 3.11 + FastAPI
 - **資料庫**: Oracle XE 21c (Docker)
 - **快取**: Redis 7.2
@@ -13,6 +14,7 @@
 - **認證**: JWT
 
 ### 前端技術棧
+
 - **Framework**: React 18 + Next.js 14
 - **語言**: TypeScript
 - **樣式**: Tailwind CSS
@@ -20,6 +22,7 @@
 - **API 請求**: SWR
 
 ### 基礎設施
+
 - **容器化**: Docker + Docker Compose
 - **代理**: Nginx (生產環境)
 - **監控**: Prometheus + Grafana
@@ -28,18 +31,21 @@
 ## 🚀 快速開始
 
 ### 系統需求
+
 - Docker Desktop 4.20+
 - Docker Compose 2.15+
 - Node.js 18+ (開發環境)
 - Python 3.11+ (開發環境)
 
 ### 1. 克隆專案
+
 ```bash
 git clone <repository-url>
 cd pcm
 ```
 
 ### 2. 環境設定
+
 ```bash
 # 複製環境變數範本
 cp .env.example .env
@@ -49,6 +55,7 @@ cp .env.example .env
 ```
 
 ### 3. 啟動開發環境
+
 ```bash
 # 啟動所有服務 (首次啟動需要 5-10 分鐘下載映像檔)
 docker-compose up -d
@@ -61,6 +68,7 @@ docker-compose logs -f
 ```
 
 ### 4. 健康檢查
+
 等待所有服務啟動完成後，檢查各服務狀態：
 
 ```bash
@@ -78,6 +86,7 @@ open http://localhost:5500/em
 ```
 
 ### 5. 資料庫初始化
+
 ```bash
 # 執行資料庫遷移 (後續實作後執行)
 docker-compose exec backend alembic upgrade head
@@ -124,6 +133,7 @@ pcm-photo-management/
 ## 🔧 開發指令
 
 ### Docker 操作
+
 ```bash
 # 啟動所有服務
 docker-compose up -d
@@ -146,6 +156,7 @@ docker-compose exec frontend sh
 ```
 
 ### 後端開發
+
 ```bash
 # 進入後端容器
 docker-compose exec backend bash
@@ -163,6 +174,7 @@ alembic upgrade head
 ```
 
 ### 前端開發
+
 ```bash
 # 進入前端容器
 docker-compose exec frontend sh
@@ -182,17 +194,18 @@ npm run lint
 
 ## 🌐 服務端點
 
-| 服務 | URL | 說明 |
-|------|-----|------|
-| 前端應用 | http://localhost:3000 | React 使用者介面 |
-| 後端 API | http://localhost:8000 | FastAPI REST API |
-| API 文件 | http://localhost:8000/docs | Swagger UI |
-| Celery 監控 | http://localhost:5555 | Flower 監控介面 |
-| Oracle EM | http://localhost:5500/em | 資料庫管理介面 |
+| 服務        | URL                        | 說明             |
+| ----------- | -------------------------- | ---------------- |
+| 前端應用    | http://localhost:3000      | React 使用者介面 |
+| 後端 API    | http://localhost:8000      | FastAPI REST API |
+| API 文件    | http://localhost:8000/docs | Swagger UI       |
+| Celery 監控 | http://localhost:5555      | Flower 監控介面  |
+| Oracle EM   | http://localhost:5500/em   | 資料庫管理介面   |
 
 ## 🔐 預設帳號密碼
 
 ### 開發環境預設帳號
+
 - **Oracle 資料庫**
   - 系統管理員: `SYS` / `oracle`
   - 應用使用者: `pcm_user` / `oracle123`
@@ -202,16 +215,19 @@ npm run lint
   - 密碼: `flower123`
 
 ### 安全提醒
+
 ⚠️ **重要**: 生產環境部署前務必修改所有預設密碼和金鑰！
 
 ## 📊 監控和日誌
 
 ### 健康檢查端點
+
 - **整體健康狀態**: `GET /health`
-- **就緒狀態檢查**: `GET /health/ready` 
+- **就緒狀態檢查**: `GET /health/ready`
 - **存活狀態檢查**: `GET /health/live`
 
 ### 日誌查看
+
 ```bash
 # 查看所有服務日誌
 docker-compose logs -f
@@ -223,6 +239,7 @@ docker-compose logs -f oracle-xe
 ```
 
 ### 效能監控
+
 ```bash
 # 查看容器資源使用情況
 docker stats
@@ -234,6 +251,7 @@ docker system df
 ## 🧪 測試
 
 ### 後端測試
+
 ```bash
 # 執行所有測試
 docker-compose exec backend pytest
@@ -246,6 +264,7 @@ docker-compose exec backend pytest --cov=src
 ```
 
 ### 前端測試
+
 ```bash
 # 執行所有測試
 docker-compose exec frontend npm test
@@ -260,6 +279,7 @@ docker-compose exec frontend npm run test:coverage
 ## 🚀 生產環境部署
 
 ### 使用生產 Docker Compose
+
 ```bash
 # 使用生產設定檔
 docker-compose -f docker-compose.prod.yml up -d
@@ -269,6 +289,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ### 環境變數設定
+
 生產環境部署前，請務必：
 
 1. 修改所有密碼和金鑰
@@ -280,6 +301,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ## 📝 API 文件
 
 啟動開發環境後，可透過以下 URL 查看 API 文件：
+
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
@@ -300,6 +322,7 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ### 常見問題
 
 **Q: Oracle 容器啟動失敗**
+
 ```bash
 # 檢查容器日誌
 docker-compose logs oracle-xe
@@ -311,6 +334,7 @@ docker-compose up -d
 ```
 
 **Q: 後端 API 無法連接資料庫**
+
 ```bash
 # 檢查資料庫是否完全啟動
 docker-compose logs oracle-xe | grep "DATABASE IS READY TO USE"
@@ -320,6 +344,7 @@ docker-compose exec backend python -c "from src.config import get_settings; prin
 ```
 
 **Q: 前端無法連接後端 API**
+
 ```bash
 # 檢查後端服務狀態
 curl http://localhost:8000/health
@@ -330,6 +355,7 @@ docker network inspect pcm_pcm-network
 ```
 
 **Q: 檔案上傳失敗**
+
 ```bash
 # 檢查上傳目錄權限
 docker-compose exec backend ls -la /app/uploads
@@ -339,6 +365,7 @@ df -h
 ```
 
 ### 重置環境
+
 ```bash
 # 停止所有服務並清除資料
 docker-compose down -v
@@ -353,6 +380,7 @@ docker system prune -a
 ## 📞 技術支援
 
 如有問題或建議，請：
+
 1. 查閱本 README 的故障排除章節
 2. 檢查 [Issues](../../issues) 是否有相關問題
 3. 建立新的 Issue 並提供詳細資訊

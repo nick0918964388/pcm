@@ -26,8 +26,8 @@ vi.mock('oracledb', () => ({
     CURSOR: 2004,
     CLOB: 2006,
     BLOB: 2007,
-    OUT_FORMAT_OBJECT: 4001
-  }
+    OUT_FORMAT_OBJECT: 4001,
+  },
 }));
 
 import { OracleQueryExecutor } from '../oracle-query-executor';
@@ -39,7 +39,7 @@ import type {
   BatchOperation,
   QueryResult,
   CursorResult,
-  BulkOperationResult
+  BulkOperationResult,
 } from '../oracle-query-types';
 
 describe('Oracle Query Executor - Task 3.2', () => {
@@ -58,19 +58,21 @@ describe('Oracle Query Executor - Task 3.2', () => {
       action: '',
       module: 'PCM_APP',
       clientId: '',
-      callTimeout: 60000
+      callTimeout: 60000,
     };
 
     // Mock connection manager
     mockConnectionManager = {
-      getConnection: vi.fn().mockResolvedValue({ success: true, data: mockConnection }),
+      getConnection: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: mockConnection }),
       executeQuery: vi.fn(),
       executeOne: vi.fn(),
       executeTransaction: vi.fn(),
       healthCheck: vi.fn(),
       getPoolStatus: vi.fn(),
       shutdown: vi.fn(),
-      initialize: vi.fn()
+      initialize: vi.fn(),
     } as any;
 
     queryExecutor = new OracleQueryExecutor(mockConnectionManager);
@@ -83,15 +85,21 @@ describe('Oracle Query Executor - Task 3.2', () => {
   describe('Oracle SQL語法查詢適配器', () => {
     it('should convert PostgreSQL LIMIT/OFFSET to Oracle OFFSET/FETCH', async () => {
       // RED: 測試分頁語法轉換
-      const postgresQuery = 'SELECT * FROM users ORDER BY id LIMIT 10 OFFSET 20';
-      const expectedOracleQuery = 'SELECT * FROM users ORDER BY id OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY';
+      const postgresQuery =
+        'SELECT * FROM users ORDER BY id LIMIT 10 OFFSET 20';
+      const expectedOracleQuery =
+        'SELECT * FROM users ORDER BY id OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY';
 
       mockConnection.execute.mockResolvedValue({
         rows: [{ id: 1, name: 'Test User' }],
-        metaData: [{ name: 'ID' }, { name: 'NAME' }]
+        metaData: [{ name: 'ID' }, { name: 'NAME' }],
       });
 
-      const result = await queryExecutor.executeQuery(postgresQuery, {}, { convertSyntax: true });
+      const result = await queryExecutor.executeQuery(
+        postgresQuery,
+        {},
+        { convertSyntax: true }
+      );
 
       expect(result.success).toBe(true);
       expect(mockConnection.execute).toHaveBeenCalledWith(
@@ -103,14 +111,20 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
     it('should convert PostgreSQL JSONB operations to Oracle JSON functions', async () => {
       // RED: 測試JSON操作語法轉換
-      const postgresQuery = "SELECT data->>'name' as name, data @> '{\"status\":\"active\"}' as is_active FROM projects";
-      const expectedOracleQuery = "SELECT JSON_VALUE(data, '$.name') as name, JSON_EXISTS(data, '$.status?(@ == \"active\")') as is_active FROM projects";
+      const postgresQuery =
+        'SELECT data->>\'name\' as name, data @> \'{"status":"active"}\' as is_active FROM projects';
+      const expectedOracleQuery =
+        "SELECT JSON_VALUE(data, '$.name') as name, JSON_EXISTS(data, '$.status?(@ == \"active\")') as is_active FROM projects";
 
       mockConnection.execute.mockResolvedValue({
-        rows: [{ NAME: 'Project 1', IS_ACTIVE: 1 }]
+        rows: [{ NAME: 'Project 1', IS_ACTIVE: 1 }],
       });
 
-      const result = await queryExecutor.executeQuery(postgresQuery, {}, { convertSyntax: true });
+      const result = await queryExecutor.executeQuery(
+        postgresQuery,
+        {},
+        { convertSyntax: true }
+      );
 
       expect(result.success).toBe(true);
       expect(mockConnection.execute).toHaveBeenCalledWith(
@@ -122,14 +136,20 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
     it('should convert PostgreSQL date functions to Oracle equivalents', async () => {
       // RED: 測試日期函數轉換
-      const postgresQuery = "SELECT NOW(), EXTRACT(YEAR FROM created_at), AGE(created_at) FROM users";
-      const expectedOracleQuery = "SELECT SYSTIMESTAMP, EXTRACT(YEAR FROM created_at), (SYSTIMESTAMP - created_at) FROM users";
+      const postgresQuery =
+        'SELECT NOW(), EXTRACT(YEAR FROM created_at), AGE(created_at) FROM users';
+      const expectedOracleQuery =
+        'SELECT SYSTIMESTAMP, EXTRACT(YEAR FROM created_at), (SYSTIMESTAMP - created_at) FROM users';
 
       mockConnection.execute.mockResolvedValue({
-        rows: [{ SYSTIMESTAMP: new Date(), YEAR: 2023, AGE: 365 }]
+        rows: [{ SYSTIMESTAMP: new Date(), YEAR: 2023, AGE: 365 }],
       });
 
-      const result = await queryExecutor.executeQuery(postgresQuery, {}, { convertSyntax: true });
+      const result = await queryExecutor.executeQuery(
+        postgresQuery,
+        {},
+        { convertSyntax: true }
+      );
 
       expect(result.success).toBe(true);
       expect(mockConnection.execute).toHaveBeenCalledWith(
@@ -142,13 +162,18 @@ describe('Oracle Query Executor - Task 3.2', () => {
     it('should handle ILIKE operations with Oracle REGEXP_LIKE', async () => {
       // RED: 測試不區分大小寫的LIKE操作轉換
       const postgresQuery = "SELECT * FROM users WHERE name ILIKE '%john%'";
-      const expectedOracleQuery = "SELECT * FROM users WHERE REGEXP_LIKE(name, 'john', 'i')";
+      const expectedOracleQuery =
+        "SELECT * FROM users WHERE REGEXP_LIKE(name, 'john', 'i')";
 
       mockConnection.execute.mockResolvedValue({
-        rows: [{ id: 1, name: 'John Doe' }]
+        rows: [{ id: 1, name: 'John Doe' }],
       });
 
-      const result = await queryExecutor.executeQuery(postgresQuery, {}, { convertSyntax: true });
+      const result = await queryExecutor.executeQuery(
+        postgresQuery,
+        {},
+        { convertSyntax: true }
+      );
 
       expect(result.success).toBe(true);
       expect(mockConnection.execute).toHaveBeenCalledWith(
@@ -160,12 +185,15 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
     it('should convert BOOLEAN values to Oracle NUMBER(1)', async () => {
       // RED: 測試布林值轉換
-      const query = "INSERT INTO users (name, is_active) VALUES (:name, :is_active)";
+      const query =
+        'INSERT INTO users (name, is_active) VALUES (:name, :is_active)';
       const binds = { name: 'John', is_active: true };
 
       mockConnection.execute.mockResolvedValue({ rowsAffected: 1 });
 
-      const result = await queryExecutor.executeQuery(query, binds, { convertBinds: true });
+      const result = await queryExecutor.executeQuery(query, binds, {
+        convertBinds: true,
+      });
 
       expect(result.success).toBe(true);
       expect(mockConnection.execute).toHaveBeenCalledWith(
@@ -179,11 +207,12 @@ describe('Oracle Query Executor - Task 3.2', () => {
   describe('Oracle Bind Variables處理', () => {
     it('should properly handle Oracle bind variable syntax', async () => {
       // RED: 測試Oracle bind variables語法
-      const query = "SELECT * FROM users WHERE id = :userId AND status = :userStatus";
+      const query =
+        'SELECT * FROM users WHERE id = :userId AND status = :userStatus';
       const binds = { userId: 123, userStatus: 'active' };
 
       mockConnection.execute.mockResolvedValue({
-        rows: [{ ID: 123, NAME: 'Test User', STATUS: 'active' }]
+        rows: [{ ID: 123, NAME: 'Test User', STATUS: 'active' }],
       });
 
       const result = await queryExecutor.executeQuery(query, binds);
@@ -193,7 +222,7 @@ describe('Oracle Query Executor - Task 3.2', () => {
         query,
         binds,
         expect.objectContaining({
-          outFormat: expect.any(Number)
+          outFormat: expect.any(Number),
         })
       );
     });
@@ -209,12 +238,14 @@ describe('Oracle Query Executor - Task 3.2', () => {
         name: 'Test Project',
         metadata: { key: 'value', tags: ['tag1', 'tag2'] },
         created_at: new Date(),
-        budget: 100000.50
+        budget: 100000.5,
       };
 
       mockConnection.execute.mockResolvedValue({ rowsAffected: 1 });
 
-      const result = await queryExecutor.executeQuery(query, binds, { convertBinds: true });
+      const result = await queryExecutor.executeQuery(query, binds, {
+        convertBinds: true,
+      });
 
       expect(result.success).toBe(true);
       expect(mockConnection.execute).toHaveBeenCalledWith(
@@ -224,7 +255,7 @@ describe('Oracle Query Executor - Task 3.2', () => {
           name: binds.name,
           metadata: JSON.stringify(binds.metadata), // JSON序列化
           created_at: binds.created_at,
-          budget: binds.budget
+          budget: binds.budget,
         }),
         expect.any(Object)
       );
@@ -240,11 +271,11 @@ describe('Oracle Query Executor - Task 3.2', () => {
       const binds = {
         userId: 123,
         newName: 'New Name',
-        oldName: { type: 'STRING', dir: 'BIND_OUT', maxSize: 255 }
+        oldName: { type: 'STRING', dir: 'BIND_OUT', maxSize: 255 },
       };
 
       mockConnection.execute.mockResolvedValue({
-        outBinds: { oldName: 'Old Name' }
+        outBinds: { oldName: 'Old Name' },
       });
 
       const result = await queryExecutor.executeQuery(query, binds);
@@ -255,34 +286,38 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
     it('should handle array bind variables for batch operations', async () => {
       // RED: 測試陣列bind variables用於批次操作
-      const query = "INSERT INTO users (name, email) VALUES (:name, :email)";
+      const query = 'INSERT INTO users (name, email) VALUES (:name, :email)';
       const bindArray = [
         { name: 'User 1', email: 'user1@test.com' },
         { name: 'User 2', email: 'user2@test.com' },
-        { name: 'User 3', email: 'user3@test.com' }
+        { name: 'User 3', email: 'user3@test.com' },
       ];
 
       mockConnection.executeMany.mockResolvedValue({
-        rowsAffected: 3
+        rowsAffected: 3,
       });
 
       const result = await queryExecutor.executeBatch(query, bindArray);
 
       expect(result.success).toBe(true);
       expect(result.totalProcessed).toBe(3);
-      expect(mockConnection.executeMany).toHaveBeenCalledWith(query, bindArray, expect.any(Object));
+      expect(mockConnection.executeMany).toHaveBeenCalledWith(
+        query,
+        bindArray,
+        expect.any(Object)
+      );
     });
   });
 
   describe('預處理語句快取和重用', () => {
     it('should cache prepared statements for reuse', async () => {
       // RED: 測試預處理語句快取
-      const query = "SELECT * FROM users WHERE id = :id";
+      const query = 'SELECT * FROM users WHERE id = :id';
       const cacheKey = queryExecutor.generateCacheKey(query);
 
       // 第一次執行
       mockConnection.execute.mockResolvedValue({
-        rows: [{ ID: 1, NAME: 'User 1' }]
+        rows: [{ ID: 1, NAME: 'User 1' }],
       });
 
       await queryExecutor.executeQuery(query, { id: 1 }, { useCache: true });
@@ -300,10 +335,13 @@ describe('Oracle Query Executor - Task 3.2', () => {
     it('should handle cache eviction when cache is full', async () => {
       // RED: 測試快取滿時的清理機制
       const maxCacheSize = 10;
-      const smallCacheExecutor = new OracleQueryExecutor(mockConnectionManager, {
-        maxCacheSize,
-        cacheEvictionPolicy: 'LRU'
-      });
+      const smallCacheExecutor = new OracleQueryExecutor(
+        mockConnectionManager,
+        {
+          maxCacheSize,
+          cacheEvictionPolicy: 'LRU',
+        }
+      );
 
       mockConnection.execute.mockResolvedValue({ rows: [] });
 
@@ -318,13 +356,15 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
       const cacheStats = smallCacheExecutor.getCacheStatistics();
 
-      expect(cacheStats.totalCachedStatements).toBeLessThanOrEqual(maxCacheSize);
+      expect(cacheStats.totalCachedStatements).toBeLessThanOrEqual(
+        maxCacheSize
+      );
       expect(cacheStats.cacheEvictions).toBeGreaterThan(0);
     });
 
     it('should support cache invalidation', async () => {
       // RED: 測試快取失效
-      const query = "SELECT * FROM users WHERE id = :id";
+      const query = 'SELECT * FROM users WHERE id = :id';
 
       mockConnection.execute.mockResolvedValue({ rows: [] });
 
@@ -339,16 +379,24 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
     it('should provide cache performance metrics', async () => {
       // RED: 測試快取效能指標
-      const query = "SELECT * FROM users WHERE status = :status";
+      const query = 'SELECT * FROM users WHERE status = :status';
 
       mockConnection.execute.mockResolvedValue({ rows: [] });
 
       // 執行查詢建立快取
-      await queryExecutor.executeQuery(query, { status: 'active' }, { useCache: true });
+      await queryExecutor.executeQuery(
+        query,
+        { status: 'active' },
+        { useCache: true }
+      );
 
       // 多次執行相同查詢模式
       for (let i = 0; i < 5; i++) {
-        await queryExecutor.executeQuery(query, { status: 'active' }, { useCache: true });
+        await queryExecutor.executeQuery(
+          query,
+          { status: 'active' },
+          { useCache: true }
+        );
       }
 
       const metrics = queryExecutor.getCachePerformanceMetrics();
@@ -365,7 +413,7 @@ describe('Oracle Query Executor - Task 3.2', () => {
       const transactionContext: TransactionContext = {
         isolationLevel: 'READ_COMMITTED',
         readOnly: false,
-        autoCommit: false
+        autoCommit: false,
       };
 
       mockConnection.execute
@@ -373,9 +421,11 @@ describe('Oracle Query Executor - Task 3.2', () => {
         .mockResolvedValueOnce({ rowsAffected: 1 }) // UPDATE
         .mockResolvedValueOnce({}); // COMMIT
 
-      const result = await queryExecutor.executeTransaction(async (tx) => {
+      const result = await queryExecutor.executeTransaction(async tx => {
         await tx.execute("INSERT INTO users (name) VALUES ('Test User')");
-        await tx.execute("UPDATE users SET status = 'active' WHERE name = 'Test User'");
+        await tx.execute(
+          "UPDATE users SET status = 'active' WHERE name = 'Test User'"
+        );
         return { success: true, message: 'Transaction completed' };
       }, transactionContext);
 
@@ -387,9 +437,11 @@ describe('Oracle Query Executor - Task 3.2', () => {
       // RED: 測試錯誤時的交易回滾
       mockConnection.execute
         .mockResolvedValueOnce({ rowsAffected: 1 }) // INSERT success
-        .mockRejectedValueOnce(new Error('ORA-00001: unique constraint violated')); // UPDATE fail
+        .mockRejectedValueOnce(
+          new Error('ORA-00001: unique constraint violated')
+        ); // UPDATE fail
 
-      const result = await queryExecutor.executeTransaction(async (tx) => {
+      const result = await queryExecutor.executeTransaction(async tx => {
         await tx.execute("INSERT INTO users (name) VALUES ('Test User')");
         await tx.execute("INSERT INTO users (name) VALUES ('Test User')"); // Duplicate
         return { success: true };
@@ -404,13 +456,13 @@ describe('Oracle Query Executor - Task 3.2', () => {
       // RED: 測試嵌套儲存點
       mockConnection.execute.mockResolvedValue({ rowsAffected: 1 });
 
-      const result = await queryExecutor.executeTransaction(async (tx) => {
+      const result = await queryExecutor.executeTransaction(async tx => {
         await tx.execute("INSERT INTO users (name) VALUES ('User 1')");
 
         const savepoint = await tx.createSavepoint('sp1');
         try {
           await tx.execute("INSERT INTO users (name) VALUES ('User 2')");
-          await tx.execute("INVALID SQL"); // This should fail
+          await tx.execute('INVALID SQL'); // This should fail
         } catch (error) {
           await tx.rollbackToSavepoint(savepoint);
         }
@@ -433,16 +485,19 @@ describe('Oracle Query Executor - Task 3.2', () => {
         'READ_UNCOMMITTED',
         'READ_COMMITTED',
         'REPEATABLE_READ',
-        'SERIALIZABLE'
+        'SERIALIZABLE',
       ] as const;
 
       for (const level of isolationLevels) {
         mockConnection.execute.mockResolvedValue({ rowsAffected: 1 });
 
-        await queryExecutor.executeTransaction(async (tx) => {
-          await tx.execute("SELECT COUNT(*) FROM users");
-          return { success: true };
-        }, { isolationLevel: level });
+        await queryExecutor.executeTransaction(
+          async tx => {
+            await tx.execute('SELECT COUNT(*) FROM users');
+            return { success: true };
+          },
+          { isolationLevel: level }
+        );
 
         expect(mockConnection.execute).toHaveBeenCalledWith(
           expect.stringContaining('SET TRANSACTION'),
@@ -459,18 +514,17 @@ describe('Oracle Query Executor - Task 3.2', () => {
       const batchData = Array.from({ length: 1000 }, (_, i) => ({
         name: `User ${i}`,
         email: `user${i}@test.com`,
-        created_at: new Date()
+        created_at: new Date(),
       }));
 
       mockConnection.executeMany.mockResolvedValue({
-        rowsAffected: 1000
+        rowsAffected: 1000,
       });
 
-      const result = await queryExecutor.executeBulkInsert(
-        'users',
-        batchData,
-        { batchSize: 100, enableParallel: true }
-      );
+      const result = await queryExecutor.executeBulkInsert('users', batchData, {
+        batchSize: 100,
+        enableParallel: true,
+      });
 
       expect(result.success).toBe(true);
       expect(result.totalProcessed).toBe(1000);
@@ -483,11 +537,11 @@ describe('Oracle Query Executor - Task 3.2', () => {
       const updateData = [
         { id: 1, status: 'active' },
         { id: 2, status: 'inactive' },
-        { id: 3, status: 'pending' }
+        { id: 3, status: 'pending' },
       ];
 
       mockConnection.executeMany.mockResolvedValue({
-        rowsAffected: 3
+        rowsAffected: 3,
       });
 
       const result = await queryExecutor.executeBulkUpdate(
@@ -505,11 +559,11 @@ describe('Oracle Query Executor - Task 3.2', () => {
       // RED: 測試MERGE操作（upsert）
       const mergeData = [
         { id: 1, name: 'Updated User 1', email: 'updated1@test.com' },
-        { id: 4, name: 'New User 4', email: 'new4@test.com' }
+        { id: 4, name: 'New User 4', email: 'new4@test.com' },
       ];
 
       mockConnection.execute.mockResolvedValue({
-        rowsAffected: 2
+        rowsAffected: 2,
       });
 
       const result = await queryExecutor.executeMerge(
@@ -532,19 +586,20 @@ describe('Oracle Query Executor - Task 3.2', () => {
     it('should handle cursor-based result streaming', async () => {
       // RED: 測試基於遊標的結果串流
       const mockCursor = {
-        getRow: vi.fn()
+        getRow: vi
+          .fn()
           .mockResolvedValueOnce({ ID: 1, NAME: 'User 1' })
           .mockResolvedValueOnce({ ID: 2, NAME: 'User 2' })
           .mockResolvedValueOnce(undefined), // End of data
-        close: vi.fn()
+        close: vi.fn(),
       };
 
       mockConnection.execute.mockResolvedValue({
-        resultSet: mockCursor
+        resultSet: mockCursor,
       });
 
       const result = await queryExecutor.executeQueryWithCursor(
-        "SELECT * FROM large_table",
+        'SELECT * FROM large_table',
         {},
         { fetchSize: 1000 }
       );
@@ -560,25 +615,25 @@ describe('Oracle Query Executor - Task 3.2', () => {
       const mockResultStream = {
         on: vi.fn(),
         pipe: vi.fn(),
-        end: vi.fn()
+        end: vi.fn(),
       };
 
       const rowCount = 50000;
       const batchSize = 1000;
 
       let processedRows = 0;
-      const rowProcessor = vi.fn().mockImplementation((rows) => {
+      const rowProcessor = vi.fn().mockImplementation(rows => {
         processedRows += rows.length;
       });
 
       const result = await queryExecutor.streamQuery(
-        "SELECT * FROM very_large_table",
+        'SELECT * FROM very_large_table',
         {},
         {
           batchSize,
           onBatch: rowProcessor,
-          onError: (error) => console.error(error),
-          onComplete: () => console.log('Streaming complete')
+          onError: error => console.error(error),
+          onComplete: () => console.log('Streaming complete'),
         }
       );
 
@@ -592,17 +647,23 @@ describe('Oracle Query Executor - Task 3.2', () => {
       // RED: 測試Oracle錯誤碼映射
       const oracleErrors = [
         { code: 'ORA-00001', type: 'CONSTRAINT_VIOLATION', severity: 'ERROR' },
-        { code: 'ORA-01017', type: 'AUTHENTICATION_FAILED', severity: 'CRITICAL' },
+        {
+          code: 'ORA-01017',
+          type: 'AUTHENTICATION_FAILED',
+          severity: 'CRITICAL',
+        },
         { code: 'ORA-00904', type: 'INVALID_COLUMN', severity: 'ERROR' },
         { code: 'ORA-00942', type: 'TABLE_NOT_EXISTS', severity: 'ERROR' },
-        { code: 'ORA-01403', type: 'NO_DATA_FOUND', severity: 'WARNING' }
+        { code: 'ORA-01403', type: 'NO_DATA_FOUND', severity: 'WARNING' },
       ];
 
       for (const errorInfo of oracleErrors) {
         const oracleError = new Error(`${errorInfo.code}: Test error message`);
         mockConnection.execute.mockRejectedValue(oracleError);
 
-        const result = await queryExecutor.executeQuery("SELECT * FROM test_table");
+        const result = await queryExecutor.executeQuery(
+          'SELECT * FROM test_table'
+        );
 
         expect(result.success).toBe(false);
         expect(result.error?.type).toBe(errorInfo.type);
@@ -612,7 +673,9 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
     it('should provide localized error messages', async () => {
       // RED: 測試本地化錯誤訊息
-      const oracleError = new Error('ORA-00001: unique constraint (PCM.UK_USERS_EMAIL) violated');
+      const oracleError = new Error(
+        'ORA-00001: unique constraint (PCM.UK_USERS_EMAIL) violated'
+      );
       mockConnection.execute.mockRejectedValue(oracleError);
 
       const result = await queryExecutor.executeQuery(
@@ -628,11 +691,13 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
     it('should handle constraint violations with detailed information', async () => {
       // RED: 測試約束違反的詳細資訊處理
-      const constraintError = new Error('ORA-00001: unique constraint (PCM.UK_USERS_EMAIL) violated');
+      const constraintError = new Error(
+        'ORA-00001: unique constraint (PCM.UK_USERS_EMAIL) violated'
+      );
       mockConnection.execute.mockRejectedValue(constraintError);
 
       const result = await queryExecutor.executeQuery(
-        "INSERT INTO users (email) VALUES (:email)",
+        'INSERT INTO users (email) VALUES (:email)',
         { email: 'test@example.com' }
       );
 
@@ -641,7 +706,7 @@ describe('Oracle Query Executor - Task 3.2', () => {
         constraintName: 'UK_USERS_EMAIL',
         constraintType: 'UNIQUE',
         affectedColumns: ['email'],
-        suggestedAction: expect.any(String)
+        suggestedAction: expect.any(String),
       });
     });
   });
@@ -656,7 +721,9 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
       mockConnection.execute.mockResolvedValue({ rows: [] });
 
-      const result = await queryExecutor.executeQuery(queryWithHints, { status: 'active' });
+      const result = await queryExecutor.executeQuery(queryWithHints, {
+        status: 'active',
+      });
 
       expect(result.success).toBe(true);
       expect(mockConnection.execute).toHaveBeenCalledWith(
@@ -668,18 +735,23 @@ describe('Oracle Query Executor - Task 3.2', () => {
 
     it('should provide query execution plan analysis', async () => {
       // RED: 測試查詢執行計畫分析
-      const query = "SELECT * FROM users u JOIN projects p ON u.id = p.owner_id WHERE u.status = 'active'";
+      const query =
+        "SELECT * FROM users u JOIN projects p ON u.id = p.owner_id WHERE u.status = 'active'";
 
       mockConnection.execute.mockResolvedValue({
         rows: [],
         executionPlan: {
           cost: 1250,
           cardinality: 100,
-          operations: ['HASH JOIN', 'INDEX RANGE SCAN']
-        }
+          operations: ['HASH JOIN', 'INDEX RANGE SCAN'],
+        },
       });
 
-      const result = await queryExecutor.executeQuery(query, {}, { includeExecutionPlan: true });
+      const result = await queryExecutor.executeQuery(
+        query,
+        {},
+        { includeExecutionPlan: true }
+      );
 
       expect(result.success).toBe(true);
       expect(result.executionPlan).toBeDefined();

@@ -36,9 +36,7 @@ async function generateTestImage() {
   `;
 
   // 將 SVG 轉換為 JPEG
-  const buffer = await sharp(Buffer.from(svg))
-    .jpeg({ quality: 90 })
-    .toBuffer();
+  const buffer = await sharp(Buffer.from(svg)).jpeg({ quality: 90 }).toBuffer();
 
   return buffer;
 }
@@ -52,13 +50,16 @@ async function uploadPhoto(projectId, imageBuffer) {
   const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
   form.append('file', imageBuffer, {
     filename: `test_photo_${Date.now()}.jpg`,
-    contentType: 'image/jpeg'
+    contentType: 'image/jpeg',
   });
 
-  const response = await fetch(`http://localhost:3002/api/projects/${projectId}/photos/upload`, {
-    method: 'POST',
-    body: form
-  });
+  const response = await fetch(
+    `http://localhost:3002/api/projects/${projectId}/photos/upload`,
+    {
+      method: 'POST',
+      body: form,
+    }
+  );
 
   return await response.json();
 }
@@ -82,13 +83,18 @@ async function main() {
     if (result.success) {
       console.log('✅ 照片上傳成功！');
       console.log('📊 回應資料:', JSON.stringify(result.data, null, 2));
-      console.log(`\n🔗 縮圖URL: http://localhost:3002${result.data.thumbnailUrl}`);
-      console.log(`🔗 中型圖URL: http://localhost:3002${result.data.mediumUrl}`);
-      console.log(`🔗 原圖URL: http://localhost:3002${result.data.originalUrl}`);
+      console.log(
+        `\n🔗 縮圖URL: http://localhost:3002${result.data.thumbnailUrl}`
+      );
+      console.log(
+        `🔗 中型圖URL: http://localhost:3002${result.data.mediumUrl}`
+      );
+      console.log(
+        `🔗 原圖URL: http://localhost:3002${result.data.originalUrl}`
+      );
     } else {
       console.error('❌ 上傳失敗:', result.error);
     }
-
   } catch (error) {
     console.error('❌ 錯誤:', error);
   }

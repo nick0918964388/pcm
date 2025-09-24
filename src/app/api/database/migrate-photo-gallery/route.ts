@@ -19,7 +19,11 @@ export async function POST(request: NextRequest) {
     await connection.connect();
 
     // 讀取SQL檔案
-    const sqlPath = path.join(process.cwd(), 'database', '06-photo-gallery-schema.sql');
+    const sqlPath = path.join(
+      process.cwd(),
+      'database',
+      '06-photo-gallery-schema.sql'
+    );
 
     if (!fs.existsSync(sqlPath)) {
       throw new Error(`SQL檔案不存在: ${sqlPath}`);
@@ -45,7 +49,7 @@ export async function POST(request: NextRequest) {
           results.push({
             statement: statement.substring(0, 100) + '...',
             success: true,
-            rowCount: result.rowCount
+            rowCount: result.rowCount,
           });
           executedCount++;
         }
@@ -54,7 +58,7 @@ export async function POST(request: NextRequest) {
         results.push({
           statement: statement.substring(0, 100) + '...',
           success: false,
-          error: error instanceof Error ? error.message : '未知錯誤'
+          error: error instanceof Error ? error.message : '未知錯誤',
         });
       }
     }
@@ -63,7 +67,7 @@ export async function POST(request: NextRequest) {
     const verificationQueries = [
       "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'pcm' AND table_name = 'photo_albums'",
       "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'pcm' AND table_name = 'photos'",
-      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'pcm' AND table_name = 'photo_versions'"
+      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'pcm' AND table_name = 'photo_versions'",
     ];
 
     const verificationResults = [];
@@ -72,13 +76,13 @@ export async function POST(request: NextRequest) {
         const result = await connection.query(query);
         verificationResults.push({
           query: query.match(/table_name = '(\w+)'/)?.[1] || 'unknown',
-          exists: result.rows[0]?.count === '1'
+          exists: result.rows[0]?.count === '1',
         });
       } catch (error) {
         verificationResults.push({
           query: query.match(/table_name = '(\w+)'/)?.[1] || 'unknown',
           exists: false,
-          error: error instanceof Error ? error.message : '未知錯誤'
+          error: error instanceof Error ? error.message : '未知錯誤',
         });
       }
     }
@@ -91,18 +95,19 @@ export async function POST(request: NextRequest) {
       executedStatements: executedCount,
       totalStatements: statements.length,
       results: results.slice(-10), // 只回傳最後10個結果
-      verification: verificationResults
+      verification: verificationResults,
     });
-
   } catch (error) {
     console.error('❌ 照片庫資料庫遷移失敗:', error);
 
-    return NextResponse.json({
-      success: false,
-      message: '照片庫資料庫遷移失敗',
-      error: error instanceof Error ? error.message : '未知錯誤'
-    }, { status: 500 });
-
+    return NextResponse.json(
+      {
+        success: false,
+        message: '照片庫資料庫遷移失敗',
+        error: error instanceof Error ? error.message : '未知錯誤',
+      },
+      { status: 500 }
+    );
   } finally {
     if (connection) {
       await connection.close();
@@ -122,17 +127,14 @@ export async function GET(request: NextRequest) {
     await connection.connect();
 
     // 檢查表格存在狀態
-    const tableChecks = [
-      'photo_albums',
-      'photos',
-      'photo_versions'
-    ];
+    const tableChecks = ['photo_albums', 'photos', 'photo_versions'];
 
     const tableStatus = [];
 
     for (const tableName of tableChecks) {
       try {
-        const result = await connection.query(`
+        const result = await connection.query(
+          `
           SELECT
             column_name,
             data_type,
@@ -141,19 +143,21 @@ export async function GET(request: NextRequest) {
           FROM information_schema.columns
           WHERE table_schema = 'pcm' AND table_name = $1
           ORDER BY ordinal_position
-        `, [tableName]);
+        `,
+          [tableName]
+        );
 
         tableStatus.push({
           table: tableName,
           exists: result.rows.length > 0,
           columns: result.rows.length,
-          columnDetails: result.rows
+          columnDetails: result.rows,
         });
       } catch (error) {
         tableStatus.push({
           table: tableName,
           exists: false,
-          error: error instanceof Error ? error.message : '未知錯誤'
+          error: error instanceof Error ? error.message : '未知錯誤',
         });
       }
     }
@@ -185,18 +189,19 @@ export async function GET(request: NextRequest) {
       message: '照片庫資料庫架構狀態檢查完成',
       tables: tableStatus,
       indexes: indexResult.rows,
-      indexCount: indexResult.rows.length
+      indexCount: indexResult.rows.length,
     });
-
   } catch (error) {
     console.error('❌ 架構狀態檢查失敗:', error);
 
-    return NextResponse.json({
-      success: false,
-      message: '架構狀態檢查失敗',
-      error: error instanceof Error ? error.message : '未知錯誤'
-    }, { status: 500 });
-
+    return NextResponse.json(
+      {
+        success: false,
+        message: '架構狀態檢查失敗',
+        error: error instanceof Error ? error.message : '未知錯誤',
+      },
+      { status: 500 }
+    );
   } finally {
     if (connection) {
       await connection.close();

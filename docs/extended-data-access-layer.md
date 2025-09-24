@@ -234,12 +234,15 @@ export class UserRepository extends BaseRepository<User> {
     }
 
     if (filters.search) {
-      builder.where(`(
+      builder.where(
+        `(
         username ILIKE '%' || ? || '%' OR 
         display_name ILIKE '%' || ? || '%' OR 
         email ILIKE '%' || ? || '%' OR
         employee_id ILIKE '%' || ? || '%'
-      )`, [filters.search, filters.search, filters.search, filters.search]);
+      )`,
+        [filters.search, filters.search, filters.search, filters.search]
+      );
     }
 
     if (filters.isActive !== undefined) {
@@ -313,7 +316,7 @@ export class UserRepository extends BaseRepository<User> {
     await this.db.query(query, [userId]);
   }
 
-  async getUserWithRoles(userId: string): Promise<User & { roles: Role[] } | null> {
+  async getUserWithRoles(userId: string): Promise<(User & { roles: Role[] }) | null> {
     const query = `
       SELECT 
         u.*,
@@ -378,7 +381,7 @@ export class UserRepository extends BaseRepository<User> {
             )
           ) FILTER (WHERE r.id IS NOT NULL), 
           '[]'
-        ) as roles`
+        ) as roles`,
       ])
       .from('users u')
       .leftJoin('user_roles ur', 'u.id = ur.user_id AND ur.is_active = TRUE')
@@ -386,15 +389,21 @@ export class UserRepository extends BaseRepository<User> {
 
     // 應用通用篩選
     if (filters.search) {
-      builder.where(`(
+      builder.where(
+        `(
         u.username ILIKE '%' || ? || '%' OR 
         u.display_name ILIKE '%' || ? || '%' OR 
         u.email ILIKE '%' || ? || '%'
-      )`, [filters.search, filters.search, filters.search]);
+      )`,
+        [filters.search, filters.search, filters.search]
+      );
     }
 
     if (filters.status) {
-      builder.whereIn('u.status', Array.isArray(filters.status) ? filters.status : [filters.status]);
+      builder.whereIn(
+        'u.status',
+        Array.isArray(filters.status) ? filters.status : [filters.status]
+      );
     }
 
     if (filters.department) {
@@ -522,7 +531,11 @@ export class UserSessionRepository extends BaseRepository<UserSession> {
     await this.db.query(query, [sessionId, reason]);
   }
 
-  async deactivateAllUserSessions(userId: string, reason: string, excludeSessionId?: string): Promise<void> {
+  async deactivateAllUserSessions(
+    userId: string,
+    reason: string,
+    excludeSessionId?: string
+  ): Promise<void> {
     let query = `
       UPDATE ${this.tableName} 
       SET is_active = FALSE, logout_reason = $2 
@@ -602,10 +615,13 @@ export class RoleRepository extends BaseRepository<Role> {
     }
 
     if (filters.search) {
-      builder.where(`(
+      builder.where(
+        `(
         name ILIKE '%' || ? || '%' OR 
         display_name ILIKE '%' || ? || '%'
-      )`, [filters.search, filters.search]);
+      )`,
+        [filters.search, filters.search]
+      );
     }
   }
 
@@ -925,7 +941,10 @@ export class ProjectRepository extends BaseRepository<Project> {
     }
 
     if (filters.priority) {
-      builder.whereIn('priority', Array.isArray(filters.priority) ? filters.priority : [filters.priority]);
+      builder.whereIn(
+        'priority',
+        Array.isArray(filters.priority) ? filters.priority : [filters.priority]
+      );
     }
 
     if (filters.projectManagerId) {
@@ -933,12 +952,15 @@ export class ProjectRepository extends BaseRepository<Project> {
     }
 
     if (filters.search) {
-      builder.where(`(
+      builder.where(
+        `(
         code ILIKE '%' || ? || '%' OR 
         name ILIKE '%' || ? || '%' OR 
         description ILIKE '%' || ? || '%' OR
         client_name ILIKE '%' || ? || '%'
-      )`, [filters.search, filters.search, filters.search, filters.search]);
+      )`,
+        [filters.search, filters.search, filters.search, filters.search]
+      );
     }
 
     if (filters.tags?.length) {
@@ -1160,7 +1182,11 @@ export class AuthService extends BaseService<User, UserRepository> {
       }
 
       // 3. 驗證密碼
-      const isValidPassword = await this.verifyPassword(credentials.password, user.passwordHash, user.salt);
+      const isValidPassword = await this.verifyPassword(
+        credentials.password,
+        user.passwordHash,
+        user.salt
+      );
       if (!isValidPassword) {
         await this.repository.incrementFailedAttempts(user.id);
         return { success: false, error: 'Invalid credentials' };
@@ -1175,7 +1201,9 @@ export class AuthService extends BaseService<User, UserRepository> {
       }
 
       // 5. 建立新會話
-      const sessionDuration = credentials.rememberMe ? 30 * 24 * 60 * 60 * 1000 : user.sessionTimeout * 60 * 1000;
+      const sessionDuration = credentials.rememberMe
+        ? 30 * 24 * 60 * 60 * 1000
+        : user.sessionTimeout * 60 * 1000;
       const session = await this.createSession(user, sessionDuration, credentials.deviceInfo);
 
       // 6. 生成 JWT tokens
@@ -1193,7 +1221,6 @@ export class AuthService extends BaseService<User, UserRepository> {
         tokens,
         session,
       };
-
     } catch (error) {
       this.handleError(error, '用戶登入');
       return { success: false, error: 'Login failed' };
@@ -1240,7 +1267,6 @@ export class AuthService extends BaseService<User, UserRepository> {
       const tokens = await this.generateTokens(user, session);
 
       return { success: true, tokens };
-
     } catch (error) {
       this.handleError(error, '刷新token');
       return { success: false, error: 'Token refresh failed' };
@@ -1250,7 +1276,7 @@ export class AuthService extends BaseService<User, UserRepository> {
   async validateToken(accessToken: string): Promise<User | null> {
     try {
       const payload = jwt.verify(accessToken, this.jwtSecret) as any;
-      
+
       // 檢查會話是否仍然有效
       const session = await this.sessionRepository.findById(payload.sessionId);
       if (!session || !session.isActive || session.isExpired()) {
@@ -1263,21 +1289,24 @@ export class AuthService extends BaseService<User, UserRepository> {
       // 返回用戶資料（包含最新的角色和權限）
       const user = await this.repository.getUserWithRoles(payload.userId);
       return user;
-
     } catch (error) {
       return null;
     }
   }
 
-  async checkPermission(userId: string, permission: string, context?: {
-    projectId?: string;
-    resourceType?: string;
-    resourceId?: string;
-  }): Promise<boolean> {
+  async checkPermission(
+    userId: string,
+    permission: string,
+    context?: {
+      projectId?: string;
+      resourceType?: string;
+      resourceId?: string;
+    }
+  ): Promise<boolean> {
     try {
       // 獲取用戶完整權限列表
       const permissions = await this.repository.getUserPermissions(userId);
-      
+
       // 檢查通用權限
       if (permissions.includes('*') || permissions.includes(permission)) {
         return true;
@@ -1287,14 +1316,17 @@ export class AuthService extends BaseService<User, UserRepository> {
       // 例如：項目級權限、資源級權限等
 
       return false;
-
     } catch (error) {
       this.handleError(error, '權限檢查');
       return false;
     }
   }
 
-  private async createSession(user: User, duration: number, deviceInfo?: any): Promise<UserSession> {
+  private async createSession(
+    user: User,
+    duration: number,
+    deviceInfo?: any
+  ): Promise<UserSession> {
     const sessionToken = this.generateSecureToken();
     const refreshToken = this.generateSecureToken();
     const expiresAt = new Date(Date.now() + duration);
@@ -1313,7 +1345,10 @@ export class AuthService extends BaseService<User, UserRepository> {
     return session;
   }
 
-  private async generateTokens(user: User, session: UserSession): Promise<{
+  private async generateTokens(
+    user: User,
+    session: UserSession
+  ): Promise<{
     accessToken: string;
     refreshToken: string;
     expiresIn: number;

@@ -3,9 +3,9 @@
  * 支援GET, PUT, DELETE操作
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getOracleConnection } from '@/lib/database/oracle-connection'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from 'next/server';
+import { getOracleConnection } from '@/lib/database/oracle-connection';
+import { z } from 'zod';
 
 // 專案更新Schema
 const ProjectUpdateSchema = z.object({
@@ -19,32 +19,29 @@ const ProjectUpdateSchema = z.object({
   budget: z.number().positive().optional(),
   progress: z.number().min(0).max(100).optional(),
   manager_id: z.string().optional(),
-  metadata: z.record(z.any()).optional()
-})
+  metadata: z.record(z.any()).optional(),
+});
 
 // 格式化回傳的日期
 function formatResponseDate(oracleDate: any): string | null {
-  if (!oracleDate) return null
+  if (!oracleDate) return null;
   if (oracleDate instanceof Date) {
-    return oracleDate.toISOString()
+    return oracleDate.toISOString();
   }
-  return new Date(oracleDate).toISOString()
+  return new Date(oracleDate).toISOString();
 }
 
 interface RouteParams {
   params: {
-    projectId: string
-  }
+    projectId: string;
+  };
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { projectId } = params
+    const { projectId } = params;
 
-    const oracle = getOracleConnection()
+    const oracle = getOracleConnection();
 
     const query = `
       SELECT
@@ -53,12 +50,12 @@ export async function GET(
         metadata, created_at, updated_at
       FROM projects
       WHERE id = :projectId
-    `
+    `;
 
-    const result = await oracle.executeOne(query, { projectId })
+    const result = await oracle.executeOne(query, { projectId });
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch project')
+      throw new Error(result.error || 'Failed to fetch project');
     }
 
     if (!result.data) {
@@ -66,13 +63,13 @@ export async function GET(
         {
           success: false,
           error: 'Project not found',
-          message: `Project with ID ${projectId} does not exist`
+          message: `Project with ID ${projectId} does not exist`,
         },
         { status: 404 }
-      )
+      );
     }
 
-    const row = result.data
+    const row = result.data;
     const project = {
       id: row.ID,
       name: row.NAME,
@@ -87,48 +84,44 @@ export async function GET(
       manager_id: row.MANAGER_ID,
       metadata: row.METADATA ? JSON.parse(row.METADATA) : null,
       created_at: formatResponseDate(row.CREATED_AT),
-      updated_at: formatResponseDate(row.UPDATED_AT)
-    }
+      updated_at: formatResponseDate(row.UPDATED_AT),
+    };
 
     return NextResponse.json({
       success: true,
       data: project,
-      message: 'Project retrieved successfully'
-    })
-
+      message: 'Project retrieved successfully',
+    });
   } catch (error) {
-    console.error(`GET /api/projects/${params.projectId} error:`, error)
+    console.error(`GET /api/projects/${params.projectId} error:`, error);
 
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Internal server error',
-        message: 'Failed to retrieve project'
+        message: 'Failed to retrieve project',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { projectId } = params
-    const body = await request.json()
+    const { projectId } = params;
+    const body = await request.json();
 
     // 驗證更新資料
-    const updateData = ProjectUpdateSchema.parse(body)
+    const updateData = ProjectUpdateSchema.parse(body);
 
-    const oracle = getOracleConnection()
+    const oracle = getOracleConnection();
 
     // 檢查專案是否存在
-    const checkQuery = `SELECT id FROM projects WHERE id = :projectId`
-    const checkResult = await oracle.executeOne(checkQuery, { projectId })
+    const checkQuery = `SELECT id FROM projects WHERE id = :projectId`;
+    const checkResult = await oracle.executeOne(checkQuery, { projectId });
 
     if (!checkResult.success) {
-      throw new Error(checkResult.error || 'Failed to check project existence')
+      throw new Error(checkResult.error || 'Failed to check project existence');
     }
 
     if (!checkResult.data) {
@@ -136,69 +129,75 @@ export async function PUT(
         {
           success: false,
           error: 'Project not found',
-          message: `Project with ID ${projectId} does not exist`
+          message: `Project with ID ${projectId} does not exist`,
         },
         { status: 404 }
-      )
+      );
     }
 
     // 建構更新查詢
-    const setClauses: string[] = []
-    const binds: Record<string, any> = { projectId }
+    const setClauses: string[] = [];
+    const binds: Record<string, any> = { projectId };
 
     if (updateData.name !== undefined) {
-      setClauses.push('name = :name')
-      binds.name = updateData.name
+      setClauses.push('name = :name');
+      binds.name = updateData.name;
     }
 
     if (updateData.description !== undefined) {
-      setClauses.push('description = :description')
-      binds.description = updateData.description
+      setClauses.push('description = :description');
+      binds.description = updateData.description;
     }
 
     if (updateData.status !== undefined) {
-      setClauses.push('status = :status')
-      binds.status = updateData.status
+      setClauses.push('status = :status');
+      binds.status = updateData.status;
     }
 
     if (updateData.type !== undefined) {
-      setClauses.push('type = :type')
-      binds.type = updateData.type
+      setClauses.push('type = :type');
+      binds.type = updateData.type;
     }
 
     if (updateData.priority !== undefined) {
-      setClauses.push('priority = :priority')
-      binds.priority = updateData.priority
+      setClauses.push('priority = :priority');
+      binds.priority = updateData.priority;
     }
 
     if (updateData.start_date !== undefined) {
-      setClauses.push(`start_date = TO_TIMESTAMP(:start_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`)
-      binds.start_date = updateData.start_date
+      setClauses.push(
+        `start_date = TO_TIMESTAMP(:start_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`
+      );
+      binds.start_date = updateData.start_date;
     }
 
     if (updateData.end_date !== undefined) {
-      setClauses.push(`end_date = TO_TIMESTAMP(:end_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`)
-      binds.end_date = updateData.end_date
+      setClauses.push(
+        `end_date = TO_TIMESTAMP(:end_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`
+      );
+      binds.end_date = updateData.end_date;
     }
 
     if (updateData.budget !== undefined) {
-      setClauses.push('budget = :budget')
-      binds.budget = updateData.budget
+      setClauses.push('budget = :budget');
+      binds.budget = updateData.budget;
     }
 
     if (updateData.progress !== undefined) {
-      setClauses.push('progress = :progress')
-      binds.progress = updateData.progress
+      setClauses.push('progress = :progress');
+      binds.progress = updateData.progress;
     }
 
     if (updateData.manager_id !== undefined) {
-      setClauses.push('manager_id = :manager_id')
-      binds.manager_id = updateData.manager_id
+      setClauses.push('manager_id = :manager_id');
+      binds.manager_id = updateData.manager_id;
     }
 
     if (updateData.metadata !== undefined) {
-      setClauses.push('metadata = :metadata')
-      binds.metadata = updateData.metadata ? JSON.stringify(updateData.metadata) : null
+      setClauses.push('metadata = :metadata');
+      binds.metadata = updateData.metadata
+        ? JSON.stringify(updateData.metadata)
+        : null;
     }
 
     if (setClauses.length === 0) {
@@ -206,25 +205,25 @@ export async function PUT(
         {
           success: false,
           error: 'No update data provided',
-          message: 'At least one field must be provided for update'
+          message: 'At least one field must be provided for update',
         },
         { status: 400 }
-      )
+      );
     }
 
     // 總是更新 updated_at
-    setClauses.push('updated_at = SYSTIMESTAMP')
+    setClauses.push('updated_at = SYSTIMESTAMP');
 
     const updateQuery = `
       UPDATE projects
       SET ${setClauses.join(', ')}
       WHERE id = :projectId
-    `
+    `;
 
-    const updateResult = await oracle.executeQuery(updateQuery, binds)
+    const updateResult = await oracle.executeQuery(updateQuery, binds);
 
     if (!updateResult.success) {
-      throw new Error(updateResult.error || 'Failed to update project')
+      throw new Error(updateResult.error || 'Failed to update project');
     }
 
     // 查詢更新後的專案
@@ -235,15 +234,15 @@ export async function PUT(
         metadata, created_at, updated_at
       FROM projects
       WHERE id = :projectId
-    `
+    `;
 
-    const selectResult = await oracle.executeOne(selectQuery, { projectId })
+    const selectResult = await oracle.executeOne(selectQuery, { projectId });
 
     if (!selectResult.success || !selectResult.data) {
-      throw new Error('Failed to retrieve updated project')
+      throw new Error('Failed to retrieve updated project');
     }
 
-    const row = selectResult.data
+    const row = selectResult.data;
     const updatedProject = {
       id: row.ID,
       name: row.NAME,
@@ -258,17 +257,16 @@ export async function PUT(
       manager_id: row.MANAGER_ID,
       metadata: row.METADATA ? JSON.parse(row.METADATA) : null,
       created_at: formatResponseDate(row.CREATED_AT),
-      updated_at: formatResponseDate(row.UPDATED_AT)
-    }
+      updated_at: formatResponseDate(row.UPDATED_AT),
+    };
 
     return NextResponse.json({
       success: true,
       data: updatedProject,
-      message: 'Project updated successfully'
-    })
-
+      message: 'Project updated successfully',
+    });
   } catch (error) {
-    console.error(`PUT /api/projects/${params.projectId} error:`, error)
+    console.error(`PUT /api/projects/${params.projectId} error:`, error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -276,38 +274,35 @@ export async function PUT(
           success: false,
           error: 'Validation error',
           details: error.errors,
-          message: 'Invalid update data'
+          message: 'Invalid update data',
         },
         { status: 400 }
-      )
+      );
     }
 
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Internal server error',
-        message: 'Failed to update project'
+        message: 'Failed to update project',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { projectId } = params
+    const { projectId } = params;
 
-    const oracle = getOracleConnection()
+    const oracle = getOracleConnection();
 
     // 檢查專案是否存在
-    const checkQuery = `SELECT id FROM projects WHERE id = :projectId`
-    const checkResult = await oracle.executeOne(checkQuery, { projectId })
+    const checkQuery = `SELECT id FROM projects WHERE id = :projectId`;
+    const checkResult = await oracle.executeOne(checkQuery, { projectId });
 
     if (!checkResult.success) {
-      throw new Error(checkResult.error || 'Failed to check project existence')
+      throw new Error(checkResult.error || 'Failed to check project existence');
     }
 
     if (!checkResult.data) {
@@ -315,10 +310,10 @@ export async function DELETE(
         {
           success: false,
           error: 'Project not found',
-          message: `Project with ID ${projectId} does not exist`
+          message: `Project with ID ${projectId} does not exist`,
         },
         { status: 404 }
-      )
+      );
     }
 
     // 軟刪除專案（更新deleted_at欄位）
@@ -326,29 +321,28 @@ export async function DELETE(
       UPDATE projects
       SET deleted_at = SYSTIMESTAMP
       WHERE id = :projectId AND deleted_at IS NULL
-    `
+    `;
 
-    const deleteResult = await oracle.executeQuery(deleteQuery, { projectId })
+    const deleteResult = await oracle.executeQuery(deleteQuery, { projectId });
 
     if (!deleteResult.success) {
-      throw new Error(deleteResult.error || 'Failed to delete project')
+      throw new Error(deleteResult.error || 'Failed to delete project');
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Project deleted successfully'
-    })
-
+      message: 'Project deleted successfully',
+    });
   } catch (error) {
-    console.error(`DELETE /api/projects/${params.projectId} error:`, error)
+    console.error(`DELETE /api/projects/${params.projectId} error:`, error);
 
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Internal server error',
-        message: 'Failed to delete project'
+        message: 'Failed to delete project',
       },
       { status: 500 }
-    )
+    );
   }
 }

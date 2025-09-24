@@ -137,15 +137,19 @@ export class OracleManagementTools {
     this.preferences = {
       defaultTool: 'sqlDeveloperWeb',
       autoStart: true,
-      monitoringInterval: 30000
+      monitoringInterval: 30000,
     };
   }
 
   async enableSqlDeveloperWeb(): Promise<SqlDeveloperWebResult> {
     try {
       // 檢查Oracle容器是否運行
-      const containerStatusResult = await this.containerManager.getContainerStatus();
-      if (!containerStatusResult.success || containerStatusResult.data.state !== 'running') {
+      const containerStatusResult =
+        await this.containerManager.getContainerStatus();
+      if (
+        !containerStatusResult.success ||
+        containerStatusResult.data.state !== 'running'
+      ) {
         throw new Error('Oracle container is not running');
       }
 
@@ -171,8 +175,8 @@ export class OracleManagementTools {
         webUrl: `http://localhost:${webPort}/ords`,
         credentials: {
           username: 'system',
-          password: password
-        }
+          password: password,
+        },
       };
     } catch (error) {
       throw new Error(`Failed to enable SQL Developer Web: ${error}`);
@@ -192,32 +196,39 @@ export class OracleManagementTools {
       return {
         isAccessible: response.status === 200,
         responseTime,
-        status: response.status === 200 ? 'healthy' : 'unhealthy'
+        status: response.status === 200 ? 'healthy' : 'unhealthy',
       };
     } catch (error) {
       return {
         isAccessible: false,
         responseTime: Date.now() - startTime,
-        status: 'unhealthy'
+        status: 'unhealthy',
       };
     }
   }
 
-  async authenticateSqlDeveloperWeb(credentials: { username: string; password: string }): Promise<AuthenticationResult> {
+  async authenticateSqlDeveloperWeb(credentials: {
+    username: string;
+    password: string;
+  }): Promise<AuthenticationResult> {
     try {
       const webPort = process.env.ORACLE_APEX_PORT || '8080';
       const loginUrl = `http://localhost:${webPort}/ords/f?p=4550:1`;
 
       // 模擬登入驗證
-      const response = await axios.post(loginUrl, {
-        username: credentials.username,
-        password: credentials.password
-      }, { timeout: 5000 });
+      const response = await axios.post(
+        loginUrl,
+        {
+          username: credentials.username,
+          password: credentials.password,
+        },
+        { timeout: 5000 }
+      );
 
       if (response.status === 200) {
         return {
           authenticated: true,
-          sessionToken: 'mock-session-token-' + Date.now()
+          sessionToken: 'mock-session-token-' + Date.now(),
         };
       }
 
@@ -244,23 +255,34 @@ export class OracleManagementTools {
       logs.push('Error retrieving logs');
     }
 
-    const containerStatus = statusResult.success ? statusResult.data.state : 'unknown';
+    const containerStatus = statusResult.success
+      ? statusResult.data.state
+      : 'unknown';
     const databaseStatus = containerStatus === 'running' ? 'ready' : 'starting';
 
     return {
       containerStatus,
       databaseStatus,
-      logs
+      logs,
     };
   }
 
   async getAvailableOperations(): Promise<string[]> {
-    return ['restart', 'status', 'logs', 'backup', 'restore', 'monitor', 'health-check'];
+    return [
+      'restart',
+      'status',
+      'logs',
+      'backup',
+      'restore',
+      'monitor',
+      'health-check',
+    ];
   }
 
   async startContainerMonitoring(): Promise<ContainerMonitor> {
     // 取得容器資源使用資訊
-    const metricsCommand = 'docker stats pcm-oracle-dev --no-stream --format "{{.CPUPerc}},{{.MemUsage}}"';
+    const metricsCommand =
+      'docker stats pcm-oracle-dev --no-stream --format "{{.CPUPerc}},{{.MemUsage}}"';
 
     try {
       const output = execSync(metricsCommand, { encoding: 'utf8' });
@@ -271,8 +293,8 @@ export class OracleManagementTools {
         metrics: {
           cpu: parseFloat(cpuStr.replace('%', '')),
           memory: this.parseMemoryUsage(memStr),
-          diskUsage: 0 // 簡化實作
-        }
+          diskUsage: 0, // 簡化實作
+        },
       };
 
       return this.monitor;
@@ -296,24 +318,24 @@ export class OracleManagementTools {
       tools: {
         sqlDeveloperWeb: {
           url: `http://localhost:${process.env.ORACLE_APEX_PORT || '8080'}/ords`,
-          status: sqlDevCheck.isAccessible ? 'available' : 'unavailable'
+          status: sqlDevCheck.isAccessible ? 'available' : 'unavailable',
         },
         containerManager: {
           status: containerInterface.containerStatus,
-          version: '21c-slim'
+          version: '21c-slim',
         },
         databaseMonitor: {
           status: containerInterface.databaseStatus,
-          activeConnections: 1 // 簡化實作
-        }
+          activeConnections: 1, // 簡化實作
+        },
       },
       quickActions: [
         'Start SQL Developer Web',
         'View Container Logs',
         'Restart Database',
         'Run Health Check',
-        'View Performance Metrics'
-      ]
+        'View Performance Metrics',
+      ],
     };
   }
 
@@ -322,20 +344,22 @@ export class OracleManagementTools {
       sqlDeveloperWeb: {
         enabled: true,
         port: parseInt(process.env.ORACLE_APEX_PORT || '8080'),
-        autoStart: this.preferences.autoStart
+        autoStart: this.preferences.autoStart,
       },
       containerManager: {
         enabled: true,
-        monitoringInterval: this.preferences.monitoringInterval
+        monitoringInterval: this.preferences.monitoringInterval,
       },
       monitoring: {
         enabled: true,
-        alertThreshold: 80
-      }
+        alertThreshold: 80,
+      },
     };
   }
 
-  async updateToolPreferences(preferences: Partial<ToolPreferences>): Promise<{ success: boolean }> {
+  async updateToolPreferences(
+    preferences: Partial<ToolPreferences>
+  ): Promise<{ success: boolean }> {
     this.preferences = { ...this.preferences, ...preferences };
     return { success: true };
   }
@@ -346,21 +370,28 @@ export class OracleManagementTools {
 
   async validateDockerComposeIntegration(): Promise<DockerComposeIntegration> {
     try {
-      const composeCheck = execSync('docker-compose config --services', { encoding: 'utf8' });
-      const services = composeCheck.trim().split('\n').filter(s => s.length > 0);
+      const composeCheck = execSync('docker-compose config --services', {
+        encoding: 'utf8',
+      });
+      const services = composeCheck
+        .trim()
+        .split('\n')
+        .filter(s => s.length > 0);
 
-      const networkCheck = execSync('docker-compose config --volumes', { encoding: 'utf8' });
+      const networkCheck = execSync('docker-compose config --volumes', {
+        encoding: 'utf8',
+      });
 
       return {
         isValid: services.includes('oracle-db'),
         services: services,
-        networks: ['pcm_network'] // 從docker-compose.yml已知
+        networks: ['pcm_network'], // 從docker-compose.yml已知
       };
     } catch (error) {
       return {
         isValid: false,
         services: [],
-        networks: []
+        networks: [],
       };
     }
   }
@@ -370,7 +401,7 @@ export class OracleManagementTools {
       getVariable: (name: string) => process.env[name],
       setVariable: (name: string, value: string) => {
         process.env[name] = value;
-      }
+      },
     };
   }
 
@@ -382,7 +413,7 @@ export class OracleManagementTools {
       'Waiting for database ready',
       'Enabling SQL Developer Web',
       'Configuring management tools',
-      'Starting monitoring services'
+      'Starting monitoring services',
     ];
 
     try {
@@ -390,7 +421,9 @@ export class OracleManagementTools {
       // 這裡我們檢查容器狀態而不是直接啟動
       const statusResult = await this.containerManager.getContainerStatus();
       if (!statusResult.success || statusResult.data.state !== 'running') {
-        throw new Error('Oracle container is not running. Please start with docker-compose up');
+        throw new Error(
+          'Oracle container is not running. Please start with docker-compose up'
+        );
       }
 
       await this.enableSqlDeveloperWeb();
@@ -398,13 +431,13 @@ export class OracleManagementTools {
       return {
         steps,
         success: true,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
     } catch (error) {
       return {
         steps,
         success: false,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
     }
   }
@@ -413,48 +446,54 @@ export class OracleManagementTools {
     return {
       recovery: {
         action: 'retry_with_different_port',
-        suggestion: 'Try using a different port for SQL Developer Web. Check if port 8080 is already in use.'
-      }
+        suggestion:
+          'Try using a different port for SQL Developer Web. Check if port 8080 is already in use.',
+      },
     };
   }
 
   async getTroubleshootingInfo(): Promise<TroubleshootingInfo> {
-    const containerStatusResult = await this.containerManager.getContainerStatus();
-    const containerStatus = containerStatusResult.success ? containerStatusResult.data.state : 'unknown';
+    const containerStatusResult =
+      await this.containerManager.getContainerStatus();
+    const containerStatus = containerStatusResult.success
+      ? containerStatusResult.data.state
+      : 'unknown';
 
     return {
       commonIssues: [
         {
           issue: 'SQL Developer Web not accessible',
-          solution: 'Check if Oracle container is running and APEX is enabled'
+          solution: 'Check if Oracle container is running and APEX is enabled',
         },
         {
           issue: 'Port conflict on 8080',
-          solution: 'Set ORACLE_APEX_PORT environment variable to different port'
+          solution:
+            'Set ORACLE_APEX_PORT environment variable to different port',
         },
         {
           issue: 'Container startup timeout',
-          solution: 'Oracle XE may need more time to initialize. Wait up to 3 minutes.'
-        }
+          solution:
+            'Oracle XE may need more time to initialize. Wait up to 3 minutes.',
+        },
       ],
       diagnostics: {
         containerStatus: containerStatus,
         networkConnectivity: true, // 簡化實作
-        portAvailability: [1521, 5500, 8080]
+        portAvailability: [1521, 5500, 8080],
       },
       solutions: {
         quickFixes: [
           'Restart Oracle container',
           'Check environment variables',
-          'Verify port availability'
+          'Verify port availability',
         ],
         detailedSteps: [
           '1. Stop all Oracle containers: docker-compose down',
           '2. Check port usage: netstat -tlnp | grep :8080',
           '3. Set different port: export ORACLE_APEX_PORT=8081',
-          '4. Restart with new port: docker-compose up -d'
-        ]
-      }
+          '4. Restart with new port: docker-compose up -d',
+        ],
+      },
     };
   }
 

@@ -36,12 +36,16 @@ vi.mock('oracledb', () => ({
     DATE: 2003,
     CURSOR: 2004,
     CLOB: 2006,
-    BLOB: 2007
-  }
+    BLOB: 2007,
+  },
 }));
 
 import { OracleConnectionManager } from '../oracle-connection';
-import type { OracleConfig, HealthStatus, PoolMetrics } from '../oracle-connection';
+import type {
+  OracleConfig,
+  HealthStatus,
+  PoolMetrics,
+} from '../oracle-connection';
 
 describe('Oracle Connection Manager - Task 3.1', () => {
   let connectionManager: OracleConnectionManager;
@@ -60,7 +64,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
       poolMax: 20,
       poolIncrement: 2,
       poolTimeout: 60,
-      enableStatistics: true
+      enableStatistics: true,
     };
 
     connectionManager = new OracleConnectionManager();
@@ -80,7 +84,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         close: vi.fn(),
         connectionsOpen: 5,
         connectionsInUse: 2,
-        status: mockOracleDb.default.POOL_STATUS_OPEN
+        status: mockOracleDb.default.POOL_STATUS_OPEN,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -88,7 +92,9 @@ describe('Oracle Connection Manager - Task 3.1', () => {
       const result = await connectionManager.initialize(mockConfig);
 
       expect(result.success).toBe(true);
-      expect(mockOracleDb.default.outFormat).toBe(mockOracleDb.default.OUT_FORMAT_OBJECT);
+      expect(mockOracleDb.default.outFormat).toBe(
+        mockOracleDb.default.OUT_FORMAT_OBJECT
+      );
       expect(mockOracleDb.default.autoCommit).toBe(false);
       expect(mockOracleDb.default.createPool).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -99,7 +105,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
           poolMax: mockConfig.poolMax,
           poolIncrement: mockConfig.poolIncrement,
           poolTimeout: mockConfig.poolTimeout,
-          enableStatistics: mockConfig.enableStatistics
+          enableStatistics: mockConfig.enableStatistics,
         })
       );
     });
@@ -114,14 +120,14 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         charset: 'AL32UTF8',
         ncharset: 'AL16UTF16',
         connectionClass: 'PCM_APP',
-        privilege: 'SYSDBA' as any
+        privilege: 'SYSDBA' as any,
       };
 
       const mockPool = {
         getConnection: vi.fn(),
         close: vi.fn(),
         connectionsOpen: 5,
-        connectionsInUse: 2
+        connectionsInUse: 2,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -132,7 +138,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
       expect(mockOracleDb.default.createPool).toHaveBeenCalledWith(
         expect.objectContaining({
           connectString: extendedConfig.connectString,
-          connectionClass: extendedConfig.connectionClass
+          connectionClass: extendedConfig.connectionClass,
         })
       );
     });
@@ -145,14 +151,16 @@ describe('Oracle Connection Manager - Task 3.1', () => {
       const result = await connectionManager.initialize(mockConfig);
 
       expect(result.success).toBe(false);
-      expect(result.error?.message).toContain('Oracle Instant Client not found');
+      expect(result.error?.message).toContain(
+        'Oracle Instant Client not found'
+      );
     });
 
     it('should support Oracle bind variables properly', async () => {
       // RED: 測試Oracle bind variables支援
       const mockPool = {
         getConnection: vi.fn(),
-        close: vi.fn()
+        close: vi.fn(),
       };
 
       const mockConnection = {
@@ -160,10 +168,10 @@ describe('Oracle Connection Manager - Task 3.1', () => {
           rows: [{ id: 123, name: 'Test User' }],
           metaData: [
             { name: 'ID', fetchType: mockOracleDb.default.NUMBER },
-            { name: 'NAME', fetchType: mockOracleDb.default.STRING }
-          ]
+            { name: 'NAME', fetchType: mockOracleDb.default.STRING },
+          ],
         }),
-        close: vi.fn()
+        close: vi.fn(),
       };
 
       mockPool.getConnection.mockResolvedValue(mockConnection);
@@ -195,7 +203,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         maxSessionsPerShard: 20,
         enableStatistics: true,
         queueTimeout: 60000,
-        _enableStats: true
+        _enableStats: true,
       };
 
       const mockPool = {
@@ -206,7 +214,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         poolPingInterval: 60,
         poolTimeout: 120,
         stmtCacheSize: 30,
-        status: mockOracleDb.default.POOL_STATUS_OPEN
+        status: mockOracleDb.default.POOL_STATUS_OPEN,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -220,7 +228,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
           poolMax: advancedConfig.poolMax,
           poolIncrement: advancedConfig.poolIncrement,
           poolTimeout: advancedConfig.poolTimeout,
-          enableStatistics: advancedConfig.enableStatistics
+          enableStatistics: advancedConfig.enableStatistics,
         })
       );
     });
@@ -234,7 +242,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         connectionsInUse: 7,
         poolMin: 5,
         poolMax: 20,
-        poolIncrement: 2
+        poolIncrement: 2,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -250,13 +258,15 @@ describe('Oracle Connection Manager - Task 3.1', () => {
 
     it('should handle connection pool exhaustion gracefully', async () => {
       // RED: 測試連線池耗盡的優雅處理
-      const poolExhaustionError = new Error('ORA-24418: Cannot open further sessions');
+      const poolExhaustionError = new Error(
+        'ORA-24418: Cannot open further sessions'
+      );
 
       const mockPool = {
         getConnection: vi.fn().mockRejectedValue(poolExhaustionError),
         close: vi.fn(),
         connectionsOpen: 20, // Max reached
-        connectionsInUse: 20
+        connectionsInUse: 20,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -276,14 +286,14 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         close: vi.fn(),
         action: '',
         module: '',
-        clientId: ''
+        clientId: '',
       };
 
       const mockPool = {
         getConnection: vi.fn().mockResolvedValue(mockConnection),
         close: vi.fn(),
         connectionsOpen: 5,
-        connectionsInUse: 1
+        connectionsInUse: 1,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -302,17 +312,20 @@ describe('Oracle Connection Manager - Task 3.1', () => {
     it('should perform comprehensive health checks', async () => {
       // RED: 測試全面的健康檢查
       const mockConnection = {
-        execute: vi.fn()
+        execute: vi
+          .fn()
           .mockResolvedValueOnce({ rows: [{ result: 1 }] }) // SELECT 1 FROM dual
-          .mockResolvedValueOnce({ rows: [{ version: 'Oracle Database 21c Express Edition' }] }), // Version check
+          .mockResolvedValueOnce({
+            rows: [{ version: 'Oracle Database 21c Express Edition' }],
+          }), // Version check
         close: vi.fn(),
-        pingDatabase: vi.fn().mockResolvedValue(undefined)
+        pingDatabase: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockPool = {
         getConnection: vi.fn().mockResolvedValue(mockConnection),
         close: vi.fn(),
-        status: mockOracleDb.default.POOL_STATUS_OPEN
+        status: mockOracleDb.default.POOL_STATUS_OPEN,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -333,13 +346,13 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         'ORA-12541: TNS:no listener',
         'ORA-01017: invalid username/password; logon denied',
         'ORA-12514: TNS:listener does not currently know of service',
-        'ORA-28001: the password has expired'
+        'ORA-28001: the password has expired',
       ];
 
       for (const errorMsg of oracleErrors) {
         const mockPool = {
           getConnection: vi.fn().mockRejectedValue(new Error(errorMsg)),
-          close: vi.fn()
+          close: vi.fn(),
         };
 
         mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -365,10 +378,10 @@ describe('Oracle Connection Manager - Task 3.1', () => {
           }
           return Promise.resolve({
             execute: vi.fn().mockResolvedValue({ rows: [{ result: 1 }] }),
-            close: vi.fn()
+            close: vi.fn(),
           });
         }),
-        close: vi.fn()
+        close: vi.fn(),
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -388,14 +401,14 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         execute: vi.fn(),
         close: vi.fn(),
         isHealthy: vi.fn().mockReturnValue(true),
-        ping: vi.fn().mockResolvedValue(undefined)
+        ping: vi.fn().mockResolvedValue(undefined),
       };
 
       const mockPool = {
         getConnection: vi.fn().mockResolvedValue(mockConnection),
         close: vi.fn(),
         reconfigure: vi.fn(),
-        status: mockOracleDb.default.POOL_STATUS_OPEN
+        status: mockOracleDb.default.POOL_STATUS_OPEN,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -427,7 +440,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         totalRequestsQueued: 12,
         totalRequestsDequeued: 10,
         totalFailedRequests: 1,
-        totalRequestTimeouts: 0
+        totalRequestTimeouts: 0,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -441,21 +454,21 @@ describe('Oracle Connection Manager - Task 3.1', () => {
           totalConnections: 8,
           activeConnections: 5,
           idleConnections: 3,
-          waitingRequests: 2
+          waitingRequests: 2,
         },
         performance: {
           totalRequests: 150,
           queuedRequests: 12,
           timeoutRequests: 0,
           failedRequests: 1,
-          averageWaitTime: expect.any(Number)
+          averageWaitTime: expect.any(Number),
         },
         configuration: {
           minConnections: 5,
           maxConnections: 20,
           incrementSize: 2,
-          timeoutSeconds: 60
-        }
+          timeoutSeconds: 60,
+        },
       });
     });
 
@@ -468,20 +481,23 @@ describe('Oracle Connection Manager - Task 3.1', () => {
           await new Promise(resolve => setTimeout(resolve, delay));
           return { rows: [{ id: 1 }] };
         }),
-        close: vi.fn()
+        close: vi.fn(),
       };
 
       const mockPool = {
         getConnection: vi.fn().mockResolvedValue(mockConnection),
-        close: vi.fn()
+        close: vi.fn(),
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
 
       await connectionManager.initialize(mockConfig);
 
-      const simpleQueryResult = await connectionManager.executeQuery('SELECT 1 FROM dual');
-      const complexQueryResult = await connectionManager.executeQuery('SELECT complex FROM table');
+      const simpleQueryResult =
+        await connectionManager.executeQuery('SELECT 1 FROM dual');
+      const complexQueryResult = await connectionManager.executeQuery(
+        'SELECT complex FROM table'
+      );
 
       const performanceMetrics = connectionManager.getQueryPerformanceMetrics();
 
@@ -496,7 +512,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         getConnection: vi.fn(),
         close: vi.fn(),
         connectionsOpen: 10,
-        connectionsInUse: 7
+        connectionsInUse: 7,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -521,7 +537,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         getConnection: vi.fn(),
         close: vi.fn(),
         connectionsOpen: 5,
-        connectionsInUse: 3
+        connectionsInUse: 3,
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -535,13 +551,13 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         poolStatus: {
           isHealthy: expect.any(Boolean),
           totalConnections: expect.any(Number),
-          activeConnections: expect.any(Number)
+          activeConnections: expect.any(Number),
         },
         performance: {
           queriesPerSecond: expect.any(Number),
           averageResponseTime: expect.any(Number),
-          errorRate: expect.any(Number)
-        }
+          errorRate: expect.any(Number),
+        },
       });
     });
 
@@ -551,7 +567,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         getConnection: vi.fn(),
         close: vi.fn(),
         connectionsOpen: 19, // Near max (20)
-        connectionsInUse: 18  // High usage
+        connectionsInUse: 18, // High usage
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(mockPool);
@@ -566,8 +582,8 @@ describe('Oracle Connection Manager - Task 3.1', () => {
             type: 'WARNING',
             message: expect.stringContaining('high connection usage'),
             threshold: expect.any(Number),
-            currentValue: expect.any(Number)
-          })
+            currentValue: expect.any(Number),
+          }),
         ])
       );
     });
@@ -580,7 +596,7 @@ describe('Oracle Connection Manager - Task 3.1', () => {
         { code: 'ORA-00001', type: 'constraint_violation', retryable: false },
         { code: 'ORA-12541', type: 'connection_error', retryable: true },
         { code: 'ORA-01017', type: 'authentication_error', retryable: false },
-        { code: 'ORA-28001', type: 'password_expired', retryable: false }
+        { code: 'ORA-28001', type: 'password_expired', retryable: false },
       ];
 
       for (const errorInfo of oracleErrorCodes) {
@@ -596,8 +612,10 @@ describe('Oracle Connection Manager - Task 3.1', () => {
     it('should implement circuit breaker pattern', async () => {
       // RED: 測試斷路器模式實作
       const failingPool = {
-        getConnection: vi.fn().mockRejectedValue(new Error('ORA-12541: TNS:no listener')),
-        close: vi.fn()
+        getConnection: vi
+          .fn()
+          .mockRejectedValue(new Error('ORA-12541: TNS:no listener')),
+        close: vi.fn(),
       };
 
       mockOracleDb.default.createPool.mockResolvedValue(failingPool);

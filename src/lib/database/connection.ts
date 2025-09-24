@@ -42,7 +42,10 @@ if (USE_ORACLE) {
         host: process.env.DB_HOST || process.env.HOSTNAME || '192.168.1.183',
         database: process.env.DB_DATABASE || process.env.DATABASE || 'app_db',
         user: process.env.DB_USER || process.env.USERNAME || 'admin',
-        password: process.env.DB_PASSWORD || process.env.PASSWORD || 'XcW04ByX6GbVdt1gw4EJ5XRY',
+        password:
+          process.env.DB_PASSWORD ||
+          process.env.PASSWORD ||
+          'XcW04ByX6GbVdt1gw4EJ5XRY',
         port: parseInt(process.env.DB_PORT || process.env.PORT || '30432'),
         ssl: process.env.DATABASE_URL?.includes('sslmode=require')
           ? { rejectUnauthorized: false }
@@ -50,7 +53,9 @@ if (USE_ORACLE) {
         max: parseInt(process.env.DB_MAX_CONNECTIONS || '20'),
         min: parseInt(process.env.DB_MIN_CONNECTIONS || '5'),
         idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '10000'),
-        connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '5000'),
+        connectionTimeoutMillis: parseInt(
+          process.env.DB_CONNECTION_TIMEOUT || '5000'
+        ),
       };
 
       console.log('PostgreSQL config:', {
@@ -98,7 +103,9 @@ if (USE_ORACLE) {
 
         // 慢查詢警告 (超過 1 秒)
         if (duration > 1000) {
-          console.warn(`Slow query detected: ${duration}ms - ${text.substring(0, 100)}...`);
+          console.warn(
+            `Slow query detected: ${duration}ms - ${text.substring(0, 100)}...`
+          );
         }
 
         return result.rows;

@@ -10,12 +10,12 @@ const dbConfig = {
   database: 'app_db',
   user: 'admin',
   password: 'XcW04ByX6GbVdt1gw4EJ5XRY',
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 };
 
 async function seedVendorContacts() {
   const client = new Client(dbConfig);
-  
+
   try {
     console.log('🔌 連接資料庫...');
     await client.connect();
@@ -24,19 +24,21 @@ async function seedVendorContacts() {
     // 讀取 SQL 腳本
     const sqlPath = path.join(__dirname, 'seed-vendor-contacts-data.sql');
     const sqlScript = fs.readFileSync(sqlPath, 'utf8');
-    
+
     console.log('📄 執行廠商聯絡人測試資料插入腳本...');
-    
+
     // 執行 SQL 腳本
     await client.query(sqlScript);
-    
+
     console.log('🎉 廠商聯絡人測試資料插入完成！');
-    
+
     // 查詢結果統計
-    const contactCount = await client.query("SELECT COUNT(*) as count FROM vendor_contacts");
+    const contactCount = await client.query(
+      'SELECT COUNT(*) as count FROM vendor_contacts'
+    );
     console.log(`📊 統計結果:`);
     console.log(`   - 聯絡人總數: ${contactCount.rows[0].count}`);
-    
+
     // 顯示聯絡人職位分布
     const positionDistribution = await client.query(`
       SELECT position, COUNT(*) as count 
@@ -44,12 +46,12 @@ async function seedVendorContacts() {
       GROUP BY position 
       ORDER BY count DESC
     `);
-    
+
     console.log(`\n📈 聯絡人職位分布:`);
     positionDistribution.rows.forEach(row => {
       console.log(`   - ${row.position}: ${row.count} 人`);
     });
-    
+
     // 顯示聯絡人狀態分布
     const statusDistribution = await client.query(`
       SELECT status, COUNT(*) as count 
@@ -57,7 +59,7 @@ async function seedVendorContacts() {
       GROUP BY status 
       ORDER BY count DESC
     `);
-    
+
     console.log(`\n🚦 聯絡人狀態分布:`);
     statusDistribution.rows.forEach(row => {
       console.log(`   - ${row.status}: ${row.count} 人`);
@@ -72,7 +74,7 @@ async function seedVendorContacts() {
       GROUP BY v.id, v.name
       ORDER BY contact_count DESC
     `);
-    
+
     console.log(`\n👥 各廠商聯絡人數量:`);
     vendorContactCount.rows.forEach(row => {
       console.log(`   - ${row.name}: ${row.contact_count} 人`);
@@ -86,12 +88,13 @@ async function seedVendorContacts() {
       ORDER BY vc.created_at DESC 
       LIMIT 8
     `);
-    
+
     console.log(`\n🆕 最近新增的聯絡人（前8位）:`);
     recentContacts.rows.forEach((contact, index) => {
-      console.log(`   ${index + 1}. ${contact.name} (${contact.title}) - ${contact.vendor_name} [${contact.position}]`);
+      console.log(
+        `   ${index + 1}. ${contact.name} (${contact.title}) - ${contact.vendor_name} [${contact.position}]`
+      );
     });
-
   } catch (error) {
     console.error('❌ 錯誤:', error.message);
     if (error.message.includes('duplicate key value')) {

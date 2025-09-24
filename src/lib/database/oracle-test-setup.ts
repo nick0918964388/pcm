@@ -3,26 +3,26 @@
  * 用於端到端測試的資料庫初始化和清理
  */
 
-import { getOracleConnection, OracleConfig } from './oracle-connection'
-import { getDefaultOracleConfig } from './oracle-connection'
-import { exec } from 'child_process'
-import { promisify } from 'util'
+import { getOracleConnection, OracleConfig } from './oracle-connection';
+import { getDefaultOracleConfig } from './oracle-connection';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-const execAsync = promisify(exec)
+const execAsync = promisify(exec);
 
 export interface TestDatabaseConfig {
-  skipInitialization?: boolean
-  recreateSchema?: boolean
-  loadTestData?: boolean
+  skipInitialization?: boolean;
+  recreateSchema?: boolean;
+  loadTestData?: boolean;
 }
 
 export class OracleTestManager {
-  private oracle = getOracleConnection()
-  private isInitialized = false
+  private oracle = getOracleConnection();
+  private isInitialized = false;
 
   async initialize(config: TestDatabaseConfig = {}): Promise<void> {
     if (this.isInitialized && !config.recreateSchema) {
-      return
+      return;
     }
 
     try {
@@ -32,69 +32,70 @@ export class OracleTestManager {
         poolMin: 2,
         poolMax: 5, // 測試環境使用較小的連線池
         poolIncrement: 1,
-        poolTimeout: 30
-      }
+        poolTimeout: 30,
+      };
 
-      const initResult = await this.oracle.initialize(oracleConfig)
+      const initResult = await this.oracle.initialize(oracleConfig);
       if (!initResult.success) {
-        throw new Error(`Failed to initialize Oracle connection: ${initResult.error?.message}`)
+        throw new Error(
+          `Failed to initialize Oracle connection: ${initResult.error?.message}`
+        );
       }
 
       // 檢查資料庫連線
-      const healthCheck = await this.oracle.healthCheck()
+      const healthCheck = await this.oracle.healthCheck();
       if (!healthCheck.success || !healthCheck.data?.isHealthy) {
-        throw new Error(`Oracle database is not healthy: ${healthCheck.data?.errorDetails}`)
+        throw new Error(
+          `Oracle database is not healthy: ${healthCheck.data?.errorDetails}`
+        );
       }
 
       if (config.recreateSchema) {
-        await this.recreateSchema()
+        await this.recreateSchema();
       }
 
       if (config.loadTestData && !this.isInitialized) {
-        await this.loadTestData()
+        await this.loadTestData();
       }
 
-      this.isInitialized = true
-
+      this.isInitialized = true;
     } catch (error) {
-      throw new Error(`Oracle test setup failed: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(
+        `Oracle test setup failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
   async cleanup(): Promise<void> {
     try {
       // 清理測試資料
-      await this.cleanupTestData()
+      await this.cleanupTestData();
 
       // 關閉連線池
-      await this.oracle.shutdown()
-      this.isInitialized = false
-
+      await this.oracle.shutdown();
+      this.isInitialized = false;
     } catch (error) {
-      console.error('Oracle test cleanup failed:', error)
+      console.error('Oracle test cleanup failed:', error);
     }
   }
 
   async recreateSchema(): Promise<void> {
-    const dropTables = [
-      'photos',
-      'photo_albums',
-      'users',
-      'projects'
-    ]
+    const dropTables = ['photos', 'photo_albums', 'users', 'projects'];
 
     // 刪除現有表格
     for (const table of dropTables) {
       try {
-        await this.oracle.executeQuery(`DROP TABLE ${table} CASCADE CONSTRAINTS`)
+        await this.oracle.executeQuery(
+          `DROP TABLE ${table} CASCADE CONSTRAINTS`
+        );
       } catch (error) {
         // 忽略表格不存在的錯誤
-        console.log(`Table ${table} does not exist, skipping drop`)
+        console.log(`Table ${table} does not exist, skipping drop`);
       }
     }
 
     // 重新建立Schema
-    await this.createTables()
+    await this.createTables();
   }
 
   async createTables(): Promise<void> {
@@ -117,7 +118,7 @@ export class OracleTestManager {
         updated_at TIMESTAMP DEFAULT SYSTIMESTAMP,
         deleted_at TIMESTAMP
       )
-    `)
+    `);
 
     // 建立使用者表
     await this.oracle.executeQuery(`
@@ -133,7 +134,7 @@ export class OracleTestManager {
         updated_at TIMESTAMP DEFAULT SYSTIMESTAMP,
         deleted_at TIMESTAMP
       )
-    `)
+    `);
 
     // 建立相簿表
     await this.oracle.executeQuery(`
@@ -151,7 +152,7 @@ export class OracleTestManager {
         CONSTRAINT fk_album_project FOREIGN KEY (project_id) REFERENCES projects(id),
         CONSTRAINT fk_album_creator FOREIGN KEY (created_by) REFERENCES users(id)
       )
-    `)
+    `);
 
     // 建立更新觸發器
     await this.oracle.executeQuery(`
@@ -161,7 +162,7 @@ export class OracleTestManager {
       BEGIN
         :NEW.updated_at := SYSTIMESTAMP;
       END
-    `)
+    `);
 
     await this.oracle.executeQuery(`
       CREATE OR REPLACE TRIGGER trg_users_updated_at
@@ -170,7 +171,7 @@ export class OracleTestManager {
       BEGIN
         :NEW.updated_at := SYSTIMESTAMP;
       END
-    `)
+    `);
   }
 
   async loadTestData(): Promise<void> {
@@ -178,90 +179,96 @@ export class OracleTestManager {
     await this.oracle.executeQuery(`
       INSERT INTO users (id, username, email, password_hash, role, first_name, last_name)
       VALUES ('TEST_USER_001', 'test_user_e2e', 'test@pcm.test', 'test_hash', 'manager', 'Test', 'User')
-    `)
+    `);
 
-    console.log('Test data loaded successfully')
+    console.log('Test data loaded successfully');
   }
 
   async cleanupTestData(): Promise<void> {
     const cleanupQueries = [
       "DELETE FROM photo_albums WHERE project_id LIKE 'TEST_%'",
       "DELETE FROM projects WHERE id LIKE 'TEST_%'",
-      "DELETE FROM users WHERE username LIKE 'test_%'"
-    ]
+      "DELETE FROM users WHERE username LIKE 'test_%'",
+    ];
 
     for (const query of cleanupQueries) {
       try {
-        await this.oracle.executeQuery(query)
+        await this.oracle.executeQuery(query);
       } catch (error) {
-        console.warn(`Cleanup query failed: ${query}`, error)
+        console.warn(`Cleanup query failed: ${query}`, error);
       }
     }
 
-    console.log('Test data cleaned up')
+    console.log('Test data cleaned up');
   }
 
   async verifyConnection(): Promise<boolean> {
     try {
-      const result = await this.oracle.healthCheck()
-      return result.success && result.data?.isHealthy === true
+      const result = await this.oracle.healthCheck();
+      return result.success && result.data?.isHealthy === true;
     } catch (error) {
-      return false
+      return false;
     }
   }
 
   async checkContainerStatus(): Promise<boolean> {
     try {
-      const { stdout } = await execAsync('docker ps --filter "name=pcm-oracle-dev" --format "{{.Status}}"')
-      return stdout.includes('Up')
+      const { stdout } = await execAsync(
+        'docker ps --filter "name=pcm-oracle-dev" --format "{{.Status}}"'
+      );
+      return stdout.includes('Up');
     } catch (error) {
-      return false
+      return false;
     }
   }
 
   async waitForDatabase(timeoutMs = 30000): Promise<boolean> {
-    const startTime = Date.now()
-    const pollInterval = 2000
+    const startTime = Date.now();
+    const pollInterval = 2000;
 
     while (Date.now() - startTime < timeoutMs) {
       if (await this.verifyConnection()) {
-        return true
+        return true;
       }
 
-      await new Promise(resolve => setTimeout(resolve, pollInterval))
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
     }
 
-    return false
+    return false;
   }
 
   getConnectionStatus() {
     return {
       isInitialized: this.isInitialized,
-      poolStatus: this.isInitialized ? this.oracle.getPoolStatus() : null
-    }
+      poolStatus: this.isInitialized ? this.oracle.getPoolStatus() : null,
+    };
   }
 }
 
 // 導出單例實例
-export const oracleTestManager = new OracleTestManager()
+export const oracleTestManager = new OracleTestManager();
 
 // 測試輔助函數
-export async function setupOracleForTests(config?: TestDatabaseConfig): Promise<void> {
-  await oracleTestManager.initialize(config)
+export async function setupOracleForTests(
+  config?: TestDatabaseConfig
+): Promise<void> {
+  await oracleTestManager.initialize(config);
 }
 
 export async function cleanupOracleAfterTests(): Promise<void> {
-  await oracleTestManager.cleanup()
+  await oracleTestManager.cleanup();
 }
 
 export async function ensureOracleReady(): Promise<void> {
-  const containerRunning = await oracleTestManager.checkContainerStatus()
+  const containerRunning = await oracleTestManager.checkContainerStatus();
   if (!containerRunning) {
-    throw new Error('Oracle container is not running. Please start it with: npm run docker:oracle:start')
+    throw new Error(
+      'Oracle container is not running. Please start it with: npm run docker:oracle:start'
+    );
   }
 
-  const dbReady = await oracleTestManager.waitForDatabase(30000)
+  const dbReady = await oracleTestManager.waitForDatabase(30000);
   if (!dbReady) {
-    throw new Error('Oracle database is not ready within timeout')
+    throw new Error('Oracle database is not ready within timeout');
   }
 }

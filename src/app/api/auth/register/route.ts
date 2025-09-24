@@ -9,7 +9,7 @@ import {
   handleOptionsRequest,
   logApiRequest,
   checkRateLimit,
-  rateLimitErrorResponse
+  rateLimitErrorResponse,
 } from '@/lib/utils/api-response';
 
 // POST /api/auth/register - 用戶註冊
@@ -22,11 +22,12 @@ export async function POST(request: NextRequest) {
     if (methodError) return methodError;
 
     // 速率限制檢查 (每小時最多 3 次註冊嘗試)
-    const clientIP = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown';
+    const clientIP =
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
     const rateLimit = checkRateLimit(`register:${clientIP}`, 3, 60 * 60 * 1000);
-    
+
     if (!rateLimit.allowed) {
       return rateLimitErrorResponse('註冊次數過多，請稍後再試');
     }
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       email,
       password,
       firstName,
-      lastName
+      lastName,
     });
 
     // 記錄請求日誌
@@ -60,14 +61,13 @@ export async function POST(request: NextRequest) {
           email: user.email,
           firstName: user.first_name,
           lastName: user.last_name,
-          isVerified: user.is_verified
-        }
+          isVerified: user.is_verified,
+        },
       },
       '註冊成功',
       null,
       201
     );
-
   } catch (error: any) {
     logApiRequest(request, null, null, startTime);
     return handleKnownError(error);

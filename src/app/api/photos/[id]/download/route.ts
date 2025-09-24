@@ -1,212 +1,366 @@
 /**
  * Photo Download API - 照片下載端點
- * POST /api/photos/[id]/download
- * 處理照片下載請求，支援不同解析度和權限驗證
+ * Task 7.3: 建立照片下載功能，支援單一和批次下載
+ *
+ * POST /api/photos/[id]/download - 生成安全下載連結
+ * GET /api/photos/[id]/download - 驗證令牌並下載檔案
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { DatabaseConnection } from '@/lib/database/connection'
+import { NextRequest, NextResponse } from 'next/server';
+import { OracleRepositoryFactory } from '@/lib/repositories/oracle-repository-factory';
+import { FileSecurityService } from '@/lib/services/file-security-service';
 import type {
   DownloadOptions,
   DownloadResponse,
-  PhotoResolution
-} from '@/types/photo.types'
-import path from 'path'
-import fs from 'fs/promises'
+  PhotoResolution,
+} from '@/types/photo.types';
+import path from 'path';
+import { readFile } from 'fs/promises';
 
 interface RequestBody {
-  options: DownloadOptions
+  options: DownloadOptions;
 }
 
+interface BatchDownloadRequest {
+  photoIds: string[];
+  options: {
+    resolution: PhotoResolution;
+    format?: 'zip' | 'individual';
+    compression?: boolean;
+  };
+}
+
+/**
+ * POST /api/photos/[id]/download
+ * 生成安全的下載連結
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  let connection: DatabaseConnection | null = null
-
   try {
-    const photoId = params.id
-    const body: RequestBody = await request.json()
-    const { options } = body
+    const photoId = params.id;
+    const body: RequestBody = await request.json();
+    const { options } = body;
 
-    console.log(`📥 處理照片下載請求: ${photoId}, 解析度: ${options.resolution}`)
+    // TODO: 從認證中間件取得用戶ID
+    const userId = 'test-user-123';
 
-    // 建立資料庫連接
-    connection = new DatabaseConnection()
-    await connection.connect()
+    console.log(
+      `📥 生成下載連結請求: ${photoId}, 解析度: ${options.resolution}, 使用者: ${userId}`
+    );
 
-    // 查詢照片資訊
-    const photoQuery = `
-      SELECT
-        p.*,
-        pa.project_id,
-        pa.name as album_name
-      FROM photos p
-      JOIN photo_albums pa ON p.album_id = pa.id
-      WHERE p.id = $1 AND p.deleted_at IS NULL
-    `
-
-    const photoResult = await connection.query(photoQuery, [photoId])
-
-    if (photoResult.rows.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: '照片不存在'
-      }, { status: 404 })
+    // 1. 速率限制檢查
+    const rateLimit = FileSecurityService.checkRateLimit(userId);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '下載頻率限制超過，請稍後再試',
+          resetTime: new Date(rateLimit.resetTime).toISOString(),
+        },
+        { status: 429 }
+      );
     }
 
-    const photo = photoResult.rows[0]
+    // 2. Oracle 權限驗證
+    const photoRepository = OracleRepositoryFactory.getPhotoRepository();
+    const photoWithPermissions = await photoRepository.getPhotoWithPermissions(
+      photoId,
+      userId
+    );
 
-    // TODO: 驗證使用者權限
-    // const userId = await getUserIdFromRequest(request)
-    // const hasPermission = await verifyDownloadPermission(photo.project_id, userId)
-    // if (!hasPermission) {
-    //   return NextResponse.json({
-    //     success: false,
-    //     error: '權限不足，無法下載此照片'
-    //   }, { status: 403 })
-    // }
+    if (!photoWithPermissions) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '照片不存在或無存取權限',
+        },
+        { status: 404 }
+      );
+    }
 
-    // 根據解析度取得檔案路徑
-    let filePath: string
-    let fileName: string
+    // 3. 取得檔案路徑和資訊
+    const filePaths = await photoRepository.getPhotoFilePaths(photoId);
+    let targetPath: string;
+    let fileName: string;
+    let fileSize = 0;
 
     if (options.resolution === 'original') {
-      filePath = photo.file_path
-      fileName = photo.file_name
+      targetPath = filePaths.original || photoWithPermissions.filePath;
+      fileName = photoWithPermissions.fileName;
+      fileSize = photoWithPermissions.fileSize;
+    } else if (options.resolution === 'thumbnail') {
+      targetPath =
+        filePaths.thumbnail ||
+        filePaths.original ||
+        photoWithPermissions.filePath;
+      const ext = path.extname(photoWithPermissions.fileName);
+      const nameWithoutExt = path.basename(photoWithPermissions.fileName, ext);
+      fileName = `${nameWithoutExt}-thumbnail${ext}`;
     } else {
-      // 查詢對應解析度的版本
-      const versionQuery = `
-        SELECT file_path, width, height, file_size
-        FROM photo_versions
-        WHERE photo_id = $1 AND version_type = $2
-      `
-
-      const versionResult = await connection.query(versionQuery, [photoId, options.resolution])
-
-      if (versionResult.rows.length === 0) {
-        return NextResponse.json({
-          success: false,
-          error: `${options.resolution} 解析度版本不存在`
-        }, { status: 404 })
+      // 查找特定版本
+      const version = filePaths.versions.find(
+        v => v.type === options.resolution
+      );
+      if (version) {
+        targetPath = version.path;
+        fileSize = version.size;
+        const ext = path.extname(photoWithPermissions.fileName);
+        const nameWithoutExt = path.basename(
+          photoWithPermissions.fileName,
+          ext
+        );
+        fileName = `${nameWithoutExt}-${options.resolution}${ext}`;
+      } else {
+        // 如果版本不存在，使用原始檔案
+        targetPath = filePaths.original || photoWithPermissions.filePath;
+        fileName = photoWithPermissions.fileName;
+        fileSize = photoWithPermissions.fileSize;
       }
-
-      const version = versionResult.rows[0]
-      filePath = version.file_path
-
-      // 生成檔案名稱
-      const ext = path.extname(photo.file_name)
-      const nameWithoutExt = path.basename(photo.file_name, ext)
-      fileName = `${nameWithoutExt}-${options.resolution}${ext}`
     }
 
-    // 檢查檔案是否存在
-    try {
-      await fs.access(filePath)
-    } catch (error) {
-      console.error(`檔案不存在: ${filePath}`)
-      return NextResponse.json({
-        success: false,
-        error: '檔案檔案不存在於伺服器'
-      }, { status: 404 })
+    // 4. 檢查檔案可存取性
+    const securityCheck = await FileSecurityService.checkFilePermissions(
+      targetPath,
+      {
+        userId,
+        allowedExtensions: [
+          '.jpg',
+          '.jpeg',
+          '.png',
+          '.gif',
+          '.webp',
+          '.bmp',
+          '.tiff',
+          '.pdf',
+        ],
+        maxFileSize: 100 * 1024 * 1024, // 100MB
+      }
+    );
+
+    if (!securityCheck.accessible) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `檔案無法存取: ${securityCheck.error}`,
+        },
+        { status: 404 }
+      );
     }
 
-    // 取得檔案資訊
-    const stats = await fs.stat(filePath)
+    // 5. 生成安全下載令牌
+    const secureToken = FileSecurityService.generateSecureToken(
+      photoId,
+      userId,
+      options.resolution
+    );
 
-    // 生成下載URL (簽名URL，1小時後過期)
-    const downloadToken = generateDownloadToken(photoId, options.resolution)
-    const downloadUrl = `/api/photos/${photoId}/file?token=${downloadToken}&resolution=${options.resolution}`
+    // 6. 構建下載URL
+    const downloadUrl = `/api/photos/${photoId}/download?token=${secureToken.token}&resolution=${options.resolution}&type=file`;
 
     const response: DownloadResponse = {
       success: true,
       downloadUrl,
-      fileName,
-      fileSize: stats.size,
-      expiresAt: new Date(Date.now() + 3600000) // 1小時後過期
-    }
+      fileName: FileSecurityService.sanitizeFileName(fileName),
+      fileSize: securityCheck.fileStats?.size || fileSize,
+      expiresAt: new Date(secureToken.expiresAt),
+    };
 
-    console.log(`✅ 照片下載連結生成成功: ${fileName}`)
+    console.log(
+      `✅ 下載連結生成成功: ${fileName} (${response.fileSize} bytes)`
+    );
 
-    return NextResponse.json(response)
-
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('❌ 照片下載失敗:', error)
+    console.error('❌ 生成下載連結失敗:', error);
 
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : '下載失敗'
-    }, { status: 500 })
-
-  } finally {
-    if (connection) {
-      await connection.close()
-    }
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '生成下載連結失敗',
+      },
+      { status: 500 }
+    );
   }
 }
 
 /**
- * 生成下載令牌
- * @param photoId 照片ID
- * @param resolution 解析度
- * @returns 下載令牌
- */
-function generateDownloadToken(photoId: string, resolution: PhotoResolution): string {
-  const payload = {
-    photoId,
-    resolution,
-    expiresAt: Date.now() + 3600000 // 1小時
-  }
-
-  // 簡單的 base64 編碼 (生產環境應使用 JWT)
-  return Buffer.from(JSON.stringify(payload)).toString('base64')
-}
-
-/**
- * 取得照片檔案下載 API
  * GET /api/photos/[id]/download
+ * 驗證令牌並提供檔案下載
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { searchParams } = new URL(request.url)
-  const token = searchParams.get('token')
-  const resolution = searchParams.get('resolution') as PhotoResolution
-
-  if (!token) {
-    return NextResponse.json({
-      error: '缺少下載令牌'
-    }, { status: 400 })
-  }
-
   try {
-    // 驗證令牌
-    const payload = JSON.parse(Buffer.from(token, 'base64').toString())
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get('token');
+    const resolution = searchParams.get('resolution') as PhotoResolution;
+    const type = searchParams.get('type') || 'file';
+    const photoId = params.id;
 
-    if (payload.expiresAt < Date.now()) {
-      return NextResponse.json({
-        error: '下載連結已過期'
-      }, { status: 410 })
+    if (!token) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '缺少下載令牌',
+        },
+        { status: 400 }
+      );
     }
 
-    if (payload.photoId !== params.id || payload.resolution !== resolution) {
-      return NextResponse.json({
-        error: '無效的下載令牌'
-      }, { status: 403 })
+    console.log(`📤 驗證下載令牌: ${photoId}, 解析度: ${resolution}`);
+
+    // 1. 驗證下載令牌
+    const tokenValidation = FileSecurityService.validateToken(token);
+    if (!tokenValidation.valid) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: tokenValidation.error,
+        },
+        {
+          status: tokenValidation.error?.includes('過期') ? 410 : 403,
+        }
+      );
     }
 
-    // TODO: 實際下載檔案邏輯
-    // 這裡應該讀取檔案並串流回傳給客戶端
+    const tokenPayload = tokenValidation.payload!;
 
-    return NextResponse.json({
-      success: true,
-      message: '下載令牌驗證成功'
-    })
+    // 2. 驗證令牌參數匹配
+    if (
+      tokenPayload.photoId !== photoId ||
+      tokenPayload.resolution !== resolution
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '下載令牌參數不匹配',
+        },
+        { status: 403 }
+      );
+    }
 
+    // 3. 再次驗證 Oracle 權限
+    const photoRepository = OracleRepositoryFactory.getPhotoRepository();
+    const hasAccess = await photoRepository.verifyFileAccess(
+      photoId,
+      tokenPayload.userId
+    );
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '權限已變更，無法下載',
+        },
+        { status: 403 }
+      );
+    }
+
+    // 4. 取得照片和檔案路徑資訊
+    const photoWithPermissions = await photoRepository.getPhotoWithPermissions(
+      photoId,
+      tokenPayload.userId
+    );
+    if (!photoWithPermissions) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '照片不存在或已被刪除',
+        },
+        { status: 404 }
+      );
+    }
+
+    const filePaths = await photoRepository.getPhotoFilePaths(photoId);
+    let targetPath: string;
+    let fileName: string;
+
+    if (resolution === 'original') {
+      targetPath = filePaths.original || photoWithPermissions.filePath;
+      fileName = photoWithPermissions.fileName;
+    } else if (resolution === 'thumbnail') {
+      targetPath =
+        filePaths.thumbnail ||
+        filePaths.original ||
+        photoWithPermissions.filePath;
+      const ext = path.extname(photoWithPermissions.fileName);
+      const nameWithoutExt = path.basename(photoWithPermissions.fileName, ext);
+      fileName = `${nameWithoutExt}-thumbnail${ext}`;
+    } else {
+      const version = filePaths.versions.find(v => v.type === resolution);
+      if (version) {
+        targetPath = version.path;
+        const ext = path.extname(photoWithPermissions.fileName);
+        const nameWithoutExt = path.basename(
+          photoWithPermissions.fileName,
+          ext
+        );
+        fileName = `${nameWithoutExt}-${resolution}${ext}`;
+      } else {
+        targetPath = filePaths.original || photoWithPermissions.filePath;
+        fileName = photoWithPermissions.fileName;
+      }
+    }
+
+    // 5. 最終安全檢查
+    const securityCheck = await FileSecurityService.checkFilePermissions(
+      targetPath,
+      {
+        userId: tokenPayload.userId,
+      }
+    );
+
+    if (!securityCheck.accessible) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '檔案當前無法存取',
+        },
+        { status: 404 }
+      );
+    }
+
+    // 6. 讀取檔案並返回
+    const fullPath = path.resolve(process.cwd(), 'public', targetPath);
+    const fileBuffer = await readFile(fullPath);
+    const mimeType = FileSecurityService.getMimeType(targetPath);
+    const safeFileName = FileSecurityService.sanitizeFileName(fileName);
+
+    // 7. 記錄下載統計
+    await photoRepository.updateDownloadStats({
+      photoId,
+      userId: tokenPayload.userId,
+      downloadedAt: new Date(),
+      resolution,
+      fileSize: fileBuffer.length,
+      userAgent: request.headers.get('user-agent') || undefined,
+    });
+
+    const headers = new Headers({
+      'Content-Type': mimeType,
+      'Content-Length': fileBuffer.length.toString(),
+      'Content-Disposition': `attachment; filename="${safeFileName}"`,
+      'Cache-Control': 'private, no-cache',
+      'X-Download-Stats': 'recorded',
+    });
+
+    console.log(
+      `✅ 檔案下載成功: ${safeFileName} (${fileBuffer.length} bytes)`
+    );
+
+    return new NextResponse(fileBuffer, { headers });
   } catch (error) {
-    return NextResponse.json({
-      error: '無效的下載令牌'
-    }, { status: 403 })
+    console.error('❌ 檔案下載失敗:', error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '檔案下載失敗',
+      },
+      { status: 500 }
+    );
   }
 }

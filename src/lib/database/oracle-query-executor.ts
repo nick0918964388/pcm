@@ -31,7 +31,7 @@ import type {
   ErrorType,
   ErrorSeverity,
   ConstraintInfo,
-  ExecutionPlan
+  ExecutionPlan,
 } from './oracle-query-types';
 
 interface ExecutorConfig {
@@ -50,19 +50,22 @@ export class OracleQueryExecutor {
     totalCachedStatements: 0,
     cacheEvictions: 0,
     hitRate: 0,
-    memoryUsage: 0
+    memoryUsage: 0,
   };
   private config: ExecutorConfig;
   private syntaxRules: SyntaxConversionRule[] = [];
 
-  constructor(connectionManager: OracleConnectionManager, config: ExecutorConfig = {}) {
+  constructor(
+    connectionManager: OracleConnectionManager,
+    config: ExecutorConfig = {}
+  ) {
     this.connectionManager = connectionManager;
     this.config = {
       maxCacheSize: 100,
       cacheEvictionPolicy: 'LRU',
       enableQueryLogging: false,
       defaultTimeout: 30000,
-      ...config
+      ...config,
     };
     this.initializeSyntaxRules();
   }
@@ -100,14 +103,22 @@ export class OracleQueryExecutor {
       }
 
       // 執行查詢
-      const result = await this.connectionManager.executeQuery<T>(processedSql, processedBinds);
+      const result = await this.connectionManager.executeQuery<T>(
+        processedSql,
+        processedBinds
+      );
 
       if (!result.success) {
-        const queryError = this.mapOracleError(result.error as Error, processedSql, processedBinds, options.locale);
+        const queryError = this.mapOracleError(
+          result.error as Error,
+          processedSql,
+          processedBinds,
+          options.locale
+        );
         return {
           success: false,
           error: queryError,
-          executionTime: Date.now() - startTime
+          executionTime: Date.now() - startTime,
         };
       }
 
@@ -116,15 +127,19 @@ export class OracleQueryExecutor {
         data: result.data,
         rows: result.data,
         totalRows: result.data?.length || 0,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
-
     } catch (error) {
-      const queryError = this.mapOracleError(error as Error, sql, binds, options.locale);
+      const queryError = this.mapOracleError(
+        error as Error,
+        sql,
+        binds,
+        options.locale
+      );
       return {
         success: false,
         error: queryError,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -153,13 +168,19 @@ export class OracleQueryExecutor {
       // 處理綁定變數轉換
       let processedBindArray = bindArray;
       if (options.convertBinds) {
-        processedBindArray = bindArray.map(binds => this.convertBindVariables(binds));
+        processedBindArray = bindArray.map(binds =>
+          this.convertBindVariables(binds)
+        );
       }
 
-      const result = await connection.executeMany(processedSql, processedBindArray, {
-        autoCommit: true,
-        outFormat: 4001 // OUT_FORMAT_OBJECT
-      });
+      const result = await connection.executeMany(
+        processedSql,
+        processedBindArray,
+        {
+          autoCommit: true,
+          outFormat: 4001, // OUT_FORMAT_OBJECT
+        }
+      );
 
       await connection.close();
 
@@ -169,9 +190,8 @@ export class OracleQueryExecutor {
         successfulRows: result.rowsAffected || 0,
         failedRows: 0,
         batchCount: 1,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
-
     } catch (error) {
       return {
         success: false,
@@ -179,11 +199,13 @@ export class OracleQueryExecutor {
         successfulRows: 0,
         failedRows: bindArray.length,
         batchCount: 0,
-        errors: [{
-          rowIndex: 0,
-          error: this.mapOracleError(error as Error, sql, {})
-        }],
-        executionTime: Date.now() - startTime
+        errors: [
+          {
+            rowIndex: 0,
+            error: this.mapOracleError(error as Error, sql, {}),
+          },
+        ],
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -204,7 +226,7 @@ export class OracleQueryExecutor {
           successfulRows: 0,
           failedRows: 0,
           batchCount: 0,
-          executionTime: Date.now() - startTime
+          executionTime: Date.now() - startTime,
         };
       }
 
@@ -227,7 +249,9 @@ export class OracleQueryExecutor {
         const batch = batches[batchIndex];
 
         try {
-          const batchResult = await this.executeBatch(sql, batch, { convertBinds: true });
+          const batchResult = await this.executeBatch(sql, batch, {
+            convertBinds: true,
+          });
           if (batchResult.success) {
             totalSuccessful += batchResult.successfulRows;
           } else {
@@ -240,7 +264,7 @@ export class OracleQueryExecutor {
           totalFailed += batch.length;
           errors.push({
             rowIndex: batchIndex * batchSize,
-            error: this.mapOracleError(error as Error, sql, {})
+            error: this.mapOracleError(error as Error, sql, {}),
           });
         }
       }
@@ -252,9 +276,8 @@ export class OracleQueryExecutor {
         failedRows: totalFailed,
         batchCount: batches.length,
         errors: errors.length > 0 ? errors : undefined,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
-
     } catch (error) {
       return {
         success: false,
@@ -262,11 +285,13 @@ export class OracleQueryExecutor {
         successfulRows: 0,
         failedRows: data.length,
         batchCount: 0,
-        errors: [{
-          rowIndex: 0,
-          error: this.mapOracleError(error as Error, '', {})
-        }],
-        executionTime: Date.now() - startTime
+        errors: [
+          {
+            rowIndex: 0,
+            error: this.mapOracleError(error as Error, '', {}),
+          },
+        ],
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -287,9 +312,8 @@ export class OracleQueryExecutor {
 
       return {
         ...result,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
-
     } catch (error) {
       return {
         success: false,
@@ -297,11 +321,13 @@ export class OracleQueryExecutor {
         successfulRows: 0,
         failedRows: data.length,
         batchCount: 0,
-        errors: [{
-          rowIndex: 0,
-          error: this.mapOracleError(error as Error, '', {})
-        }],
-        executionTime: Date.now() - startTime
+        errors: [
+          {
+            rowIndex: 0,
+            error: this.mapOracleError(error as Error, '', {}),
+          },
+        ],
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -317,8 +343,12 @@ export class OracleQueryExecutor {
     try {
       // 生成MERGE語句
       const allColumns = Object.keys(data[0]);
-      const keyConditions = keyColumns.map(col => `t.${col} = s.${col}`).join(' AND ');
-      const updateSet = updateColumns.map(col => `t.${col} = s.${col}`).join(', ');
+      const keyConditions = keyColumns
+        .map(col => `t.${col} = s.${col}`)
+        .join(' AND ');
+      const updateSet = updateColumns
+        .map(col => `t.${col} = s.${col}`)
+        .join(', ');
       const insertColumns = allColumns.join(', ');
       const insertValues = allColumns.map(col => `s.${col}`).join(', ');
 
@@ -336,9 +366,8 @@ export class OracleQueryExecutor {
 
       return {
         ...result,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
-
     } catch (error) {
       return {
         success: false,
@@ -346,11 +375,13 @@ export class OracleQueryExecutor {
         successfulRows: 0,
         failedRows: data.length,
         batchCount: 0,
-        errors: [{
-          rowIndex: 0,
-          error: this.mapOracleError(error as Error, '', {})
-        }],
-        executionTime: Date.now() - startTime
+        errors: [
+          {
+            rowIndex: 0,
+            error: this.mapOracleError(error as Error, '', {}),
+          },
+        ],
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -371,7 +402,7 @@ export class OracleQueryExecutor {
       const connection = connectionResult.data;
       const result = await connection.execute(sql, binds, {
         resultSet: true,
-        fetchArraySize: options.fetchSize || 1000
+        fetchArraySize: options.fetchSize || 1000,
       });
 
       const rows: T[] = [];
@@ -389,16 +420,15 @@ export class OracleQueryExecutor {
         success: true,
         rows,
         hasMore: false,
-        totalFetched: rows.length
+        totalFetched: rows.length,
       };
-
     } catch (error) {
       return {
         success: false,
         rows: [],
         hasMore: false,
         totalFetched: 0,
-        error: this.mapOracleError(error as Error, sql, binds)
+        error: this.mapOracleError(error as Error, sql, binds),
       };
     }
   }
@@ -421,7 +451,7 @@ export class OracleQueryExecutor {
       const connection = connectionResult.data;
       const result = await connection.execute(sql, binds, {
         resultSet: true,
-        fetchArraySize: options.batchSize
+        fetchArraySize: options.batchSize,
       });
 
       if (result.resultSet) {
@@ -429,7 +459,9 @@ export class OracleQueryExecutor {
         let row;
 
         while ((row = await result.resultSet.getRow())) {
-          const transformedRow = options.transform ? options.transform(row) : row;
+          const transformedRow = options.transform
+            ? options.transform(row)
+            : row;
           batch.push(transformedRow);
 
           if (batch.length >= options.batchSize) {
@@ -463,9 +495,8 @@ export class OracleQueryExecutor {
       return {
         success: true,
         totalProcessed,
-        batchCount
+        batchCount,
       };
-
     } catch (error) {
       const queryError = this.mapOracleError(error as Error, sql, binds);
       if (options.onError) {
@@ -476,7 +507,7 @@ export class OracleQueryExecutor {
         success: false,
         totalProcessed,
         batchCount,
-        error: queryError
+        error: queryError,
       };
     }
   }
@@ -520,20 +551,18 @@ export class OracleQueryExecutor {
         return {
           success: true,
           data: [result],
-          executionTime: Date.now() - startTime
+          executionTime: Date.now() - startTime,
         };
-
       } catch (error) {
         await tx.rollback();
         await connection.close();
         throw error;
       }
-
     } catch (error) {
       return {
         success: false,
         error: this.mapOracleError(error as Error, '', {}),
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -566,7 +595,7 @@ export class OracleQueryExecutor {
           return `FETCH NEXT ${limit} ROWS ONLY`;
         },
         description: 'Convert LIMIT/OFFSET to Oracle OFFSET/FETCH',
-        category: 'pagination'
+        category: 'pagination',
       },
 
       // JSONB 操作轉換
@@ -574,21 +603,21 @@ export class OracleQueryExecutor {
         pattern: /(\w+)\s*->\s*'([^']+)'/g,
         replacement: "JSON_VALUE($1, '$.$2')",
         description: 'Convert JSONB -> operator to JSON_VALUE',
-        category: 'json'
+        category: 'json',
       },
 
       {
         pattern: /(\w+)\s*->>\s*'([^']+)'/g,
         replacement: "JSON_VALUE($1, '$.$2')",
         description: 'Convert JSONB ->> operator to JSON_VALUE',
-        category: 'json'
+        category: 'json',
       },
 
       {
         pattern: /(\w+)\s*@>\s*'([^']+)'/g,
-        replacement: "JSON_EXISTS($1, '$.status?(@ == \"$2\")')",
+        replacement: 'JSON_EXISTS($1, \'$.status?(@ == "$2")\')',
         description: 'Convert JSONB @> operator to JSON_EXISTS',
-        category: 'json'
+        category: 'json',
       },
 
       // 日期函數轉換
@@ -596,21 +625,21 @@ export class OracleQueryExecutor {
         pattern: /\bNOW\(\)/gi,
         replacement: 'SYSTIMESTAMP',
         description: 'Convert NOW() to SYSTIMESTAMP',
-        category: 'date'
+        category: 'date',
       },
 
       {
         pattern: /\bCURRENT_TIMESTAMP\b/gi,
         replacement: 'SYSTIMESTAMP',
         description: 'Convert CURRENT_TIMESTAMP to SYSTIMESTAMP',
-        category: 'date'
+        category: 'date',
       },
 
       {
         pattern: /\bAGE\(([^)]+)\)/gi,
         replacement: '(SYSTIMESTAMP - $1)',
         description: 'Convert AGE() to timestamp subtraction',
-        category: 'date'
+        category: 'date',
       },
 
       // 字串操作轉換
@@ -618,26 +647,33 @@ export class OracleQueryExecutor {
         pattern: /(\w+)\s+ILIKE\s+'%([^%]+)%'/gi,
         replacement: "REGEXP_LIKE($1, '$2', 'i')",
         description: 'Convert ILIKE to REGEXP_LIKE',
-        category: 'string'
+        category: 'string',
       },
 
       // 布林處理
       {
         pattern: /\b(true|false)\b/gi,
-        replacement: (match, value) => value.toLowerCase() === 'true' ? '1' : '0',
+        replacement: (match, value) =>
+          value.toLowerCase() === 'true' ? '1' : '0',
         description: 'Convert boolean literals to numbers',
-        category: 'string'
-      }
+        category: 'string',
+      },
     ];
   }
 
-  private convertBindVariables(binds: Record<string, any>): Record<string, any> {
+  private convertBindVariables(
+    binds: Record<string, any>
+  ): Record<string, any> {
     const converted: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(binds)) {
       if (typeof value === 'boolean') {
         converted[key] = value ? 1 : 0;
-      } else if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
+      } else if (
+        typeof value === 'object' &&
+        value !== null &&
+        !(value instanceof Date)
+      ) {
         converted[key] = JSON.stringify(value);
       } else {
         converted[key] = value;
@@ -689,27 +725,37 @@ export class OracleQueryExecutor {
       suggestedAction: this.getSuggestedAction(errorCode),
       constraintInfo,
       affectedQuery: sql,
-      bindValues: binds
+      bindValues: binds,
     };
   }
 
-  private getErrorMapping(errorCode: string): { type: ErrorType; severity: ErrorSeverity } {
-    const mappings: Record<string, { type: ErrorType; severity: ErrorSeverity }> = {
+  private getErrorMapping(errorCode: string): {
+    type: ErrorType;
+    severity: ErrorSeverity;
+  } {
+    const mappings: Record<
+      string,
+      { type: ErrorType; severity: ErrorSeverity }
+    > = {
       'ORA-00001': { type: 'CONSTRAINT_VIOLATION', severity: 'ERROR' },
       'ORA-01017': { type: 'AUTHENTICATION_FAILED', severity: 'CRITICAL' },
       'ORA-00904': { type: 'INVALID_COLUMN', severity: 'ERROR' },
       'ORA-00942': { type: 'TABLE_NOT_EXISTS', severity: 'ERROR' },
       'ORA-01403': { type: 'NO_DATA_FOUND', severity: 'WARNING' },
       'ORA-01400': { type: 'CONSTRAINT_VIOLATION', severity: 'ERROR' },
-      'ORA-12541': { type: 'CONNECTION_ERROR', severity: 'CRITICAL' }
+      'ORA-12541': { type: 'CONNECTION_ERROR', severity: 'CRITICAL' },
     };
 
     return mappings[errorCode] || { type: 'UNKNOWN_ERROR', severity: 'ERROR' };
   }
 
-  private extractConstraintInfo(errorMessage: string): ConstraintInfo | undefined {
+  private extractConstraintInfo(
+    errorMessage: string
+  ): ConstraintInfo | undefined {
     // 解析約束名稱，例如：unique constraint (PCM.UK_USERS_EMAIL) violated
-    const constraintMatch = errorMessage.match(/constraint \(([^.]+)\.([^)]+)\)/);
+    const constraintMatch = errorMessage.match(
+      /constraint \(([^.]+)\.([^)]+)\)/
+    );
     if (!constraintMatch) return undefined;
 
     const [, schema, constraintName] = constraintMatch;
@@ -721,7 +767,10 @@ export class OracleQueryExecutor {
     if (constraintName.startsWith('PK_')) {
       constraintType = 'PRIMARY_KEY';
       affectedColumns = ['id']; // 簡化推斷
-    } else if (constraintName.startsWith('UK_') || constraintName.startsWith('UQ_')) {
+    } else if (
+      constraintName.startsWith('UK_') ||
+      constraintName.startsWith('UQ_')
+    ) {
       constraintType = 'UNIQUE';
       // 從約束名稱推斷欄位名稱
       const columnMatch = constraintName.match(/UK_\w+_(\w+)/);
@@ -736,11 +785,17 @@ export class OracleQueryExecutor {
       constraintName,
       constraintType,
       affectedColumns,
-      suggestedAction: this.getConstraintSuggestedAction(constraintType, affectedColumns)
+      suggestedAction: this.getConstraintSuggestedAction(
+        constraintType,
+        affectedColumns
+      ),
     };
   }
 
-  private getConstraintSuggestedAction(type: ConstraintInfo['constraintType'], columns: string[]): string {
+  private getConstraintSuggestedAction(
+    type: ConstraintInfo['constraintType'],
+    columns: string[]
+  ): string {
     switch (type) {
       case 'UNIQUE':
         return `請檢查 ${columns.join(', ')} 欄位是否有重複的值`;
@@ -755,7 +810,10 @@ export class OracleQueryExecutor {
     }
   }
 
-  private getLocalizedMessage(errorCode: string, locale?: string): string | undefined {
+  private getLocalizedMessage(
+    errorCode: string,
+    locale?: string
+  ): string | undefined {
     if (locale !== 'zh-TW') return undefined;
 
     const messages: Record<string, string> = {
@@ -764,7 +822,7 @@ export class OracleQueryExecutor {
       'ORA-00904': '無效的欄位名稱',
       'ORA-00942': '資料表或檢視不存在',
       'ORA-01403': '沒有找到資料',
-      'ORA-01400': '不能在非空欄位中插入空值'
+      'ORA-01400': '不能在非空欄位中插入空值',
     };
 
     return messages[errorCode];
@@ -777,16 +835,22 @@ export class OracleQueryExecutor {
       'ORA-00904': 'Check column name spelling and existence',
       'ORA-00942': 'Verify table name and permissions',
       'ORA-01403': 'Check query conditions or add default handling',
-      'ORA-01400': 'Provide values for required columns'
+      'ORA-01400': 'Provide values for required columns',
     };
 
-    return suggestions[errorCode] || 'Consult Oracle documentation for this error code';
+    return (
+      suggestions[errorCode] ||
+      'Consult Oracle documentation for this error code'
+    );
   }
 
   // 快取管理
 
   generateCacheKey(sql: string): string {
-    return crypto.createHash('md5').update(sql.trim().toLowerCase()).digest('hex');
+    return crypto
+      .createHash('md5')
+      .update(sql.trim().toLowerCase())
+      .digest('hex');
   }
 
   private addToCache(key: string, sql: string): void {
@@ -801,7 +865,7 @@ export class OracleQueryExecutor {
       lastUsed: new Date(),
       useCount: 1,
       executionTime: 0,
-      cached: true
+      cached: true,
     };
 
     this.statementCache.set(key, statement);
@@ -850,15 +914,17 @@ export class OracleQueryExecutor {
       hitRate: this.cacheStats.hitRate,
       averageRetrievalTime: 5, // 簡化計算
       memoryUsage: this.cacheStats.memoryUsage,
-      evictionRate: this.cacheStats.cacheEvictions / (this.cacheStats.cacheHits + this.cacheStats.cacheMisses + 1),
+      evictionRate:
+        this.cacheStats.cacheEvictions /
+        (this.cacheStats.cacheHits + this.cacheStats.cacheMisses + 1),
       mostUsedStatements: statements
         .sort((a, b) => b.useCount - a.useCount)
         .slice(0, 10)
         .map(stmt => ({
           sql: stmt.sql.substring(0, 100) + '...',
           useCount: stmt.useCount,
-          averageExecutionTime: stmt.executionTime
-        }))
+          averageExecutionTime: stmt.executionTime,
+        })),
     };
   }
 
@@ -881,10 +947,10 @@ export class OracleQueryExecutor {
 
   private mapIsolationLevel(level: string): string {
     const mapping: Record<string, string> = {
-      'READ_UNCOMMITTED': 'READ UNCOMMITTED',
-      'READ_COMMITTED': 'READ COMMITTED',
-      'REPEATABLE_READ': 'REPEATABLE READ',
-      'SERIALIZABLE': 'SERIALIZABLE'
+      READ_UNCOMMITTED: 'READ UNCOMMITTED',
+      READ_COMMITTED: 'READ COMMITTED',
+      REPEATABLE_READ: 'REPEATABLE READ',
+      SERIALIZABLE: 'SERIALIZABLE',
     };
     return mapping[level] || 'READ COMMITTED';
   }
@@ -899,13 +965,16 @@ class OracleTransaction implements Transaction {
     this.connection = connection;
   }
 
-  async execute(sql: string, binds?: Record<string, any>): Promise<QueryResult> {
+  async execute(
+    sql: string,
+    binds?: Record<string, any>
+  ): Promise<QueryResult> {
     try {
       const result = await this.connection.execute(sql, binds || {});
       return {
         success: true,
         data: result.rows || [],
-        totalRows: result.rowsAffected || result.rows?.length || 0
+        totalRows: result.rowsAffected || result.rows?.length || 0,
       };
     } catch (error) {
       return {
@@ -914,8 +983,8 @@ class OracleTransaction implements Transaction {
           code: 'EXECUTION_ERROR',
           message: (error as Error).message,
           type: 'UNKNOWN_ERROR',
-          severity: 'ERROR'
-        }
+          severity: 'ERROR',
+        },
       };
     }
   }
@@ -931,7 +1000,7 @@ class OracleTransaction implements Transaction {
   async createSavepoint(name: string): Promise<Savepoint> {
     const savepoint: Savepoint = {
       name,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     await this.connection.execute(`SAVEPOINT ${name}`);

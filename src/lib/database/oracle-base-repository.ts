@@ -16,11 +16,13 @@ import {
   OracleTransactionOptions,
   OracleQueryBuilder,
   OracleRepositoryConfig,
-  OracleRepositoryMetrics
+  OracleRepositoryMetrics,
 } from './oracle-repository-types';
 import { QueryResult, Transaction } from './oracle-query-types';
 
-export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T> {
+export abstract class OracleBaseRepository<T>
+  implements IOracleBaseRepository<T>
+{
   protected queryExecutor: OracleQueryExecutor;
   protected config: OracleRepositoryConfig;
   protected metrics: OracleRepositoryMetrics;
@@ -33,7 +35,7 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     this.config = {
       tableName,
       primaryKey: 'id',
-      ...options
+      ...options,
     };
 
     // 如果沒有提供 queryExecutor，創建默認的
@@ -45,7 +47,7 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       slowQueries: 0,
       cacheHitRate: 0,
       errorRate: 0,
-      lastResetTime: new Date()
+      lastResetTime: new Date(),
     };
   }
 
@@ -64,11 +66,16 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
   // 取得完整的表格名稱
   protected getTableName(): string {
-    return this.config.schema ? `${this.config.schema}.${this.config.tableName}` : this.config.tableName;
+    return this.config.schema
+      ? `${this.config.schema}.${this.config.tableName}`
+      : this.config.tableName;
   }
 
   // 基本CRUD操作
-  async findById(id: string | number, options: OracleQueryOptions = {}): Promise<T | null> {
+  async findById(
+    id: string | number,
+    options: OracleQueryOptions = {}
+  ): Promise<T | null> {
     const startTime = Date.now();
     try {
       const sql = `SELECT * FROM ${this.getTableName()} WHERE ${this.config.primaryKey} = :id`;
@@ -76,14 +83,22 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       if (this.config.enableSoftDelete) {
         const softDeleteSql = `${sql} AND ${this.config.softDeleteColumn} IS NULL`;
-        const result = await this.queryExecutor.execute(softDeleteSql, binds, options);
+        const result = await this.queryExecutor.execute(
+          softDeleteSql,
+          binds,
+          options
+        );
         this.updateMetrics(startTime, true);
-        return result.rows && result.rows.length > 0 ? this.mapRowToEntity(result.rows[0]) : null;
+        return result.rows && result.rows.length > 0
+          ? this.mapRowToEntity(result.rows[0])
+          : null;
       }
 
       const result = await this.queryExecutor.execute(sql, binds, options);
       this.updateMetrics(startTime, true);
-      return result.rows && result.rows.length > 0 ? this.mapRowToEntity(result.rows[0]) : null;
+      return result.rows && result.rows.length > 0
+        ? this.mapRowToEntity(result.rows[0])
+        : null;
     } catch (error) {
       this.updateMetrics(startTime, false);
       throw error;
@@ -102,14 +117,19 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       const result = await this.queryExecutor.execute(sql, binds, options);
       this.updateMetrics(startTime, true);
-      return result.rows ? result.rows.map(row => this.mapRowToEntity(row)) : [];
+      return result.rows
+        ? result.rows.map(row => this.mapRowToEntity(row))
+        : [];
     } catch (error) {
       this.updateMetrics(startTime, false);
       throw error;
     }
   }
 
-  async create(entity: Partial<T>, options: OracleQueryOptions = {}): Promise<T> {
+  async create(
+    entity: Partial<T>,
+    options: OracleQueryOptions = {}
+  ): Promise<T> {
     const startTime = Date.now();
     try {
       const row = this.mapEntityToRow(entity);
@@ -141,7 +161,7 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       // 查詢新建立的實體
       const newId = result.outBinds?.newId;
       if (newId) {
-        return await this.findById(newId, options) as T;
+        return (await this.findById(newId, options)) as T;
       }
 
       throw new Error('Failed to retrieve created entity');
@@ -151,17 +171,26 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     }
   }
 
-  async update(id: string | number, updates: Partial<T>, options: OracleQueryOptions = {}): Promise<T> {
+  async update(
+    id: string | number,
+    updates: Partial<T>,
+    options: OracleQueryOptions = {}
+  ): Promise<T> {
     const startTime = Date.now();
     try {
       const row = this.mapEntityToRow(updates);
 
       // 加入審計欄位
-      if (this.config.enableAuditColumns && this.config.auditColumns?.updatedAt) {
+      if (
+        this.config.enableAuditColumns &&
+        this.config.auditColumns?.updatedAt
+      ) {
         row[this.config.auditColumns.updatedAt] = new Date();
       }
 
-      const setClause = Object.keys(row).map(col => `${col} = :${col}`).join(', ');
+      const setClause = Object.keys(row)
+        .map(col => `${col} = :${col}`)
+        .join(', ');
       let sql = `UPDATE ${this.getTableName()} SET ${setClause} WHERE ${this.config.primaryKey} = :id`;
 
       if (this.config.enableSoftDelete) {
@@ -172,14 +201,17 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       await this.queryExecutor.execute(sql, binds, options);
 
       this.updateMetrics(startTime, true);
-      return await this.findById(id, options) as T;
+      return (await this.findById(id, options)) as T;
     } catch (error) {
       this.updateMetrics(startTime, false);
       throw error;
     }
   }
 
-  async delete(id: string | number, options: OracleQueryOptions = {}): Promise<boolean> {
+  async delete(
+    id: string | number,
+    options: OracleQueryOptions = {}
+  ): Promise<boolean> {
     const startTime = Date.now();
     try {
       let sql: string;
@@ -188,8 +220,14 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       if (this.config.enableSoftDelete) {
         // 軟刪除
         sql = `UPDATE ${this.getTableName()} SET ${this.config.softDeleteColumn} = SYSDATE WHERE ${this.config.primaryKey} = :id`;
-        if (this.config.enableAuditColumns && this.config.auditColumns?.updatedAt) {
-          sql = sql.replace('SYSDATE', `SYSDATE, ${this.config.auditColumns.updatedAt} = SYSDATE`);
+        if (
+          this.config.enableAuditColumns &&
+          this.config.auditColumns?.updatedAt
+        ) {
+          sql = sql.replace(
+            'SYSDATE',
+            `SYSDATE, ${this.config.auditColumns.updatedAt} = SYSDATE`
+          );
         }
       } else {
         // 硬刪除
@@ -206,7 +244,10 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
   }
 
   // 批次操作
-  async createMany(entities: Partial<T>[], options: OracleBatchOptions = {}): Promise<T[]> {
+  async createMany(
+    entities: Partial<T>[],
+    options: OracleBatchOptions = {}
+  ): Promise<T[]> {
     const startTime = Date.now();
     try {
       if (entities.length === 0) return [];
@@ -237,7 +278,10 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
             VALUES (${columns.map(col => `:${col}`).join(', ')})
           `;
 
-          await this.queryExecutor.executeBatch({ sql, binds: batchRows }, options);
+          await this.queryExecutor.executeBatch(
+            { sql, binds: batchRows },
+            options
+          );
         } else {
           // 逐一插入
           for (const row of batchRows) {
@@ -255,13 +299,20 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     }
   }
 
-  async updateMany(updates: Array<{ id: string | number; data: Partial<T> }>, options: OracleBatchOptions = {}): Promise<T[]> {
+  async updateMany(
+    updates: Array<{ id: string | number; data: Partial<T> }>,
+    options: OracleBatchOptions = {}
+  ): Promise<T[]> {
     const startTime = Date.now();
     try {
       const results: T[] = [];
 
       for (const update of updates) {
-        const updatedEntity = await this.update(update.id, update.data, options);
+        const updatedEntity = await this.update(
+          update.id,
+          update.data,
+          options
+        );
         results.push(updatedEntity);
       }
 
@@ -273,16 +324,22 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     }
   }
 
-  async deleteMany(ids: (string | number)[], options: OracleBatchOptions = {}): Promise<number> {
+  async deleteMany(
+    ids: (string | number)[],
+    options: OracleBatchOptions = {}
+  ): Promise<number> {
     const startTime = Date.now();
     try {
       if (ids.length === 0) return 0;
 
       const placeholders = ids.map((_, index) => `:id${index}`).join(', ');
-      const binds = ids.reduce((acc, id, index) => {
-        acc[`id${index}`] = id;
-        return acc;
-      }, {} as Record<string, any>);
+      const binds = ids.reduce(
+        (acc, id, index) => {
+          acc[`id${index}`] = id;
+          return acc;
+        },
+        {} as Record<string, any>
+      );
 
       let sql: string;
       if (this.config.enableSoftDelete) {
@@ -301,11 +358,16 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
   }
 
   // 查詢操作
-  async findBy(criteria: Partial<T>, options: OracleQueryOptions = {}): Promise<T[]> {
+  async findBy(
+    criteria: Partial<T>,
+    options: OracleQueryOptions = {}
+  ): Promise<T[]> {
     const startTime = Date.now();
     try {
       const row = this.mapEntityToRow(criteria);
-      const whereClause = Object.keys(row).map(col => `${col} = :${col}`).join(' AND ');
+      const whereClause = Object.keys(row)
+        .map(col => `${col} = :${col}`)
+        .join(' AND ');
 
       let sql = `SELECT * FROM ${this.getTableName()}`;
       if (whereClause) {
@@ -313,7 +375,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       }
 
       if (this.config.enableSoftDelete) {
-        sql += whereClause ? ` AND ${this.config.softDeleteColumn} IS NULL` : ` WHERE ${this.config.softDeleteColumn} IS NULL`;
+        sql += whereClause
+          ? ` AND ${this.config.softDeleteColumn} IS NULL`
+          : ` WHERE ${this.config.softDeleteColumn} IS NULL`;
       }
 
       const result = await this.queryExecutor.execute(sql, row, options);
@@ -325,12 +389,18 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     }
   }
 
-  async findOne(criteria: Partial<T>, options: OracleQueryOptions = {}): Promise<T | null> {
+  async findOne(
+    criteria: Partial<T>,
+    options: OracleQueryOptions = {}
+  ): Promise<T | null> {
     const results = await this.findBy(criteria, { ...options, fetchSize: 1 });
     return results.length > 0 ? results[0] : null;
   }
 
-  async count(criteria?: Partial<T>, options: OracleQueryOptions = {}): Promise<number> {
+  async count(
+    criteria?: Partial<T>,
+    options: OracleQueryOptions = {}
+  ): Promise<number> {
     const startTime = Date.now();
     try {
       let sql = `SELECT COUNT(*) as count FROM ${this.getTableName()}`;
@@ -338,7 +408,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       if (criteria) {
         const row = this.mapEntityToRow(criteria);
-        const whereClause = Object.keys(row).map(col => `${col} = :${col}`).join(' AND ');
+        const whereClause = Object.keys(row)
+          .map(col => `${col} = :${col}`)
+          .join(' AND ');
         if (whereClause) {
           sql += ` WHERE ${whereClause}`;
           binds = row;
@@ -347,7 +419,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       if (this.config.enableSoftDelete) {
         const hasWhere = sql.includes('WHERE');
-        sql += hasWhere ? ` AND ${this.config.softDeleteColumn} IS NULL` : ` WHERE ${this.config.softDeleteColumn} IS NULL`;
+        sql += hasWhere
+          ? ` AND ${this.config.softDeleteColumn} IS NULL`
+          : ` WHERE ${this.config.softDeleteColumn} IS NULL`;
       }
 
       const result = await this.queryExecutor.execute(sql, binds, options);
@@ -359,13 +433,19 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     }
   }
 
-  async exists(criteria: Partial<T>, options: OracleQueryOptions = {}): Promise<boolean> {
+  async exists(
+    criteria: Partial<T>,
+    options: OracleQueryOptions = {}
+  ): Promise<boolean> {
     const count = await this.count(criteria, options);
     return count > 0;
   }
 
   // 分頁操作
-  async paginate(options: OraclePaginationOptions, criteria?: Partial<T>): Promise<OraclePaginationResult<T>> {
+  async paginate(
+    options: OraclePaginationOptions,
+    criteria?: Partial<T>
+  ): Promise<OraclePaginationResult<T>> {
     const startTime = Date.now();
     try {
       const offset = (options.page - 1) * options.limit;
@@ -376,7 +456,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       if (criteria) {
         const row = this.mapEntityToRow(criteria);
-        const whereClause = Object.keys(row).map(col => `${col} = :${col}`).join(' AND ');
+        const whereClause = Object.keys(row)
+          .map(col => `${col} = :${col}`)
+          .join(' AND ');
         if (whereClause) {
           sql += ` WHERE ${whereClause}`;
           binds = row;
@@ -385,7 +467,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       if (this.config.enableSoftDelete) {
         const hasWhere = sql.includes('WHERE');
-        sql += hasWhere ? ` AND ${this.config.softDeleteColumn} IS NULL` : ` WHERE ${this.config.softDeleteColumn} IS NULL`;
+        sql += hasWhere
+          ? ` AND ${this.config.softDeleteColumn} IS NULL`
+          : ` WHERE ${this.config.softDeleteColumn} IS NULL`;
       }
 
       if (options.orderBy) {
@@ -405,7 +489,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       }
 
       const result = await this.queryExecutor.execute(sql, binds);
-      const data = result.rows ? result.rows.map(row => this.mapRowToEntity(row)) : [];
+      const data = result.rows
+        ? result.rows.map(row => this.mapRowToEntity(row))
+        : [];
 
       this.updateMetrics(startTime, true);
 
@@ -414,9 +500,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
         totalCount,
         page: options.page,
         limit: options.limit,
-        hasNext: (options.page * options.limit) < totalCount,
+        hasNext: options.page * options.limit < totalCount,
         hasPrevious: options.page > 1,
-        totalPages: Math.ceil(totalCount / options.limit)
+        totalPages: Math.ceil(totalCount / options.limit),
       };
     } catch (error) {
       this.updateMetrics(startTime, false);
@@ -425,7 +511,10 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
   }
 
   // Oracle特有操作
-  async findByRowid(rowid: string, options: OracleQueryOptions = {}): Promise<T | null> {
+  async findByRowid(
+    rowid: string,
+    options: OracleQueryOptions = {}
+  ): Promise<T | null> {
     const startTime = Date.now();
     try {
       const sql = `SELECT * FROM ${this.getTableName()} WHERE ROWID = :rowid`;
@@ -433,22 +522,32 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       const result = await this.queryExecutor.execute(sql, binds, options);
       this.updateMetrics(startTime, true);
-      return result.rows && result.rows.length > 0 ? this.mapRowToEntity(result.rows[0]) : null;
+      return result.rows && result.rows.length > 0
+        ? this.mapRowToEntity(result.rows[0])
+        : null;
     } catch (error) {
       this.updateMetrics(startTime, false);
       throw error;
     }
   }
 
-  async merge(entity: Partial<T>, matchColumns: string[], options: OracleQueryOptions = {}): Promise<T> {
+  async merge(
+    entity: Partial<T>,
+    matchColumns: string[],
+    options: OracleQueryOptions = {}
+  ): Promise<T> {
     const startTime = Date.now();
     try {
       const row = this.mapEntityToRow(entity);
 
       // 構建MERGE語句
-      const matchCondition = matchColumns.map(col => `target.${col} = source.${col}`).join(' AND ');
+      const matchCondition = matchColumns
+        .map(col => `target.${col} = source.${col}`)
+        .join(' AND ');
       const insertColumns = Object.keys(row);
-      const updateColumns = insertColumns.filter(col => !matchColumns.includes(col));
+      const updateColumns = insertColumns.filter(
+        col => !matchColumns.includes(col)
+      );
 
       const sql = `
         MERGE INTO ${this.getTableName()} target
@@ -465,12 +564,15 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       this.updateMetrics(startTime, true);
 
       // 查詢合併後的實體
-      const matchCriteria = matchColumns.reduce((acc, col) => {
-        acc[col] = row[col];
-        return acc;
-      }, {} as Record<string, any>);
+      const matchCriteria = matchColumns.reduce(
+        (acc, col) => {
+          acc[col] = row[col];
+          return acc;
+        },
+        {} as Record<string, any>
+      );
 
-      return await this.findOne(matchCriteria as Partial<T>, options) as T;
+      return (await this.findOne(matchCriteria as Partial<T>, options)) as T;
     } catch (error) {
       this.updateMetrics(startTime, false);
       throw error;
@@ -478,7 +580,10 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
   }
 
   // JSON操作
-  async findByJson(jsonOptions: OracleJsonQueryOptions, options: OracleQueryOptions = {}): Promise<T[]> {
+  async findByJson(
+    jsonOptions: OracleJsonQueryOptions,
+    options: OracleQueryOptions = {}
+  ): Promise<T[]> {
     const startTime = Date.now();
     try {
       let sql = `SELECT * FROM ${this.getTableName()}`;
@@ -502,14 +607,21 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       const result = await this.queryExecutor.execute(sql, binds, options);
       this.updateMetrics(startTime, true);
-      return result.rows ? result.rows.map(row => this.mapRowToEntity(row)) : [];
+      return result.rows
+        ? result.rows.map(row => this.mapRowToEntity(row))
+        : [];
     } catch (error) {
       this.updateMetrics(startTime, false);
       throw error;
     }
   }
 
-  async updateJson(id: string | number, jsonPath: string, value: any, options: OracleQueryOptions = {}): Promise<T> {
+  async updateJson(
+    id: string | number,
+    jsonPath: string,
+    value: any,
+    options: OracleQueryOptions = {}
+  ): Promise<T> {
     const startTime = Date.now();
     try {
       const pathParts = jsonPath.split('.');
@@ -529,7 +641,7 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       await this.queryExecutor.execute(sql, binds, options);
 
       this.updateMetrics(startTime, true);
-      return await this.findById(id, options) as T;
+      return (await this.findById(id, options)) as T;
     } catch (error) {
       this.updateMetrics(startTime, false);
       throw error;
@@ -553,7 +665,10 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
   }
 
   // 聚合操作
-  async aggregate(aggregateOptions: OracleAggregateOptions, options: OracleQueryOptions = {}): Promise<any[]> {
+  async aggregate(
+    aggregateOptions: OracleAggregateOptions,
+    options: OracleQueryOptions = {}
+  ): Promise<any[]> {
     const startTime = Date.now();
     try {
       let sql = `SELECT `;
@@ -577,8 +692,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       }
 
       if (aggregateOptions.orderBy) {
-        const orderClauses = aggregateOptions.orderBy.map(sort =>
-          `${sort.column} ${sort.direction}${sort.nullsHandling ? ` ${sort.nullsHandling}` : ''}`
+        const orderClauses = aggregateOptions.orderBy.map(
+          sort =>
+            `${sort.column} ${sort.direction}${sort.nullsHandling ? ` ${sort.nullsHandling}` : ''}`
         );
         sql += ` ORDER BY ${orderClauses.join(', ')}`;
       }
@@ -598,7 +714,11 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
   }
 
   // 原始SQL執行
-  async executeRaw(sql: string, binds: Record<string, any> = {}, options: OracleQueryOptions = {}): Promise<QueryResult> {
+  async executeRaw(
+    sql: string,
+    binds: Record<string, any> = {},
+    options: OracleQueryOptions = {}
+  ): Promise<QueryResult> {
     const startTime = Date.now();
     try {
       const result = await this.queryExecutor.execute(sql, binds, options);
@@ -611,27 +731,39 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
   }
 
   // 事務支援
-  async withTransaction<R>(callback: (repo: this) => Promise<R>, options: OracleTransactionOptions = {}): Promise<R> {
-    return await this.queryExecutor.withTransaction(async (transaction: Transaction) => {
-      // 建立事務範圍內的repository實例
-      const transactionRepo = Object.create(this);
-      transactionRepo.queryExecutor = transaction;
+  async withTransaction<R>(
+    callback: (repo: this) => Promise<R>,
+    options: OracleTransactionOptions = {}
+  ): Promise<R> {
+    return await this.queryExecutor.withTransaction(
+      async (transaction: Transaction) => {
+        // 建立事務範圍內的repository實例
+        const transactionRepo = Object.create(this);
+        transactionRepo.queryExecutor = transaction;
 
-      return await callback(transactionRepo);
-    }, options);
+        return await callback(transactionRepo);
+      },
+      options
+    );
   }
 
   // 測試期望的額外方法
-  async findMany(ids: (string | number)[], options: OracleQueryOptions = {}): Promise<T[]> {
+  async findMany(
+    ids: (string | number)[],
+    options: OracleQueryOptions = {}
+  ): Promise<T[]> {
     const startTime = Date.now();
     try {
       if (ids.length === 0) return [];
 
       const placeholders = ids.map((_, index) => `:id${index}`).join(', ');
-      const binds = ids.reduce((acc, id, index) => {
-        acc[`id${index}`] = id;
-        return acc;
-      }, {} as Record<string, any>);
+      const binds = ids.reduce(
+        (acc, id, index) => {
+          acc[`id${index}`] = id;
+          return acc;
+        },
+        {} as Record<string, any>
+      );
 
       let sql = `SELECT * FROM ${this.getTableName()} WHERE ${this.config.primaryKey} IN (${placeholders})`;
 
@@ -641,22 +773,33 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       const result = await this.queryExecutor.execute(sql, binds, options);
       this.updateMetrics(startTime, true);
-      return result.rows ? result.rows.map(row => this.mapRowToEntity(row)) : [];
+      return result.rows
+        ? result.rows.map(row => this.mapRowToEntity(row))
+        : [];
     } catch (error) {
       this.updateMetrics(startTime, false);
       throw error;
     }
   }
 
-  async batchCreate(entities: Partial<T>[], options: OracleBatchOptions = {}): Promise<T[]> {
+  async batchCreate(
+    entities: Partial<T>[],
+    options: OracleBatchOptions = {}
+  ): Promise<T[]> {
     return await this.createMany(entities, options);
   }
 
-  async batchUpdate(updates: Array<{ id: string | number; data: Partial<T> }>, options: OracleBatchOptions = {}): Promise<T[]> {
+  async batchUpdate(
+    updates: Array<{ id: string | number; data: Partial<T> }>,
+    options: OracleBatchOptions = {}
+  ): Promise<T[]> {
     return await this.updateMany(updates, options);
   }
 
-  async batchDelete(ids: (string | number)[], options: OracleBatchOptions = {}): Promise<number> {
+  async batchDelete(
+    ids: (string | number)[],
+    options: OracleBatchOptions = {}
+  ): Promise<number> {
     return await this.deleteMany(ids, options);
   }
 
@@ -675,15 +818,25 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     }
   }
 
-  async bulkInsert(entities: Partial<T>[], options: OracleBatchOptions = {}): Promise<void> {
+  async bulkInsert(
+    entities: Partial<T>[],
+    options: OracleBatchOptions = {}
+  ): Promise<void> {
     await this.createMany(entities, options);
   }
 
-  async upsert(entity: Partial<T>, matchColumns: string[], options: OracleQueryOptions = {}): Promise<T> {
+  async upsert(
+    entity: Partial<T>,
+    matchColumns: string[],
+    options: OracleQueryOptions = {}
+  ): Promise<T> {
     return await this.merge(entity, matchColumns, options);
   }
 
-  async findWithCursor(options: { batchSize: number; cursor?: string }, criteria?: Partial<T>): Promise<{ data: T[]; nextCursor?: string; hasMore: boolean }> {
+  async findWithCursor(
+    options: { batchSize: number; cursor?: string },
+    criteria?: Partial<T>
+  ): Promise<{ data: T[]; nextCursor?: string; hasMore: boolean }> {
     const startTime = Date.now();
     try {
       let sql = `SELECT * FROM ${this.getTableName()}`;
@@ -691,7 +844,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       if (criteria) {
         const row = this.mapEntityToRow(criteria);
-        const whereClause = Object.keys(row).map(col => `${col} = :${col}`).join(' AND ');
+        const whereClause = Object.keys(row)
+          .map(col => `${col} = :${col}`)
+          .join(' AND ');
         if (whereClause) {
           sql += ` WHERE ${whereClause}`;
           binds = row;
@@ -700,12 +855,16 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       if (this.config.enableSoftDelete) {
         const hasWhere = sql.includes('WHERE');
-        sql += hasWhere ? ` AND ${this.config.softDeleteColumn} IS NULL` : ` WHERE ${this.config.softDeleteColumn} IS NULL`;
+        sql += hasWhere
+          ? ` AND ${this.config.softDeleteColumn} IS NULL`
+          : ` WHERE ${this.config.softDeleteColumn} IS NULL`;
       }
 
       if (options.cursor) {
         const hasWhere = sql.includes('WHERE');
-        sql += hasWhere ? ` AND ${this.config.primaryKey} > :cursor` : ` WHERE ${this.config.primaryKey} > :cursor`;
+        sql += hasWhere
+          ? ` AND ${this.config.primaryKey} > :cursor`
+          : ` WHERE ${this.config.primaryKey} > :cursor`;
         binds.cursor = options.cursor;
       }
 
@@ -715,8 +874,12 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       const rows = result.rows || [];
 
       const hasMore = rows.length > options.batchSize;
-      const data = (hasMore ? rows.slice(0, -1) : rows).map(row => this.mapRowToEntity(row));
-      const nextCursor = hasMore ? rows[rows.length - 2][this.config.primaryKey] : undefined;
+      const data = (hasMore ? rows.slice(0, -1) : rows).map(row =>
+        this.mapRowToEntity(row)
+      );
+      const nextCursor = hasMore
+        ? rows[rows.length - 2][this.config.primaryKey]
+        : undefined;
 
       this.updateMetrics(startTime, true);
       return { data, nextCursor, hasMore };
@@ -726,7 +889,10 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     }
   }
 
-  async softDelete(id: string | number, options: OracleQueryOptions = {}): Promise<boolean> {
+  async softDelete(
+    id: string | number,
+    options: OracleQueryOptions = {}
+  ): Promise<boolean> {
     if (!this.config.enableSoftDelete) {
       throw new Error('Soft delete is not enabled for this repository');
     }
@@ -735,7 +901,10 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     try {
       let sql = `UPDATE ${this.getTableName()} SET ${this.config.softDeleteColumn} = SYSDATE`;
 
-      if (this.config.enableAuditColumns && this.config.auditColumns?.updatedAt) {
+      if (
+        this.config.enableAuditColumns &&
+        this.config.auditColumns?.updatedAt
+      ) {
         sql += `, ${this.config.auditColumns.updatedAt} = SYSDATE`;
       }
 
@@ -752,7 +921,10 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     }
   }
 
-  async restore(id: string | number, options: OracleQueryOptions = {}): Promise<T | null> {
+  async restore(
+    id: string | number,
+    options: OracleQueryOptions = {}
+  ): Promise<T | null> {
     if (!this.config.enableSoftDelete) {
       throw new Error('Soft delete is not enabled for this repository');
     }
@@ -761,7 +933,10 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     try {
       let sql = `UPDATE ${this.getTableName()} SET ${this.config.softDeleteColumn} = NULL`;
 
-      if (this.config.enableAuditColumns && this.config.auditColumns?.updatedAt) {
+      if (
+        this.config.enableAuditColumns &&
+        this.config.auditColumns?.updatedAt
+      ) {
         sql += `, ${this.config.auditColumns.updatedAt} = SYSDATE`;
       }
 
@@ -789,7 +964,9 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
 
       const result = await this.queryExecutor.execute(sql, {}, options);
       this.updateMetrics(startTime, true);
-      return result.rows ? result.rows.map(row => this.mapRowToEntity(row)) : [];
+      return result.rows
+        ? result.rows.map(row => this.mapRowToEntity(row))
+        : [];
     } catch (error) {
       this.updateMetrics(startTime, false);
       throw error;
@@ -808,7 +985,7 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
       slowQueries: 0,
       cacheHitRate: 0,
       errorRate: 0,
-      lastResetTime: new Date()
+      lastResetTime: new Date(),
     };
   }
 
@@ -817,14 +994,19 @@ export abstract class OracleBaseRepository<T> implements IOracleBaseRepository<T
     this.metrics.totalQueries++;
 
     if (success) {
-      const totalTime = this.metrics.averageQueryTime * (this.metrics.totalQueries - 1) + executionTime;
+      const totalTime =
+        this.metrics.averageQueryTime * (this.metrics.totalQueries - 1) +
+        executionTime;
       this.metrics.averageQueryTime = totalTime / this.metrics.totalQueries;
 
-      if (executionTime > 1000) { // 1秒以上視為慢查詢
+      if (executionTime > 1000) {
+        // 1秒以上視為慢查詢
         this.metrics.slowQueries++;
       }
     } else {
-      this.metrics.errorRate = (this.metrics.errorRate * (this.metrics.totalQueries - 1) + 1) / this.metrics.totalQueries;
+      this.metrics.errorRate =
+        (this.metrics.errorRate * (this.metrics.totalQueries - 1) + 1) /
+        this.metrics.totalQueries;
     }
   }
 }
@@ -843,7 +1025,10 @@ class OracleQueryBuilderImpl implements OracleQueryBuilder {
   private binds: Record<string, any> = {};
   private bindCounter: number = 0;
 
-  constructor(private tableName: string, private queryExecutor: OracleQueryExecutor) {
+  constructor(
+    private tableName: string,
+    private queryExecutor: OracleQueryExecutor
+  ) {
     this.fromClause = tableName;
   }
 
@@ -912,15 +1097,20 @@ class OracleQueryBuilderImpl implements OracleQueryBuilder {
     return this.where(condition);
   }
 
-  join(table: string, condition: string, type: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS' = 'INNER'): OracleQueryBuilder {
+  join(
+    table: string,
+    condition: string,
+    type: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS' = 'INNER'
+  ): OracleQueryBuilder {
     const joinType = type === 'CROSS' ? 'CROSS JOIN' : `${type} JOIN`;
     this.joinClause += ` ${joinType} ${table} ON ${condition}`;
     return this;
   }
 
   orderBy(sorts: OracleSortOptions[]): OracleQueryBuilder {
-    const orderClauses = sorts.map(sort =>
-      `${sort.column} ${sort.direction}${sort.nullsHandling ? ` ${sort.nullsHandling}` : ''}`
+    const orderClauses = sorts.map(
+      sort =>
+        `${sort.column} ${sort.direction}${sort.nullsHandling ? ` ${sort.nullsHandling}` : ''}`
     );
     this.orderByClause = orderClauses.join(', ');
     return this;

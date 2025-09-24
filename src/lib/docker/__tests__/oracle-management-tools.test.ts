@@ -13,19 +13,19 @@ import { OracleManagementTools } from '../oracle-management-tools';
 import { OracleContainerManager } from '../oracle-container-manager';
 
 // Mock 外部依賴
-vi.mock('child_process', async (importOriginal) => {
+vi.mock('child_process', async importOriginal => {
   const actual = await importOriginal<typeof import('child_process')>();
   return {
     ...actual,
-    execSync: vi.fn()
+    execSync: vi.fn(),
   };
 });
 
 vi.mock('axios', () => ({
   default: {
     get: vi.fn(),
-    post: vi.fn()
-  }
+    post: vi.fn(),
+  },
 }));
 
 describe('Oracle Management Tools Integration', () => {
@@ -59,12 +59,12 @@ describe('Oracle Management Tools Integration', () => {
     // Mock axios
     vi.mocked(axios.get).mockResolvedValue({
       status: 200,
-      data: 'Oracle APEX login page'
+      data: 'Oracle APEX login page',
     });
 
     vi.mocked(axios.post).mockResolvedValue({
       status: 200,
-      data: { sessionToken: 'mock-token' }
+      data: { sessionToken: 'mock-token' },
     });
 
     containerManager = new OracleContainerManager();
@@ -79,19 +79,21 @@ describe('Oracle Management Tools Integration', () => {
         status: 'Up 5 minutes',
         ports: [
           { privatePort: 1521, publicPort: 1521, type: 'tcp' },
-          { privatePort: 5500, publicPort: 5500, type: 'tcp' }
-        ]
-      }
+          { privatePort: 5500, publicPort: 5500, type: 'tcp' },
+        ],
+      },
     });
 
     // Mock monitoring logs
-    vi.spyOn(containerManager, 'monitorLogs').mockImplementation(async function* () {
-      yield {
-        timestamp: new Date(),
-        level: 'INFO' as const,
-        message: 'Oracle Database ready'
-      };
-    });
+    vi.spyOn(containerManager, 'monitorLogs').mockImplementation(
+      async function* () {
+        yield {
+          timestamp: new Date(),
+          level: 'INFO' as const,
+          message: 'Oracle Database ready',
+        };
+      }
+    );
   });
 
   afterAll(async () => {
@@ -119,7 +121,7 @@ describe('Oracle Management Tools Integration', () => {
     it('should handle SQL Developer Web authentication', async () => {
       const authResult = await managementTools.authenticateSqlDeveloperWeb({
         username: 'system',
-        password: process.env.ORACLE_PASSWORD || 'Oracle123'
+        password: process.env.ORACLE_PASSWORD || 'Oracle123',
       });
 
       expect(authResult.authenticated).toBe(true);
@@ -129,7 +131,8 @@ describe('Oracle Management Tools Integration', () => {
 
   describe('Oracle Container Management Tools Access', () => {
     it('should provide container management interface', async () => {
-      const mgmtInterface = await managementTools.getContainerManagementInterface();
+      const mgmtInterface =
+        await managementTools.getContainerManagementInterface();
 
       expect(mgmtInterface).toBeDefined();
       expect(mgmtInterface.containerStatus).toBeDefined();
@@ -183,7 +186,7 @@ describe('Oracle Management Tools Integration', () => {
       const preferences = {
         defaultTool: 'sqlDeveloperWeb',
         autoStart: true,
-        monitoringInterval: 30000
+        monitoringInterval: 30000,
       };
 
       const result = await managementTools.updateToolPreferences(preferences);
@@ -199,7 +202,8 @@ describe('Oracle Management Tools Integration', () => {
   describe('Tool Integration and Interoperability', () => {
     it('should integrate tools with existing docker-compose setup', async () => {
       // 先測試基本結構，稍後再完善完整測試
-      const integration = await managementTools.validateDockerComposeIntegration();
+      const integration =
+        await managementTools.validateDockerComposeIntegration();
 
       expect(integration.isValid).toBe(true);
       expect(integration.services).toContain('oracle-db');
@@ -229,8 +233,9 @@ describe('Oracle Management Tools Integration', () => {
   describe('Error Handling and Recovery', () => {
     it('should handle SQL Developer Web startup failures gracefully', async () => {
       // 模擬啟動失敗
-      vi.spyOn(managementTools, 'enableSqlDeveloperWeb')
-        .mockRejectedValueOnce(new Error('Port already in use'));
+      vi.spyOn(managementTools, 'enableSqlDeveloperWeb').mockRejectedValueOnce(
+        new Error('Port already in use')
+      );
 
       const result = await managementTools.handleStartupFailure();
 

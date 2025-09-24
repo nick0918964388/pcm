@@ -20,7 +20,7 @@ interface LoadTestResult {
 interface StressTestConfig {
   concurrentUsers: number;
   testDuration: number; // milliseconds
-  rampUpTime: number;   // milliseconds
+  rampUpTime: number; // milliseconds
   targetEndpoint: string;
   requestBody?: any;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -41,7 +41,9 @@ describe('Load and Stress Tests - Oracle Environment', () => {
     console.log('Cleaning up load testing environment...');
   });
 
-  async function performLoadTest(config: StressTestConfig): Promise<LoadTestResult> {
+  async function performLoadTest(
+    config: StressTestConfig
+  ): Promise<LoadTestResult> {
     const results: LoadTestResult = {
       totalRequests: 0,
       successfulRequests: 0,
@@ -50,7 +52,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       minResponseTime: Infinity,
       maxResponseTime: 0,
       requestsPerSecond: 0,
-      errors: []
+      errors: [],
     };
 
     const responseTimes: number[] = [];
@@ -65,7 +67,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       const userDelay = (config.rampUpTime / config.concurrentUsers) * i;
 
       userPromises.push(
-        new Promise(async (resolve) => {
+        new Promise(async resolve => {
           // Ramp up delay
           await new Promise(r => setTimeout(r, userDelay));
 
@@ -73,14 +75,19 @@ describe('Load and Stress Tests - Oracle Environment', () => {
             try {
               const requestStart = performance.now();
 
-              const response = await fetch(`${baseUrl}${config.targetEndpoint}`, {
-                method: config.method,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${authToken}`
-                },
-                body: config.requestBody ? JSON.stringify(config.requestBody) : undefined
-              });
+              const response = await fetch(
+                `${baseUrl}${config.targetEndpoint}`,
+                {
+                  method: config.method,
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${authToken}`,
+                  },
+                  body: config.requestBody
+                    ? JSON.stringify(config.requestBody)
+                    : undefined,
+                }
+              );
 
               const requestEnd = performance.now();
               const responseTime = requestEnd - requestStart;
@@ -95,7 +102,6 @@ describe('Load and Stress Tests - Oracle Environment', () => {
                 const errorKey = `HTTP_${response.status}`;
                 errors.set(errorKey, (errors.get(errorKey) || 0) + 1);
               }
-
             } catch (error) {
               results.totalRequests++;
               results.failedRequests++;
@@ -115,17 +121,19 @@ describe('Load and Stress Tests - Oracle Environment', () => {
 
     // Calculate statistics
     if (responseTimes.length > 0) {
-      results.averageResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+      results.averageResponseTime =
+        responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
       results.minResponseTime = Math.min(...responseTimes);
       results.maxResponseTime = Math.max(...responseTimes);
     }
 
     const actualTestDuration = Date.now() - startTime;
-    results.requestsPerSecond = (results.totalRequests / actualTestDuration) * 1000;
+    results.requestsPerSecond =
+      (results.totalRequests / actualTestDuration) * 1000;
 
     results.errors = Array.from(errors.entries()).map(([error, count]) => ({
       error,
-      count
+      count,
     }));
 
     return results;
@@ -136,9 +144,9 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       const config: StressTestConfig = {
         concurrentUsers: 10,
         testDuration: 5000, // 5 seconds
-        rampUpTime: 1000,   // 1 second ramp up
+        rampUpTime: 1000, // 1 second ramp up
         targetEndpoint: '/api/auth/me',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -160,9 +168,9 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       const config: StressTestConfig = {
         concurrentUsers: 15,
         testDuration: 10000, // 10 seconds
-        rampUpTime: 2000,    // 2 second ramp up
+        rampUpTime: 2000, // 2 second ramp up
         targetEndpoint: '/api/projects',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -174,7 +182,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       expect(result.requestsPerSecond).toBeGreaterThan(3); // Should handle at least 3 requests per second
 
       const successRate = result.successfulRequests / result.totalRequests;
-      expect(successRate).toBeGreaterThan(0.90); // 90% success rate under load
+      expect(successRate).toBeGreaterThan(0.9); // 90% success rate under load
     }, 15000);
 
     it('should handle concurrent project creation', async () => {
@@ -182,16 +190,16 @@ describe('Load and Stress Tests - Oracle Environment', () => {
         name: 'Load Test Project',
         description: 'Created during load testing',
         type: 'internal',
-        priority: 3
+        priority: 3,
       };
 
       const config: StressTestConfig = {
         concurrentUsers: 5,
-        testDuration: 3000,  // 3 seconds
-        rampUpTime: 500,     // 0.5 second ramp up
+        testDuration: 3000, // 3 seconds
+        rampUpTime: 500, // 0.5 second ramp up
         targetEndpoint: '/api/projects',
         method: 'POST',
-        requestBody: projectData
+        requestBody: projectData,
       };
 
       const result = await performLoadTest(config);
@@ -203,16 +211,16 @@ describe('Load and Stress Tests - Oracle Environment', () => {
 
       // For creation endpoints, we allow lower success rate due to potential conflicts
       const successRate = result.successfulRequests / result.totalRequests;
-      expect(successRate).toBeGreaterThan(0.80); // 80% success rate for creation
+      expect(successRate).toBeGreaterThan(0.8); // 80% success rate for creation
     }, 8000);
 
     it('should handle high load on vendor endpoints', async () => {
       const config: StressTestConfig = {
         concurrentUsers: 8,
-        testDuration: 6000,  // 6 seconds
-        rampUpTime: 1000,    // 1 second ramp up
+        testDuration: 6000, // 6 seconds
+        rampUpTime: 1000, // 1 second ramp up
         targetEndpoint: '/api/vendors',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -232,10 +240,10 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       // Test with more concurrent users than typical pool size
       const config: StressTestConfig = {
         concurrentUsers: 25, // Typically more than connection pool size
-        testDuration: 8000,  // 8 seconds
-        rampUpTime: 2000,    // 2 second ramp up
+        testDuration: 8000, // 8 seconds
+        rampUpTime: 2000, // 2 second ramp up
         targetEndpoint: '/api/health/database',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -261,7 +269,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
         testDuration: 5000,
         rampUpTime: 1000,
         targetEndpoint: '/api/projects',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -283,10 +291,10 @@ describe('Load and Stress Tests - Oracle Environment', () => {
     it('should handle Oracle pagination under load', async () => {
       const config: StressTestConfig = {
         concurrentUsers: 12,
-        testDuration: 7000,  // 7 seconds
-        rampUpTime: 1500,    // 1.5 second ramp up
+        testDuration: 7000, // 7 seconds
+        rampUpTime: 1500, // 1.5 second ramp up
         targetEndpoint: '/api/projects?page=1&pageSize=20',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -297,7 +305,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       expect(result.averageResponseTime).toBeLessThan(2000); // Pagination should be efficient
 
       const successRate = result.successfulRequests / result.totalRequests;
-      expect(successRate).toBeGreaterThan(0.90); // 90% success rate
+      expect(successRate).toBeGreaterThan(0.9); // 90% success rate
     }, 12000);
 
     it('should handle Oracle JSON queries under load', async () => {
@@ -307,7 +315,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
         testDuration: 5000,
         rampUpTime: 1000,
         targetEndpoint: '/api/projects?search=metadata',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -325,7 +333,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       const projectData = {
         name: 'Sequence Test Project',
         description: 'Testing Oracle sequence under load',
-        type: 'internal'
+        type: 'internal',
       };
 
       const config: StressTestConfig = {
@@ -334,7 +342,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
         rampUpTime: 800,
         targetEndpoint: '/api/projects',
         method: 'POST',
-        requestBody: projectData
+        requestBody: projectData,
       };
 
       const result = await performLoadTest(config);
@@ -358,7 +366,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
         testDuration: 10000, // 10 seconds of sustained load
         rampUpTime: 2000,
         targetEndpoint: '/api/vendors',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -370,7 +378,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
         loadTestResult: result,
         memoryIncrease: `${Math.round(memoryIncrease / 1024 / 1024)}MB`,
         initialHeap: `${Math.round(initialMemory.heapUsed / 1024 / 1024)}MB`,
-        finalHeap: `${Math.round(finalMemory.heapUsed / 1024 / 1024)}MB`
+        finalHeap: `${Math.round(finalMemory.heapUsed / 1024 / 1024)}MB`,
       });
 
       expect(result.totalRequests).toBeGreaterThan(50);
@@ -379,17 +387,17 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       expect(memoryIncrease).toBeLessThan(100 * 1024 * 1024);
 
       const successRate = result.successfulRequests / result.totalRequests;
-      expect(successRate).toBeGreaterThan(0.90);
+      expect(successRate).toBeGreaterThan(0.9);
     }, 15000);
 
     it('should handle graceful degradation under extreme load', async () => {
       // Test with extreme concurrent load
       const config: StressTestConfig = {
         concurrentUsers: 50, // Very high concurrent load
-        testDuration: 5000,  // 5 seconds
+        testDuration: 5000, // 5 seconds
         rampUpTime: 1000,
         targetEndpoint: '/api/health/database',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -401,7 +409,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
       // Under extreme load, some failures are acceptable
       // But system should not completely crash
       const successRate = result.successfulRequests / result.totalRequests;
-      expect(successRate).toBeGreaterThan(0.60); // 60% success rate under extreme load
+      expect(successRate).toBeGreaterThan(0.6); // 60% success rate under extreme load
 
       // Response times may be higher but should not be excessive
       expect(result.averageResponseTime).toBeLessThan(10000); // Within 10 seconds
@@ -416,7 +424,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
         testDuration: 6000,
         rampUpTime: 1000,
         targetEndpoint: '/api/projects',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);
@@ -444,7 +452,7 @@ describe('Load and Stress Tests - Oracle Environment', () => {
         testDuration: 8000,
         rampUpTime: 2000,
         targetEndpoint: '/api/projects',
-        method: 'GET'
+        method: 'GET',
       };
 
       const result = await performLoadTest(config);

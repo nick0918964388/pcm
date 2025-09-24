@@ -18,7 +18,7 @@ import {
   type ValueConversionResult,
   type MigrationSummary,
   ConversionError,
-  ValidationError
+  ValidationError,
 } from './types';
 
 export class DataTypeConverter {
@@ -39,38 +39,45 @@ export class DataTypeConverter {
         reversible: true,
         constraints: [
           'CHECK (LENGTH(column_name) = 36)',
-          'CHECK (REGEXP_LIKE(column_name, \'^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$\'))'
+          "CHECK (REGEXP_LIKE(column_name, '^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$'))",
         ],
-        notes: 'UUID stored as uppercase VARCHAR2 with format validation'
+        notes: 'UUID stored as uppercase VARCHAR2 with format validation',
       },
 
       // JSONB轉換規則
       {
         postgresqlType: 'JSONB',
         oracleType: 'JSON',
-        conversionLogic: (value: any, options) => this.convertJsonValue(value, options),
+        conversionLogic: (value: any, options) =>
+          this.convertJsonValue(value, options),
         validationRule: (value: any) => this.validateJson(value),
         reversible: true,
         constraints: ['CHECK (column_name IS JSON)'],
-        notes: 'JSONB converted to Oracle JSON type with validation'
+        notes: 'JSONB converted to Oracle JSON type with validation',
       },
 
       // SERIAL轉換規則
       {
         postgresqlType: 'SERIAL',
         oracleType: 'NUMBER',
-        conversionLogic: (value: any) => ({ success: true, convertedValue: value }),
+        conversionLogic: (value: any) => ({
+          success: true,
+          convertedValue: value,
+        }),
         reversible: false,
-        notes: 'SERIAL converted to NUMBER with SEQUENCE and TRIGGER'
+        notes: 'SERIAL converted to NUMBER with SEQUENCE and TRIGGER',
       },
 
       // BIGSERIAL轉換規則
       {
         postgresqlType: 'BIGSERIAL',
         oracleType: 'NUMBER(19)',
-        conversionLogic: (value: any) => ({ success: true, convertedValue: value }),
+        conversionLogic: (value: any) => ({
+          success: true,
+          convertedValue: value,
+        }),
         reversible: false,
-        notes: 'BIGSERIAL converted to NUMBER(19) with SEQUENCE and TRIGGER'
+        notes: 'BIGSERIAL converted to NUMBER(19) with SEQUENCE and TRIGGER',
       },
 
       // TIMESTAMP WITH TIME ZONE轉換規則
@@ -79,25 +86,31 @@ export class DataTypeConverter {
         oracleType: 'TIMESTAMP',
         conversionLogic: (value: any) => this.convertTimestampValue(value),
         reversible: false,
-        notes: 'Time zone information will be lost'
+        notes: 'Time zone information will be lost',
       },
 
       // TEXT轉換規則
       {
         postgresqlType: 'TEXT',
         oracleType: 'VARCHAR2(4000)',
-        conversionLogic: (value: any) => ({ success: true, convertedValue: value }),
+        conversionLogic: (value: any) => ({
+          success: true,
+          convertedValue: value,
+        }),
         reversible: true,
-        notes: 'TEXT converted to VARCHAR2(4000), consider CLOB for large text'
+        notes: 'TEXT converted to VARCHAR2(4000), consider CLOB for large text',
       },
 
       // VARCHAR轉換規則
       {
         postgresqlType: 'VARCHAR',
         oracleType: 'VARCHAR2',
-        conversionLogic: (value: any) => ({ success: true, convertedValue: value }),
+        conversionLogic: (value: any) => ({
+          success: true,
+          convertedValue: value,
+        }),
         reversible: true,
-        notes: 'VARCHAR converted to VARCHAR2 with same length'
+        notes: 'VARCHAR converted to VARCHAR2 with same length',
       },
 
       // BOOLEAN轉換規則
@@ -107,8 +120,8 @@ export class DataTypeConverter {
         conversionLogic: (value: any) => this.convertBooleanValue(value),
         reversible: true,
         constraints: ['CHECK (column_name IN (0, 1))'],
-        notes: 'BOOLEAN converted to NUMBER(1) with check constraint'
-      }
+        notes: 'BOOLEAN converted to NUMBER(1) with check constraint',
+      },
     ];
   }
 
@@ -128,7 +141,7 @@ export class DataTypeConverter {
         return {
           success: false,
           oracleType: '',
-          error: `Unsupported type: ${postgresqlType}`
+          error: `Unsupported type: ${postgresqlType}`,
         };
       }
 
@@ -187,7 +200,9 @@ export class DataTypeConverter {
       if (rule.constraints) {
         rule.constraints.forEach(constraint => {
           if (options.columnName) {
-            constraints.push(constraint.replace('column_name', options.columnName));
+            constraints.push(
+              constraint.replace('column_name', options.columnName)
+            );
           } else {
             constraints.push(constraint);
           }
@@ -204,14 +219,13 @@ export class DataTypeConverter {
         oracleType,
         constraints: constraints.length > 0 ? constraints : undefined,
         additionalObjects,
-        migrationNotes: migrationNotes.length > 0 ? migrationNotes : undefined
+        migrationNotes: migrationNotes.length > 0 ? migrationNotes : undefined,
       };
-
     } catch (error) {
       return {
         success: false,
         oracleType: '',
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -233,17 +247,16 @@ export class DataTypeConverter {
         return {
           success: false,
           convertedValue: null,
-          error: `No conversion rule for type: ${postgresqlType}`
+          error: `No conversion rule for type: ${postgresqlType}`,
         };
       }
 
       return rule.conversionLogic(value);
-
     } catch (error) {
       return {
         success: false,
         convertedValue: null,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -274,24 +287,23 @@ export class DataTypeConverter {
         case 'UUID':
           return {
             success: true,
-            convertedValue: value.toString().toLowerCase()
+            convertedValue: value.toString().toLowerCase(),
           };
 
         case 'BOOLEAN':
           return {
             success: true,
-            convertedValue: value === 1 ? true : false
+            convertedValue: value === 1 ? true : false,
           };
 
         default:
           return { success: true, convertedValue: value };
       }
-
     } catch (error) {
       return {
         success: false,
         convertedValue: null,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -310,7 +322,7 @@ export class DataTypeConverter {
           postgresqlType: type,
           oracleType: rule.oracleType,
           status: 'supported',
-          notes: rule.notes
+          notes: rule.notes,
         });
         supportedCount++;
       } else {
@@ -318,7 +330,7 @@ export class DataTypeConverter {
           postgresqlType: type,
           oracleType: 'N/A',
           status: 'unsupported',
-          notes: 'No conversion rule available'
+          notes: 'No conversion rule available',
         });
         unsupportedCount++;
       }
@@ -330,15 +342,17 @@ export class DataTypeConverter {
       unsupportedTypes: unsupportedCount,
       details,
       warnings: [],
-      recommendations: []
+      recommendations: [],
     };
   }
 
   // 私有方法
 
-  private findConversionRule(postgresqlType: string): ConversionRule | undefined {
-    return this.rules.find(rule =>
-      rule.postgresqlType.toUpperCase() === postgresqlType.toUpperCase()
+  private findConversionRule(
+    postgresqlType: string
+  ): ConversionRule | undefined {
+    return this.rules.find(
+      rule => rule.postgresqlType.toUpperCase() === postgresqlType.toUpperCase()
     );
   }
 
@@ -362,13 +376,13 @@ export class DataTypeConverter {
       if (this.validateUuid(value)) {
         return {
           success: true,
-          convertedValue: value.toUpperCase()
+          convertedValue: value.toUpperCase(),
         };
       } else {
         return {
           success: false,
           convertedValue: null,
-          error: 'Invalid UUID format'
+          error: 'Invalid UUID format',
         };
       }
     }
@@ -376,17 +390,21 @@ export class DataTypeConverter {
     return {
       success: false,
       convertedValue: null,
-      error: 'UUID value must be a string'
+      error: 'UUID value must be a string',
     };
   }
 
   private validateUuid(value: any): boolean {
     if (typeof value !== 'string') return false;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(value);
   }
 
-  private convertJsonValue(value: any, options?: ConversionOptions): ValueConversionResult {
+  private convertJsonValue(
+    value: any,
+    options?: ConversionOptions
+  ): ValueConversionResult {
     try {
       let jsonString: string;
 
@@ -400,20 +418,19 @@ export class DataTypeConverter {
         return {
           success: false,
           convertedValue: null,
-          error: 'JSON value must be string or object'
+          error: 'JSON value must be string or object',
         };
       }
 
       return {
         success: true,
-        convertedValue: jsonString
+        convertedValue: jsonString,
       };
-
     } catch (error) {
       return {
         success: false,
         convertedValue: null,
-        error: 'Invalid JSON format'
+        error: 'Invalid JSON format',
       };
     }
   }
@@ -440,7 +457,7 @@ export class DataTypeConverter {
         if (value.toUpperCase() === 'NOW()') {
           return {
             success: true,
-            convertedValue: 'SYSTIMESTAMP'
+            convertedValue: 'SYSTIMESTAMP',
           };
         }
 
@@ -450,7 +467,7 @@ export class DataTypeConverter {
           return {
             success: false,
             convertedValue: null,
-            error: 'Invalid timestamp format'
+            error: 'Invalid timestamp format',
           };
         }
 
@@ -458,20 +475,19 @@ export class DataTypeConverter {
         const utcString = date.toISOString().replace('T', ' ').replace('Z', '');
         return {
           success: true,
-          convertedValue: utcString.substring(0, 19) // 移除毫秒部分
+          convertedValue: utcString.substring(0, 19), // 移除毫秒部分
         };
       }
 
       return {
         success: true,
-        convertedValue: value
+        convertedValue: value,
       };
-
     } catch (error) {
       return {
         success: false,
         convertedValue: null,
-        error: 'Error converting timestamp'
+        error: 'Error converting timestamp',
       };
     }
   }
@@ -481,7 +497,7 @@ export class DataTypeConverter {
       if (typeof value === 'boolean') {
         return {
           success: true,
-          convertedValue: value ? 1 : 0
+          convertedValue: value ? 1 : 0,
         };
       }
 
@@ -489,7 +505,11 @@ export class DataTypeConverter {
         const lowerValue = value.toLowerCase();
         if (lowerValue === 'true' || lowerValue === 't' || lowerValue === '1') {
           return { success: true, convertedValue: 1 };
-        } else if (lowerValue === 'false' || lowerValue === 'f' || lowerValue === '0') {
+        } else if (
+          lowerValue === 'false' ||
+          lowerValue === 'f' ||
+          lowerValue === '0'
+        ) {
           return { success: true, convertedValue: 0 };
         }
       }
@@ -497,21 +517,20 @@ export class DataTypeConverter {
       if (typeof value === 'number') {
         return {
           success: true,
-          convertedValue: value !== 0 ? 1 : 0
+          convertedValue: value !== 0 ? 1 : 0,
         };
       }
 
       return {
         success: false,
         convertedValue: null,
-        error: 'Invalid boolean value'
+        error: 'Invalid boolean value',
       };
-
     } catch (error) {
       return {
         success: false,
         convertedValue: null,
-        error: 'Error converting boolean value'
+        error: 'Error converting boolean value',
       };
     }
   }

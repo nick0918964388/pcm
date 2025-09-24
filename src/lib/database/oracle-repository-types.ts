@@ -8,7 +8,13 @@ import { QueryOptions, QueryResult } from './oracle-query-types';
 // Oracle特有的查詢選項
 export interface OracleQueryOptions extends QueryOptions {
   useOracleHints?: boolean;
-  optimizerMode?: 'ALL_ROWS' | 'FIRST_ROWS' | 'FIRST_ROWS_1' | 'FIRST_ROWS_10' | 'FIRST_ROWS_100' | 'FIRST_ROWS_1000';
+  optimizerMode?:
+    | 'ALL_ROWS'
+    | 'FIRST_ROWS'
+    | 'FIRST_ROWS_1'
+    | 'FIRST_ROWS_10'
+    | 'FIRST_ROWS_100'
+    | 'FIRST_ROWS_1000';
   enableRowid?: boolean;
   useAnalyticFunctions?: boolean;
 }
@@ -85,7 +91,11 @@ export interface OracleQueryBuilder {
   whereIn(column: string, values: any[]): OracleQueryBuilder;
   whereExists(subquery: string): OracleQueryBuilder;
   whereJson(options: OracleJsonQueryOptions): OracleQueryBuilder;
-  join(table: string, condition: string, type?: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS'): OracleQueryBuilder;
+  join(
+    table: string,
+    condition: string,
+    type?: 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS'
+  ): OracleQueryBuilder;
   orderBy(sorts: OracleSortOptions[]): OracleQueryBuilder;
   groupBy(columns: string[]): OracleQueryBuilder;
   having(condition: string): OracleQueryBuilder;
@@ -97,56 +107,125 @@ export interface OracleQueryBuilder {
 // Oracle Repository基礎介面
 export interface IOracleBaseRepository<T> {
   // 基本CRUD操作
-  findById(id: string | number, options?: OracleQueryOptions): Promise<T | null>;
+  findById(
+    id: string | number,
+    options?: OracleQueryOptions
+  ): Promise<T | null>;
   findAll(options?: OracleQueryOptions): Promise<T[]>;
   create(entity: Partial<T>, options?: OracleQueryOptions): Promise<T>;
-  update(id: string | number, updates: Partial<T>, options?: OracleQueryOptions): Promise<T>;
+  update(
+    id: string | number,
+    updates: Partial<T>,
+    options?: OracleQueryOptions
+  ): Promise<T>;
   delete(id: string | number, options?: OracleQueryOptions): Promise<boolean>;
 
   // 批次操作
-  createMany(entities: Partial<T>[], options?: OracleBatchOptions): Promise<T[]>;
-  updateMany(updates: Array<{ id: string | number; data: Partial<T> }>, options?: OracleBatchOptions): Promise<T[]>;
-  deleteMany(ids: (string | number)[], options?: OracleBatchOptions): Promise<number>;
+  createMany(
+    entities: Partial<T>[],
+    options?: OracleBatchOptions
+  ): Promise<T[]>;
+  updateMany(
+    updates: Array<{ id: string | number; data: Partial<T> }>,
+    options?: OracleBatchOptions
+  ): Promise<T[]>;
+  deleteMany(
+    ids: (string | number)[],
+    options?: OracleBatchOptions
+  ): Promise<number>;
 
   // 查詢操作
   findBy(criteria: Partial<T>, options?: OracleQueryOptions): Promise<T[]>;
-  findOne(criteria: Partial<T>, options?: OracleQueryOptions): Promise<T | null>;
+  findOne(
+    criteria: Partial<T>,
+    options?: OracleQueryOptions
+  ): Promise<T | null>;
   count(criteria?: Partial<T>, options?: OracleQueryOptions): Promise<number>;
   exists(criteria: Partial<T>, options?: OracleQueryOptions): Promise<boolean>;
 
   // 分頁操作
-  paginate(options: OraclePaginationOptions, criteria?: Partial<T>): Promise<OraclePaginationResult<T>>;
+  paginate(
+    options: OraclePaginationOptions,
+    criteria?: Partial<T>
+  ): Promise<OraclePaginationResult<T>>;
 
   // Oracle特有操作
   findByRowid(rowid: string, options?: OracleQueryOptions): Promise<T | null>;
-  merge(entity: Partial<T>, matchColumns: string[], options?: OracleQueryOptions): Promise<T>;
+  merge(
+    entity: Partial<T>,
+    matchColumns: string[],
+    options?: OracleQueryOptions
+  ): Promise<T>;
 
   // JSON操作 (for JSON columns)
-  findByJson(jsonOptions: OracleJsonQueryOptions, options?: OracleQueryOptions): Promise<T[]>;
-  updateJson(id: string | number, jsonPath: string, value: any, options?: OracleQueryOptions): Promise<T>;
+  findByJson(
+    jsonOptions: OracleJsonQueryOptions,
+    options?: OracleQueryOptions
+  ): Promise<T[]>;
+  updateJson(
+    id: string | number,
+    jsonPath: string,
+    value: any,
+    options?: OracleQueryOptions
+  ): Promise<T>;
 
   // 聚合操作
-  aggregate(aggregateOptions: OracleAggregateOptions, options?: OracleQueryOptions): Promise<any[]>;
+  aggregate(
+    aggregateOptions: OracleAggregateOptions,
+    options?: OracleQueryOptions
+  ): Promise<any[]>;
 
   // 查詢建構器
   query(): OracleQueryBuilder;
 
   // 原始SQL執行
-  executeRaw(sql: string, binds?: Record<string, any>, options?: OracleQueryOptions): Promise<QueryResult>;
+  executeRaw(
+    sql: string,
+    binds?: Record<string, any>,
+    options?: OracleQueryOptions
+  ): Promise<QueryResult>;
 
   // 事務支援
-  withTransaction<R>(callback: (repo: this) => Promise<R>, options?: OracleTransactionOptions): Promise<R>;
+  withTransaction<R>(
+    callback: (repo: this) => Promise<R>,
+    options?: OracleTransactionOptions
+  ): Promise<R>;
 
   // 測試期望的額外方法
-  findMany(ids: (string | number)[], options?: OracleQueryOptions): Promise<T[]>;
-  batchCreate(entities: Partial<T>[], options?: OracleBatchOptions): Promise<T[]>;
-  batchUpdate(updates: Array<{ id: string | number; data: Partial<T> }>, options?: OracleBatchOptions): Promise<T[]>;
-  batchDelete(ids: (string | number)[], options?: OracleBatchOptions): Promise<number>;
+  findMany(
+    ids: (string | number)[],
+    options?: OracleQueryOptions
+  ): Promise<T[]>;
+  batchCreate(
+    entities: Partial<T>[],
+    options?: OracleBatchOptions
+  ): Promise<T[]>;
+  batchUpdate(
+    updates: Array<{ id: string | number; data: Partial<T> }>,
+    options?: OracleBatchOptions
+  ): Promise<T[]>;
+  batchDelete(
+    ids: (string | number)[],
+    options?: OracleBatchOptions
+  ): Promise<number>;
   generateSequenceId(sequenceName?: string): Promise<number>;
-  bulkInsert(entities: Partial<T>[], options?: OracleBatchOptions): Promise<void>;
-  upsert(entity: Partial<T>, matchColumns: string[], options?: OracleQueryOptions): Promise<T>;
-  findWithCursor(options: { batchSize: number; cursor?: string }, criteria?: Partial<T>): Promise<{ data: T[]; nextCursor?: string; hasMore: boolean }>;
-  softDelete(id: string | number, options?: OracleQueryOptions): Promise<boolean>;
+  bulkInsert(
+    entities: Partial<T>[],
+    options?: OracleBatchOptions
+  ): Promise<void>;
+  upsert(
+    entity: Partial<T>,
+    matchColumns: string[],
+    options?: OracleQueryOptions
+  ): Promise<T>;
+  findWithCursor(
+    options: { batchSize: number; cursor?: string },
+    criteria?: Partial<T>
+  ): Promise<{ data: T[]; nextCursor?: string; hasMore: boolean }>;
+  softDelete(
+    id: string | number,
+    options?: OracleQueryOptions
+  ): Promise<boolean>;
   restore(id: string | number, options?: OracleQueryOptions): Promise<T | null>;
   findDeleted(options?: OracleQueryOptions): Promise<T[]>;
   getMetrics(): OracleRepositoryMetrics;

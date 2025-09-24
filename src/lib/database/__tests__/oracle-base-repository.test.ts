@@ -19,7 +19,7 @@ import type {
   PaginationResult,
   OracleRepositoryOptions,
   JsonQueryOptions,
-  BulkOperationOptions
+  BulkOperationOptions,
 } from '../oracle-repository-types';
 
 // 測試用實體
@@ -40,7 +40,7 @@ class TestUserRepository extends OracleBaseRepository<TestUser> {
       primaryKey: 'id',
       searchFields: ['name', 'email'],
       jsonFields: ['metadata'],
-      timestampFields: ['created_at', 'updated_at']
+      timestampFields: ['created_at', 'updated_at'],
     });
   }
 
@@ -52,7 +52,7 @@ class TestUserRepository extends OracleBaseRepository<TestUser> {
       metadata: row.METADATA ? JSON.parse(row.METADATA) : {},
       created_at: new Date(row.CREATED_AT || row.created_at),
       updated_at: new Date(row.UPDATED_AT || row.updated_at),
-      is_active: (row.IS_ACTIVE || row.is_active) === 1
+      is_active: (row.IS_ACTIVE || row.is_active) === 1,
     };
   }
 
@@ -62,10 +62,12 @@ class TestUserRepository extends OracleBaseRepository<TestUser> {
     if (entity.id !== undefined) mapped.id = entity.id;
     if (entity.name !== undefined) mapped.name = entity.name;
     if (entity.email !== undefined) mapped.email = entity.email;
-    if (entity.metadata !== undefined) mapped.metadata = JSON.stringify(entity.metadata);
+    if (entity.metadata !== undefined)
+      mapped.metadata = JSON.stringify(entity.metadata);
     if (entity.created_at !== undefined) mapped.created_at = entity.created_at;
     if (entity.updated_at !== undefined) mapped.updated_at = entity.updated_at;
-    if (entity.is_active !== undefined) mapped.is_active = entity.is_active ? 1 : 0;
+    if (entity.is_active !== undefined)
+      mapped.is_active = entity.is_active ? 1 : 0;
 
     return mapped;
   }
@@ -85,7 +87,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       executeMerge: vi.fn(),
       executeTransaction: vi.fn(),
       executeQueryWithCursor: vi.fn(),
-      streamQuery: vi.fn()
+      streamQuery: vi.fn(),
     } as any;
 
     userRepository = new TestUserRepository(mockQueryExecutor);
@@ -99,12 +101,19 @@ describe('Oracle Base Repository - Task 3.3', () => {
     it('should generate Oracle-compatible SELECT queries with proper syntax', async () => {
       // RED: 測試Oracle SELECT語法生成
       const mockUsers = [
-        { ID: '1', NAME: 'John Doe', EMAIL: 'john@test.com', IS_ACTIVE: 1, CREATED_AT: new Date(), UPDATED_AT: new Date() }
+        {
+          ID: '1',
+          NAME: 'John Doe',
+          EMAIL: 'john@test.com',
+          IS_ACTIVE: 1,
+          CREATED_AT: new Date(),
+          UPDATED_AT: new Date(),
+        },
       ];
 
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: mockUsers
+        data: mockUsers,
       });
 
       const result = await userRepository.findById('1');
@@ -114,7 +123,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
         expect.objectContaining({ id: '1' }),
         expect.objectContaining({
           convertSyntax: true,
-          convertBinds: true
+          convertBinds: true,
         })
       );
       expect(result).toBeDefined();
@@ -127,7 +136,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       const newUser: Partial<TestUser> = {
         name: 'Jane Doe',
         email: 'jane@test.com',
-        metadata: { role: 'admin' }
+        metadata: { role: 'admin' },
       };
 
       const mockInsertedUser = {
@@ -137,12 +146,12 @@ describe('Oracle Base Repository - Task 3.3', () => {
         METADATA: '{"role":"admin"}',
         IS_ACTIVE: 1,
         CREATED_AT: new Date(),
-        UPDATED_AT: new Date()
+        UPDATED_AT: new Date(),
       };
 
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: [mockInsertedUser]
+        data: [mockInsertedUser],
       });
 
       const result = await userRepository.create(newUser);
@@ -153,11 +162,11 @@ describe('Oracle Base Repository - Task 3.3', () => {
           name: 'Jane Doe',
           email: 'jane@test.com',
           metadata: '{"role":"admin"}',
-          is_active: 1
+          is_active: 1,
         }),
         expect.objectContaining({
           convertSyntax: true,
-          convertBinds: true
+          convertBinds: true,
         })
       );
       expect(result.name).toBe('Jane Doe');
@@ -168,7 +177,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       // RED: 測試Oracle UPDATE語法生成
       const updateData: Partial<TestUser> = {
         name: 'John Updated',
-        metadata: { role: 'user', updated: true }
+        metadata: { role: 'user', updated: true },
       };
 
       const mockUpdatedUser = {
@@ -178,12 +187,12 @@ describe('Oracle Base Repository - Task 3.3', () => {
         METADATA: '{"role":"user","updated":true}',
         IS_ACTIVE: 1,
         CREATED_AT: new Date(),
-        UPDATED_AT: new Date()
+        UPDATED_AT: new Date(),
       };
 
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: [mockUpdatedUser]
+        data: [mockUpdatedUser],
       });
 
       const result = await userRepository.update('1', updateData);
@@ -193,11 +202,11 @@ describe('Oracle Base Repository - Task 3.3', () => {
         expect.objectContaining({
           name: 'John Updated',
           metadata: '{"role":"user","updated":true}',
-          updated_at: expect.any(Date)
+          updated_at: expect.any(Date),
         }),
         expect.objectContaining({
           convertSyntax: true,
-          convertBinds: true
+          convertBinds: true,
         })
       );
       expect(result?.name).toBe('John Updated');
@@ -207,7 +216,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       // RED: 測試Oracle軟刪除語法
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: [{ ROWS_AFFECTED: 1 }]
+        data: [{ ROWS_AFFECTED: 1 }],
       });
 
       const result = await userRepository.delete('1');
@@ -217,11 +226,11 @@ describe('Oracle Base Repository - Task 3.3', () => {
         expect.objectContaining({
           is_active: 0,
           updated_at: expect.any(Date),
-          id: '1'
+          id: '1',
         }),
         expect.objectContaining({
           convertSyntax: true,
-          convertBinds: true
+          convertBinds: true,
         })
       );
       expect(result).toBe(true);
@@ -232,26 +241,40 @@ describe('Oracle Base Repository - Task 3.3', () => {
     it('should implement Oracle OFFSET/FETCH pagination', async () => {
       // RED: 測試Oracle分頁機制
       const mockUsers = [
-        { ID: '1', NAME: 'User 1', EMAIL: 'user1@test.com', IS_ACTIVE: 1, CREATED_AT: new Date(), UPDATED_AT: new Date() },
-        { ID: '2', NAME: 'User 2', EMAIL: 'user2@test.com', IS_ACTIVE: 1, CREATED_AT: new Date(), UPDATED_AT: new Date() }
+        {
+          ID: '1',
+          NAME: 'User 1',
+          EMAIL: 'user1@test.com',
+          IS_ACTIVE: 1,
+          CREATED_AT: new Date(),
+          UPDATED_AT: new Date(),
+        },
+        {
+          ID: '2',
+          NAME: 'User 2',
+          EMAIL: 'user2@test.com',
+          IS_ACTIVE: 1,
+          CREATED_AT: new Date(),
+          UPDATED_AT: new Date(),
+        },
       ];
 
       // Mock count query
       mockQueryExecutor.executeQuery
         .mockResolvedValueOnce({
           success: true,
-          data: [{ COUNT: 50 }]
+          data: [{ COUNT: 50 }],
         })
         .mockResolvedValueOnce({
           success: true,
-          data: mockUsers
+          data: mockUsers,
         });
 
       const options: FindOptions = {
         page: 2,
         pageSize: 10,
         sortBy: 'name',
-        sortOrder: 'ASC'
+        sortOrder: 'ASC',
       };
 
       const result = await userRepository.findMany(options);
@@ -268,7 +291,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
         expect.any(Object),
         expect.objectContaining({
           convertSyntax: true,
-          convertBinds: true
+          convertBinds: true,
         })
       );
     });
@@ -276,7 +299,14 @@ describe('Oracle Base Repository - Task 3.3', () => {
     it('should support Oracle ROWNUM pagination for legacy compatibility', async () => {
       // RED: 測試ROWNUM分頁（舊版相容性）
       const mockUsers = [
-        { ID: '1', NAME: 'User 1', EMAIL: 'user1@test.com', IS_ACTIVE: 1, CREATED_AT: new Date(), UPDATED_AT: new Date() }
+        {
+          ID: '1',
+          NAME: 'User 1',
+          EMAIL: 'user1@test.com',
+          IS_ACTIVE: 1,
+          CREATED_AT: new Date(),
+          UPDATED_AT: new Date(),
+        },
       ];
 
       mockQueryExecutor.executeQuery
@@ -286,7 +316,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       const options: FindOptions = {
         page: 1,
         pageSize: 20,
-        useRownum: true // 使用ROWNUM分頁
+        useRownum: true, // 使用ROWNUM分頁
       };
 
       const result = await userRepository.findMany(options);
@@ -304,17 +334,26 @@ describe('Oracle Base Repository - Task 3.3', () => {
       const mockCursorResult = {
         success: true,
         rows: [
-          { ID: '1', NAME: 'User 1', EMAIL: 'user1@test.com', IS_ACTIVE: 1, CREATED_AT: new Date(), UPDATED_AT: new Date() }
+          {
+            ID: '1',
+            NAME: 'User 1',
+            EMAIL: 'user1@test.com',
+            IS_ACTIVE: 1,
+            CREATED_AT: new Date(),
+            UPDATED_AT: new Date(),
+          },
         ],
         hasMore: true,
-        cursor: 'cursor_token_123'
+        cursor: 'cursor_token_123',
       };
 
-      mockQueryExecutor.executeQueryWithCursor.mockResolvedValue(mockCursorResult);
+      mockQueryExecutor.executeQueryWithCursor.mockResolvedValue(
+        mockCursorResult
+      );
 
       const result = await userRepository.findWithCursor({
         pageSize: 1000,
-        cursor: undefined
+        cursor: undefined,
       });
 
       expect(result.success).toBe(true);
@@ -328,19 +367,26 @@ describe('Oracle Base Repository - Task 3.3', () => {
     it('should support JSON_VALUE queries for extracting JSON fields', async () => {
       // RED: 測試JSON_VALUE查詢
       const mockUsers = [
-        { ID: '1', NAME: 'John', METADATA: '{"role":"admin","department":"IT"}', IS_ACTIVE: 1, CREATED_AT: new Date(), UPDATED_AT: new Date() }
+        {
+          ID: '1',
+          NAME: 'John',
+          METADATA: '{"role":"admin","department":"IT"}',
+          IS_ACTIVE: 1,
+          CREATED_AT: new Date(),
+          UPDATED_AT: new Date(),
+        },
       ];
 
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: mockUsers
+        data: mockUsers,
       });
 
       const jsonOptions: JsonQueryOptions = {
         jsonField: 'metadata',
         jsonPath: '$.role',
         operator: '=',
-        value: 'admin'
+        value: 'admin',
       };
 
       const result = await userRepository.findByJsonQuery(jsonOptions);
@@ -349,11 +395,11 @@ describe('Oracle Base Repository - Task 3.3', () => {
       expect(mockQueryExecutor.executeQuery).toHaveBeenCalledWith(
         expect.stringContaining("JSON_VALUE(metadata, '$.role') = :jsonValue"),
         expect.objectContaining({
-          jsonValue: 'admin'
+          jsonValue: 'admin',
         }),
         expect.objectContaining({
           convertSyntax: true,
-          convertBinds: true
+          convertBinds: true,
         })
       );
     });
@@ -361,25 +407,34 @@ describe('Oracle Base Repository - Task 3.3', () => {
     it('should support JSON_EXISTS queries for checking JSON structure', async () => {
       // RED: 測試JSON_EXISTS查詢
       const mockUsers = [
-        { ID: '1', NAME: 'John', METADATA: '{"permissions":["read","write"]}', IS_ACTIVE: 1, CREATED_AT: new Date(), UPDATED_AT: new Date() }
+        {
+          ID: '1',
+          NAME: 'John',
+          METADATA: '{"permissions":["read","write"]}',
+          IS_ACTIVE: 1,
+          CREATED_AT: new Date(),
+          UPDATED_AT: new Date(),
+        },
       ];
 
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: mockUsers
+        data: mockUsers,
       });
 
       const jsonOptions: JsonQueryOptions = {
         jsonField: 'metadata',
         jsonPath: '$.permissions[*]?(@ == "admin")',
-        operator: 'EXISTS'
+        operator: 'EXISTS',
       };
 
       const result = await userRepository.findByJsonQuery(jsonOptions);
 
       expect(result.success).toBe(true);
       expect(mockQueryExecutor.executeQuery).toHaveBeenCalledWith(
-        expect.stringContaining("JSON_EXISTS(metadata, '$.permissions[*]?(@ == \"admin\")')"),
+        expect.stringContaining(
+          'JSON_EXISTS(metadata, \'$.permissions[*]?(@ == "admin")\')'
+        ),
         expect.any(Object),
         expect.any(Object)
       );
@@ -392,28 +447,31 @@ describe('Oracle Base Repository - Task 3.3', () => {
           jsonField: 'metadata',
           jsonPath: '$.role',
           operator: '=',
-          value: 'manager'
+          value: 'manager',
         },
         {
           jsonField: 'metadata',
           jsonPath: '$.department',
           operator: 'IN',
-          value: ['IT', 'HR']
-        }
+          value: ['IT', 'HR'],
+        },
       ];
 
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: []
+        data: [],
       });
 
-      const result = await userRepository.findByMultipleJsonQueries(complexJsonOptions, 'AND');
+      const result = await userRepository.findByMultipleJsonQueries(
+        complexJsonOptions,
+        'AND'
+      );
 
       expect(result.success).toBe(true);
       expect(mockQueryExecutor.executeQuery).toHaveBeenCalledWith(
         expect.stringContaining("JSON_VALUE(metadata, '$.role') = :jsonValue0"),
         expect.objectContaining({
-          jsonValue0: 'manager'
+          jsonValue0: 'manager',
         }),
         expect.any(Object)
       );
@@ -431,22 +489,22 @@ describe('Oracle Base Repository - Task 3.3', () => {
           EMAIL: 'user1@test.com',
           CREATED_AT: testDate,
           UPDATED_AT: testDate,
-          IS_ACTIVE: 1
-        }
+          IS_ACTIVE: 1,
+        },
       ];
 
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: mockUsers
+        data: mockUsers,
       });
 
       const dateFilter = {
         created_at_from: new Date('2023-12-01'),
-        created_at_to: new Date('2023-12-31')
+        created_at_to: new Date('2023-12-31'),
       };
 
       const result = await userRepository.findMany({
-        filters: dateFilter
+        filters: dateFilter,
       });
 
       expect(result.success).toBe(true);
@@ -454,7 +512,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
         expect.stringContaining('created_at >= :created_at_from'),
         expect.objectContaining({
           created_at_from: dateFilter.created_at_from,
-          created_at_to: dateFilter.created_at_to
+          created_at_to: dateFilter.created_at_to,
         }),
         expect.any(Object)
       );
@@ -464,17 +522,19 @@ describe('Oracle Base Repository - Task 3.3', () => {
       // RED: 測試Oracle日期函數
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: []
+        data: [],
       });
 
       const result = await userRepository.findByDateRange({
         field: 'created_at',
-        range: 'LAST_30_DAYS'
+        range: 'LAST_30_DAYS',
       });
 
       expect(result.success).toBe(true);
       expect(mockQueryExecutor.executeQuery).toHaveBeenCalledWith(
-        expect.stringContaining('created_at >= (SYSTIMESTAMP - INTERVAL \'30\' DAY)'),
+        expect.stringContaining(
+          "created_at >= (SYSTIMESTAMP - INTERVAL '30' DAY)"
+        ),
         expect.any(Object),
         expect.any(Object)
       );
@@ -486,19 +546,21 @@ describe('Oracle Base Repository - Task 3.3', () => {
 
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: [{
-          ID: '1',
-          NAME: 'User 1',
-          EMAIL: 'user1@test.com',
-          CREATED_AT: utcDate,
-          UPDATED_AT: utcDate,
-          IS_ACTIVE: 1
-        }]
+        data: [
+          {
+            ID: '1',
+            NAME: 'User 1',
+            EMAIL: 'user1@test.com',
+            CREATED_AT: utcDate,
+            UPDATED_AT: utcDate,
+            IS_ACTIVE: 1,
+          },
+        ],
       });
 
       const result = await userRepository.findWithTimezone({
         timezone: 'Asia/Taipei',
-        dateField: 'created_at'
+        dateField: 'created_at',
       });
 
       expect(result.success).toBe(true);
@@ -516,7 +578,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       const users = [
         { name: 'User 1', email: 'user1@test.com' },
         { name: 'User 2', email: 'user2@test.com' },
-        { name: 'User 3', email: 'user3@test.com' }
+        { name: 'User 3', email: 'user3@test.com' },
       ];
 
       mockQueryExecutor.executeBulkInsert.mockResolvedValue({
@@ -525,13 +587,13 @@ describe('Oracle Base Repository - Task 3.3', () => {
         successfulRows: 3,
         failedRows: 0,
         batchCount: 1,
-        executionTime: 150
+        executionTime: 150,
       });
 
       const options: BulkOperationOptions = {
         batchSize: 1000,
         enableParallel: true,
-        continueOnError: false
+        continueOnError: false,
       };
 
       const result = await userRepository.batchCreate(users, options);
@@ -544,12 +606,12 @@ describe('Oracle Base Repository - Task 3.3', () => {
           expect.objectContaining({
             name: 'User 1',
             email: 'user1@test.com',
-            is_active: 1
-          })
+            is_active: 1,
+          }),
         ]),
         expect.objectContaining({
           batchSize: 1000,
-          enableParallel: true
+          enableParallel: true,
         })
       );
     });
@@ -558,7 +620,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       // RED: 測試Oracle MERGE操作
       const users = [
         { id: '1', name: 'Updated User 1', email: 'updated1@test.com' },
-        { id: '2', name: 'New User 2', email: 'new2@test.com' }
+        { id: '2', name: 'New User 2', email: 'new2@test.com' },
       ];
 
       mockQueryExecutor.executeMerge.mockResolvedValue({
@@ -567,10 +629,14 @@ describe('Oracle Base Repository - Task 3.3', () => {
         successfulRows: 2,
         failedRows: 0,
         batchCount: 1,
-        executionTime: 200
+        executionTime: 200,
       });
 
-      const result = await userRepository.upsertBatch(users, ['id'], ['name', 'email']);
+      const result = await userRepository.upsertBatch(
+        users,
+        ['id'],
+        ['name', 'email']
+      );
 
       expect(result.success).toBe(true);
       expect(mockQueryExecutor.executeMerge).toHaveBeenCalledWith(
@@ -579,8 +645,8 @@ describe('Oracle Base Repository - Task 3.3', () => {
           expect.objectContaining({
             id: '1',
             name: 'Updated User 1',
-            email: 'updated1@test.com'
-          })
+            email: 'updated1@test.com',
+          }),
         ]),
         ['id'],
         ['name', 'email']
@@ -591,7 +657,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       // RED: 測試批次操作錯誤恢復
       const users = [
         { name: 'Valid User', email: 'valid@test.com' },
-        { name: 'Invalid User', email: 'duplicate@test.com' } // 假設會導致錯誤
+        { name: 'Invalid User', email: 'duplicate@test.com' }, // 假設會導致錯誤
       ];
 
       mockQueryExecutor.executeBulkInsert.mockResolvedValue({
@@ -600,21 +666,23 @@ describe('Oracle Base Repository - Task 3.3', () => {
         successfulRows: 1,
         failedRows: 1,
         batchCount: 1,
-        errors: [{
-          rowIndex: 1,
-          error: {
-            code: 'ORA-00001',
-            message: 'unique constraint violated',
-            type: 'CONSTRAINT_VIOLATION',
-            severity: 'ERROR'
-          }
-        }],
-        executionTime: 300
+        errors: [
+          {
+            rowIndex: 1,
+            error: {
+              code: 'ORA-00001',
+              message: 'unique constraint violated',
+              type: 'CONSTRAINT_VIOLATION',
+              severity: 'ERROR',
+            },
+          },
+        ],
+        executionTime: 300,
       });
 
       const options: BulkOperationOptions = {
         continueOnError: true,
-        errorHandling: 'COLLECT_ERRORS'
+        errorHandling: 'COLLECT_ERRORS',
       };
 
       const result = await userRepository.batchCreate(users, options);
@@ -630,7 +698,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       const updates = [
         { id: '1', name: 'Updated Name 1' },
         { id: '2', name: 'Updated Name 2' },
-        { id: '3', name: 'Updated Name 3' }
+        { id: '3', name: 'Updated Name 3' },
       ];
 
       mockQueryExecutor.executeBulkUpdate.mockResolvedValue({
@@ -639,7 +707,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
         successfulRows: 3,
         failedRows: 0,
         batchCount: 1,
-        executionTime: 120
+        executionTime: 120,
       });
 
       const result = await userRepository.batchUpdate(updates, ['name'], 'id');
@@ -651,8 +719,8 @@ describe('Oracle Base Repository - Task 3.3', () => {
           expect.objectContaining({
             id: '1',
             name: 'Updated Name 1',
-            updated_at: expect.any(Date)
-          })
+            updated_at: expect.any(Date),
+          }),
         ]),
         ['name'],
         'id'
@@ -665,7 +733,7 @@ describe('Oracle Base Repository - Task 3.3', () => {
       // RED: 測試Oracle序列ID生成
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: [{ NEXTVAL: 12345 }]
+        data: [{ NEXTVAL: 12345 }],
       });
 
       const nextId = await userRepository.generateSequenceId('users_seq');
@@ -682,16 +750,18 @@ describe('Oracle Base Repository - Task 3.3', () => {
       // RED: 測試Oracle查詢提示
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: []
+        data: [],
       });
 
       const result = await userRepository.findManyWithHints({
-        hints: ['FIRST_ROWS(10)', 'USE_INDEX(users idx_users_email)']
+        hints: ['FIRST_ROWS(10)', 'USE_INDEX(users idx_users_email)'],
       });
 
       expect(result.success).toBe(true);
       expect(mockQueryExecutor.executeQuery).toHaveBeenCalledWith(
-        expect.stringContaining('/*+ FIRST_ROWS(10) USE_INDEX(users idx_users_email) */'),
+        expect.stringContaining(
+          '/*+ FIRST_ROWS(10) USE_INDEX(users idx_users_email) */'
+        ),
         expect.any(Object),
         expect.any(Object)
       );
@@ -702,20 +772,22 @@ describe('Oracle Base Repository - Task 3.3', () => {
       const userData = {
         name: 'Test User',
         email: 'test@example.com',
-        large_data: 'x'.repeat(10000) // 大型資料
+        large_data: 'x'.repeat(10000), // 大型資料
       };
 
       mockQueryExecutor.executeQuery.mockResolvedValue({
         success: true,
-        data: [{
-          ID: '1',
-          NAME: 'Test User',
-          EMAIL: 'test@example.com',
-          LARGE_DATA: userData.large_data,
-          IS_ACTIVE: 1,
-          CREATED_AT: new Date(),
-          UPDATED_AT: new Date()
-        }]
+        data: [
+          {
+            ID: '1',
+            NAME: 'Test User',
+            EMAIL: 'test@example.com',
+            LARGE_DATA: userData.large_data,
+            IS_ACTIVE: 1,
+            CREATED_AT: new Date(),
+            UPDATED_AT: new Date(),
+          },
+        ],
       });
 
       const result = await userRepository.createWithLob(userData);
@@ -724,10 +796,10 @@ describe('Oracle Base Repository - Task 3.3', () => {
       expect(mockQueryExecutor.executeQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO users'),
         expect.objectContaining({
-          large_data: userData.large_data
+          large_data: userData.large_data,
         }),
         expect.objectContaining({
-          lobHandling: true
+          lobHandling: true,
         })
       );
     });

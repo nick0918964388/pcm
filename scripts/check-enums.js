@@ -8,12 +8,12 @@ const dbConfig = {
   database: 'app_db',
   user: 'admin',
   password: 'XcW04ByX6GbVdt1gw4EJ5XRY',
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
 };
 
 async function checkEnums() {
   const client = new Client(dbConfig);
-  
+
   try {
     console.log('🔌 連接資料庫...');
     await client.connect();
@@ -30,7 +30,7 @@ async function checkEnums() {
       GROUP BY t.typname
       ORDER BY t.typname
     `);
-    
+
     enumTypes.rows.forEach(row => {
       console.log(`\n🏷️  ${row.enum_name}:`);
       console.log(`   值: ${row.enum_values}`);
@@ -43,15 +43,16 @@ async function checkEnums() {
       FROM vendors 
       LIMIT 5
     `);
-    
+
     if (existingVendors.rows.length > 0) {
       existingVendors.rows.forEach((vendor, index) => {
-        console.log(`   ${index + 1}. ${vendor.name} - type: "${vendor.type}", status: "${vendor.status}"`);
+        console.log(
+          `   ${index + 1}. ${vendor.name} - type: "${vendor.type}", status: "${vendor.status}"`
+        );
       });
     } else {
       console.log('   沒有現有的廠商資料');
     }
-
   } catch (error) {
     console.error('❌ 錯誤:', error.message);
     process.exit(1);

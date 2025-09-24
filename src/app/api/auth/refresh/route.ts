@@ -9,7 +9,7 @@ import {
   handleOptionsRequest,
   logApiRequest,
   checkRateLimit,
-  rateLimitErrorResponse
+  rateLimitErrorResponse,
 } from '@/lib/utils/api-response';
 
 // POST /api/auth/refresh - 刷新 Token
@@ -22,11 +22,12 @@ export async function POST(request: NextRequest) {
     if (methodError) return methodError;
 
     // 速率限制檢查 (每分鐘最多 10 次刷新嘗試)
-    const clientIP = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown';
+    const clientIP =
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
     const rateLimit = checkRateLimit(`refresh:${clientIP}`, 10, 60 * 1000);
-    
+
     if (!rateLimit.allowed) {
       return rateLimitErrorResponse('Token 刷新次數過多，請稍後再試');
     }
@@ -46,11 +47,7 @@ export async function POST(request: NextRequest) {
     // 記錄請求日誌
     logApiRequest(request, null, null, startTime);
 
-    return successResponse(
-      { tokens },
-      'Token 刷新成功'
-    );
-
+    return successResponse({ tokens }, 'Token 刷新成功');
   } catch (error: any) {
     logApiRequest(request, null, null, startTime);
     return handleKnownError(error);
